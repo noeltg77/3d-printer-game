@@ -1,4 +1,4 @@
-[gd_scene load_steps=28 format=3]
+[gd_scene load_steps=33 format=3]
 
 [ext_resource type="PackedScene" path="res://assets/models/garage/garage.glb" id="1_garage"]
 [ext_resource type="PackedScene" path="res://assets/models/furniture/workbench.glb" id="2_workbench"]
@@ -26,6 +26,12 @@
 [ext_resource type="PackedScene" path="res://assets/models/filament/spool_pink.glb" id="24_spool_pink"]
 [ext_resource type="PackedScene" path="res://assets/models/filament/spool_white.glb" id="25_spool_white"]
 [ext_resource type="PackedScene" path="res://scenes/characters/character.tscn" id="26_character"]
+
+[ext_resource type="PackedScene" path="res://assets/models/furniture/filament_rack.glb" id="27_rack"]
+[ext_resource type="Script" path="res://scripts/props/slot_filler.gd" id="28_filler"]
+[ext_resource type="PackedScene" path="res://assets/models/filament/spool_teal.glb" id="29_spool_teal"]
+[ext_resource type="PackedScene" path="res://assets/models/filament/spool_lime.glb" id="30_spool_lime"]
+[ext_resource type="PackedScene" path="res://assets/models/filament/spool_black.glb" id="31_spool_black"]
 
 [sub_resource type="Environment" id="Environment_garage"]
 background_mode = 1
@@ -102,32 +108,10 @@ transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -1.4575, 1.43, -2.1)
 [node name="UnitSpool4" parent="." instance=ExtResource("25_spool_white")]
 transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -1.3725, 1.43, -2.1)
 
-[node name="ShelvingNorth" parent="." instance=ExtResource("3_shelving")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.3, 0, -2.26)
-
-[node name="ShelfBox1" parent="." instance=ExtResource("15_box_b")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.45, 0.13, -2.26)
-
-[node name="ShelfSpool1" parent="." instance=ExtResource("20_spool_green")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.68, 0.68, -2.24)
-
-[node name="ShelfSpool2" parent="." instance=ExtResource("21_spool_sky")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.42, 0.68, -2.24)
-
-[node name="ShelfSpool3" parent="." instance=ExtResource("23_spool_purple")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.16, 0.68, -2.24)
-
-[node name="ShelfSpool4" parent="." instance=ExtResource("24_spool_pink")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.6, 1.23, -2.24)
-
-[node name="ShelfSpool5" parent="." instance=ExtResource("17_spool_red")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.34, 1.23, -2.24)
-
-[node name="ShelfSpool6" parent="." instance=ExtResource("19_spool_yellow")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.05, 1.23, -2.24)
-
-[node name="ShelfBox2" parent="." instance=ExtResource("14_box_a")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.3, 1.78, -2.26)
+[node name="FilamentRack" parent="." instance=ExtResource("27_rack")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.3, 0, -2.32)
+script = ExtResource("28_filler")
+items = Array[PackedScene]([ExtResource("17_spool_red"), ExtResource("18_spool_orange"), ExtResource("19_spool_yellow"), ExtResource("20_spool_green"), ExtResource("21_spool_sky"), ExtResource("22_spool_blue"), ExtResource("23_spool_purple"), ExtResource("24_spool_pink"), ExtResource("25_spool_white"), ExtResource("29_spool_teal"), ExtResource("30_spool_lime"), ExtResource("31_spool_black")])
 
 [node name="Desk" parent="." instance=ExtResource("4_desk")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5, 0, -2.165)
@@ -156,11 +140,8 @@ transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -2.76, 0, 1.85)
 [node name="WestShelfBox1" parent="." instance=ExtResource("14_box_a")]
 transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -2.76, 0.13, 1.6)
 
-[node name="WestShelfSpool1" parent="." instance=ExtResource("25_spool_white")]
-transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -2.74, 0.68, 1.5)
-
-[node name="WestShelfSpool2" parent="." instance=ExtResource("22_spool_blue")]
-transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -2.74, 0.68, 1.78)
+[node name="WestShelfBox3" parent="." instance=ExtResource("16_box_open")]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -2.76, 0.68, 1.7)
 
 [node name="WestShelfBox2" parent="." instance=ExtResource("15_box_b")]
 transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -2.76, 1.23, 1.9)

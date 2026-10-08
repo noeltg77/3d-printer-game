@@ -13,11 +13,15 @@
 		{ "generator": "spools", "out": "assets/models/filament/spool_purple.glb", "args": { "seed": 7, "colour": "purple" } },
 		{ "generator": "spools", "out": "assets/models/filament/spool_pink.glb", "args": { "seed": 8, "colour": "pink", "fill": 0.3 } },
 		{ "generator": "spools", "out": "assets/models/filament/spool_white.glb", "args": { "seed": 9, "colour": "white" } },
+		{ "generator": "spools", "out": "assets/models/filament/spool_teal.glb", "args": { "seed": 11, "colour": "teal" } },
+		{ "generator": "spools", "out": "assets/models/filament/spool_lime.glb", "args": { "seed": 12, "colour": "lime" } },
+		{ "generator": "spools", "out": "assets/models/filament/spool_black.glb", "args": { "seed": 13, "colour": "ink", "flange": "slate" } },
 		{ "generator": "spools", "out": "assets/models/filament/spool_empty.glb", "args": { "seed": 10, "fill": 0 } },
 
 		{ "generator": "garage", "out": "assets/models/garage/garage.glb" },
 
 		{ "generator": "furniture", "out": "assets/models/furniture/shelving.glb", "args": { "variant": "shelving" } },
+		{ "generator": "furniture", "out": "assets/models/furniture/filament_rack.glb", "args": { "variant": "filament_rack" } },
 		{ "generator": "furniture", "out": "assets/models/furniture/workbench.glb", "args": { "variant": "workbench", "seed": 4 } },
 		{ "generator": "furniture", "out": "assets/models/furniture/desk.glb", "args": { "variant": "desk" } },
 		{ "generator": "furniture", "out": "assets/models/furniture/chair.glb", "args": { "variant": "chair", "colour": "teal" } },
