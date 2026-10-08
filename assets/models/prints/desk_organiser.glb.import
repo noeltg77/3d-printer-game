@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://b34fjootjreuk"
-path="res://.godot/imported/spool_black.glb-cdc26e252da570a1c9ef582c4bf07926.scn"
+uid="uid://pbflnaoxu6br"
+path="res://.godot/imported/desk_organiser.glb-2059b25436e320bd628699ca01352617.scn"
 
 [deps]
 
-source_file="res://assets/models/filament/spool_black.glb"
-dest_files=["res://.godot/imported/spool_black.glb-cdc26e252da570a1c9ef582c4bf07926.scn"]
+source_file="res://assets/models/prints/desk_organiser.glb"
+dest_files=["res://.godot/imported/desk_organiser.glb-2059b25436e320bd628699ca01352617.scn"]
 
 [params]
 

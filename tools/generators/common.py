@@ -32,6 +32,8 @@ PALETTE_PNG = ROOT / "assets" / "palette" / "palette.png"
 PREVIEW_DIR = ROOT / "tools" / "previews"
 # Godot's post-import script swaps the material with this name for the shared one.
 MATERIAL_NAME = "palette_flat"
+# For meshes the game colours at runtime (printed items): one flat colour set per instance.
+TINT_MATERIAL_NAME = "tint_flat"
 AXIS_ROTATIONS = {"X": (0.0, math.pi / 2, 0.0), "Y": (math.pi / 2, 0.0, 0.0), "Z": (0.0, 0.0, 0.0)}
 
 # Pivot of each object in asset space, so children can be placed relative to parents.
@@ -60,7 +62,8 @@ class MeshBuilder:
     All positions are in asset space, whatever pivot the object ends up with.
     """
 
-    def __init__(self):
+    def __init__(self, material=MATERIAL_NAME):
+        self.material = material
         self.palette = Palette()
         self.bm = bmesh.new()
         self.uv_layer = self.bm.loops.layers.uv.new("UVMap")
@@ -119,7 +122,7 @@ class MeshBuilder:
         mesh = bpy.data.meshes.new(name)
         self.bm.to_mesh(mesh)
         self.bm.free()
-        mesh.materials.append(palette_material())
+        mesh.materials.append(tint_material() if self.material == TINT_MATERIAL_NAME else palette_material())
         return _link(bpy.data.objects.new(name, mesh), pivot, parent)
 
 
@@ -165,6 +168,17 @@ def palette_material():
     texture.image = bpy.data.images.load(str(PALETTE_PNG))
     texture.interpolation = "Closest"
     material.node_tree.links.new(texture.outputs["Color"], shader.inputs["Base Color"])
+    return material
+
+
+def tint_material():
+    material = bpy.data.materials.get(TINT_MATERIAL_NAME)
+    if material is None:
+        material = bpy.data.materials.new(TINT_MATERIAL_NAME)
+        material.use_nodes = True
+        shader = material.node_tree.nodes["Principled BSDF"]
+        shader.inputs["Roughness"].default_value = 1.0
+        shader.inputs["Base Color"].default_value = (0.85, 0.85, 0.85, 1.0)
     return material
 
 

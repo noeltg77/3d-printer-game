@@ -18,6 +18,7 @@ config/icon="res://icon.svg"
 [autoload]
 
 DevShot="*res://scripts/dev/dev_shot.gd"
+DevAutoplay="*res://scripts/dev/dev_autoplay.gd"
 
 [display]
 

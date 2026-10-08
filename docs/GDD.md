@@ -23,6 +23,7 @@ A cosy isometric 3D printing business sim with a proper tycoon brain underneath.
 | --- | --- |
 | Tone | Cosy theme and visuals, deep tycoon mechanics |
 | Perspective | Static isometric view, character moves around the space |
+| Control | Semi-autonomous. Click an object (printer, rack, PC) to get a list of actions, pick one and the character walks over and does the whole task. Tasks queue up |
 | Mode | Sandbox with milestones, no story campaign for now |
 | Design work | No minigame. Character sits at the PC for a set time to create their own version of an existing item |
 | Business UI | An in-game computer is the hub for all business screens |
@@ -235,11 +236,11 @@ Build small and prove each step before moving on: assets and garage first, then 
 
 ### Phase 2: Garage scene and character control
 
-- [ ] Isometric camera with zoom, cutaway walls
-- [ ] Click to move with navigation, character avoids props
-- [ ] Interactables: printer, shelf, PC, workbench, door
-- [ ] Carry system: pick up a spool, load it into the printer, collect a finished item, place it on a shelf
-- [ ] Fake print: timer, simple build-up animation on the plate
+- [x] Isometric camera with zoom, cutaway walls
+- [x] Click to move with navigation, character avoids props
+- [x] Interactables: printer, shelf, PC, workbench, door
+- [x] Carry system: pick up a spool, load it into the printer, collect a finished item, place it on a shelf
+- [x] Fake print: timer, simple build-up animation on the plate
 
 **Done when:** you can walk to the shelf, grab a spool, load the printer, start a print, collect the result and shelve it. No economy yet.
 

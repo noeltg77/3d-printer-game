@@ -15,7 +15,7 @@
 			"moisture_sensitivity": 0.2,
 			"requires": { "enclosure": false, "hardened_nozzle": false, "direct_drive": false },
 			"failure_modifiers": {},
-			"colours": ["white", "charcoal", "red", "orange", "yellow", "green", "sky", "blue", "purple", "pink"]
+			"colours": ["red", "orange", "yellow", "lime", "green", "teal", "sky", "blue", "purple", "pink", "white", "ink"]
 		},
 		{
 			"id": "petg",
@@ -31,7 +31,7 @@
 			"moisture_sensitivity": 0.5,
 			"requires": { "enclosure": false, "hardened_nozzle": false, "direct_drive": false },
 			"failure_modifiers": { "stringing": 1.5 },
-			"colours": ["white", "charcoal", "red", "teal", "blue"]
+			"colours": ["white", "ink", "red", "teal", "blue"]
 		},
 		{
 			"id": "abs",
@@ -47,7 +47,7 @@
 			"moisture_sensitivity": 0.3,
 			"requires": { "enclosure": true, "hardened_nozzle": false, "direct_drive": false },
 			"failure_modifiers": { "warping": 1.6 },
-			"colours": ["white", "charcoal", "red"]
+			"colours": ["white", "ink", "red"]
 		}
 	]
 }

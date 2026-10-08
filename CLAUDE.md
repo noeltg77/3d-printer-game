@@ -38,6 +38,25 @@ godot --path . res://scenes/garage/garage.tscn -- --shot=tools/previews/godot_ga
 
 `--shot=<png>` and `--shot-delay=<seconds>` work on every scene (the `DevShot` autoload, `scripts/dev/dev_shot.gd`). Use them to look at changes in engine rather than assuming they worked. Dev scenes: `scenes/dev/asset_preview.tscn` (every model in a grid) and `scenes/dev/character_preview.tscn` (one character per animation).
 
+Checking gameplay without clicking: the `DevAutoplay` autoload (`scripts/dev/dev_autoplay.gd`) drives the real action menus from the command line, and combines with `--shot-times` for screenshots along the way.
+
+```
+godot --headless --path . --script res://scripts/dev/run_tests.gd    # unit tests for simulation classes
+godot --path . res://scenes/garage/garage.tscn -- --time-scale=2 "--autoplay=Finisher 3>Load filament>Red;Finisher 3>Start print;wait>21;Finisher 3>Collect print" --shot=tools/previews/play.png --shot-times=4,12,30,45
+```
+
+## Gameplay architecture
+
+Control is semi-autonomous: the player clicks an object, picks from its action list, and the character does the whole task. Tasks queue.
+
+- `Interactable` (`scripts/interaction/`) is the base for anything clickable. Subclasses override `get_actions(agent)` to return `Action`s; each Action's `run` is a coroutine that drives the character. The script goes straight on the instanced model node in the scene, with `display_name` and `stand_offset` set there. It builds its own click collider from its meshes.
+- `Agent` (`scripts/character/agent.gd`, `scenes/characters/player.tscn`) owns the task queue. Task code is a plain sequence of awaits: `go_to()`, `reach(callable)`, `carry()`, `release()`, `sit()`. A task must re-check its preconditions when it starts, because the world may have changed while it was queued.
+- `InteractionController` handles hover, the popup menu and floor clicks. `Hud` shows the current task and queue.
+- `FloorGrid` is the navigation: an A* grid, with every node in the `obstacle` group blocking the cells under it. Add floor-standing furniture to that group. No baking.
+- Items are nodes that get reparented between slot markers, the character's `carry_socket` and printer mounts (`Spool`, `PrintedItem` in `scripts/items/`). Printed items use the tint material and take their filament's colour.
+- Objects find each other through groups (`filament_rack`, `print_storage`, `floor_grid`, `player`), not hard-wired paths.
+- Simulation state lives in plain classes (`PrintJob`) that the nodes advance and read.
+
 ## Art pipeline
 
 - Low poly, flat shaded, warm. Every asset is coloured from the shared palette: `data/palette.json` is the source, `assets/palette/palette.png` is built from it. Append new colours rather than reordering, because cell position is baked into model UVs.

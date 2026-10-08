@@ -1,0 +1,66 @@
+class_name Interactable
+extends Node3D
+## Base for anything the player can click. Subclasses override get_actions() to
+## offer tasks. Builds its own click collider from the meshes it finds.
+
+const HIGHLIGHT := preload("res://assets/materials/highlight.tres")
+
+@export var display_name := ""
+## Where the character stands to use this, relative to this node. Height is ignored.
+@export var stand_offset := Vector3(0.0, 0.0, 0.7)
+## Node whose meshes are clicked and highlighted. This node if empty.
+@export var visual_path: NodePath
+
+## Size of the click box, used to choose between overlapping objects.
+var click_volume := 0.0
+
+
+func _ready() -> void:
+	add_to_group(&"interactable")
+	# Deferred so the scene is fully placed before measuring.
+	_build_collider.call_deferred()
+
+
+## Tasks to offer in the menu right now, for `agent`.
+func get_actions(_agent: Agent) -> Array[Action]:
+	return []
+
+
+func get_stand_point() -> Vector3:
+	var point := global_transform * stand_offset
+	return Vector3(point.x, 0.0, point.z)
+
+
+func set_highlighted(on: bool) -> void:
+	for mesh: MeshInstance3D in _visual().find_children("*", "MeshInstance3D", true, false):
+		mesh.material_overlay = HIGHLIGHT if on else null
+	if _visual() is MeshInstance3D:
+		_visual().material_overlay = HIGHLIGHT if on else null
+
+
+## Moves `item` under `parent`, sitting exactly on it.
+static func attach(item: Node3D, parent: Node3D) -> void:
+	if item.get_parent() != null:
+		item.get_parent().remove_child(item)
+	parent.add_child(item)
+	item.transform = Transform3D.IDENTITY
+
+
+func _visual() -> Node3D:
+	return self if visual_path.is_empty() else get_node(visual_path)
+
+
+func _build_collider() -> void:
+	var box := Bounds.of(_visual())
+	var shape := BoxShape3D.new()
+	shape.size = box.size.max(Vector3.ONE * 0.1)
+	click_volume = shape.size.x * shape.size.y * shape.size.z
+	var collision := CollisionShape3D.new()
+	collision.shape = shape
+	var body := StaticBody3D.new()
+	body.add_child(collision)
+	body.set_meta(&"interactable", self)
+	# Placed in world space so this node's own rotation doesn't skew the box.
+	body.top_level = true
+	add_child(body)
+	body.global_transform = Transform3D(Basis.IDENTITY, box.get_center())

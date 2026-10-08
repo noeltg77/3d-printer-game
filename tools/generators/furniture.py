@@ -13,8 +13,10 @@ import common
 from common import MeshBuilder, marker
 
 TOOL_COLOURS = ("red", "orange", "yellow", "teal", "blue", "green")
-# Markers a variant wants, added once its mesh object exists. Turned so a spool's axle runs along X.
+# (name, position, rotation) of markers a variant wants, added once its mesh object exists.
 _pending_markers = []
+# Turns a spool so its axle runs along X.
+SIDEWAYS = (0.0, 0.0, math.pi / 2)
 
 
 def add_arguments(parser):
@@ -29,13 +31,21 @@ def build(args, rng):
     _pending_markers.clear()
     VARIANTS[args.variant](builder, args, rng)
     obj = builder.finish(args.out.stem)
-    for name, position in _pending_markers:
-        marker(name, position, obj, rotation=(0.0, 0.0, math.pi / 2))
+    for name, position, rotation in _pending_markers:
+        marker(name, position, obj, rotation=rotation)
 
 
 def _shelving(builder, args, rng):
-    """Metal rack, 1.2 x 0.45 x 1.8. Shelf tops are at 0.13 + n * 0.55."""
+    """Metal rack, 1.2 x 0.45 x 1.8. Shelf tops are at 0.13 + n * 0.55.
+
+    Markers `item_slot_1..12`: three across each shelf, top shelf first.
+    """
     width, depth, height = 1.2, 0.45, 1.8
+    slot = 1
+    for level in reversed(range(4)):
+        for x in (-0.36, 0.0, 0.36):
+            _pending_markers.append((f"item_slot_{slot}", (x, 0, 0.13 + level * 0.55), (0.0, 0.0, 0.0)))
+            slot += 1
     for x in (-1, 1):
         for y in (-1, 1):
             builder.box((0.04, 0.04, height), (x * (width / 2 - 0.02), y * (depth / 2 - 0.02), height / 2), "metal_dark")
@@ -73,7 +83,7 @@ def _filament_rack(builder, args, rng):
         builder.cylinder(0.008, width - 0.03, (0, depth / 2 - 0.015, z + 0.15), "charcoal", segments=6, axis="X")
         for index in range(per_tier):
             x = (index - (per_tier - 1) / 2) * pitch
-            _pending_markers.append((f"spool_slot_{slot}", (x, 0, z - drop)))
+            _pending_markers.append((f"spool_slot_{slot}", (x, 0, z - drop), SIDEWAYS))
             slot += 1
 
 
