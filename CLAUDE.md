@@ -24,7 +24,10 @@ Cosy isometric 3D printing business sim in Godot 4.7 (GDScript). `docs/GDD.md` i
 
 ## Tools
 
-Godot is not on PATH: `S:\Godot Games\godot-4.7.1\Godot_v4.7.1-stable_win64_console.exe` (called `godot` below). Run from the repo root.
+Neither tool is on PATH. Run from the repo root.
+
+- `godot` below is `S:\Godot Games\godot-4.7.1\Godot_v4.7.1-stable_win64_console.exe`
+- `blender` below is `C:\Program Files\Blender Foundation\Blender 5.2\blender.exe` (not `blender-launcher.exe`, which hides console output)
 
 ```
 godot --headless --path . --import                                        # import new or changed assets

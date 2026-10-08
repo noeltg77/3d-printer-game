@@ -215,7 +215,7 @@ Build small and prove each step before moving on: assets and garage first, then 
 ### Phase 0: Project setup
 
 - [x] Godot 4 project, folder structure, git repo
-- [ ] Blender headless pipeline: generator script runs, exports .glb, renders a preview PNG
+- [x] Blender headless pipeline: generator script runs, exports .glb, renders a preview PNG
 - [x] Shared palette texture and flat shaded material
 - [x] CLAUDE.md with conventions (see section 6) and this doc in the repo
 - [x] Data schemas drafted for printers, filaments, products (JSON or Godot resources)

@@ -57,6 +57,7 @@ func _build_camera() -> void:
 	camera.projection = Camera3D.PROJECTION_ORTHOGONAL
 	camera.size = maxf(_bounds.size.length() * 1.2, 1.0)
 	camera.rotation_degrees = ISO_ROTATION
+	camera.far = 60.0
 	add_child(camera)
 	camera.position = _bounds.get_center() + camera.basis.z * 20.0
 	camera.make_current()
@@ -77,6 +78,8 @@ func _build_environment() -> void:
 	var sun := DirectionalLight3D.new()
 	sun.light_color = Color("#FFF1DE")
 	sun.shadow_enabled = true
+	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_ORTHOGONAL
+	sun.directional_shadow_max_distance = 60.0
 	sun.rotation_degrees = Vector3(-50.0, -30.0, 0.0)
 	add_child(sun)
 
