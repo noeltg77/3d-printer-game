@@ -1,0 +1,19 @@
+{
+	"schema_version": 1,
+	"start": {
+		"cash_cents": 30000,
+		"packaging": 5,
+		"designs": ["cable_clips"],
+		"minute_of_day": 480
+	},
+	"electricity_cents_per_kwh": 30,
+	"courier_minute_of_day": 1020,
+	"supplier": {
+		"name": "PrintBits",
+		"filament_lead_minutes": 120,
+		"printer_lead_minutes": 180,
+		"packaging_name": "Mailer boxes",
+		"packaging_pack_size": 10,
+		"packaging_pack_cents": 500
+	}
+}

@@ -336,7 +336,7 @@ Put this doc in the repo (export as Markdown, e.g. `docs/GDD.md`) and point CLAU
 ## 7. Open questions
 
 - [ ] Final game name
-- [ ] Currency and setting: UK based (GBP) or neutral?
+- [x] Currency and setting: US dollars
 - [ ] Time scale: how long is an in-game day, and how long does a typical print take in real time?
 - [ ] Character: customisable or a fixed character?
 - [ ] Exact colour palette and mood board

@@ -7,11 +7,16 @@ const TABLES := {
 	"printers": "res://data/printers.json",
 	"filaments": "res://data/filaments.json",
 	"products": "res://data/products.json",
+	"marketplaces": "res://data/marketplaces.json",
 }
+const SETTINGS := "res://data/game.json"
 
 var printers: Dictionary = {}
 var filaments: Dictionary = {}
 var products: Dictionary = {}
+var marketplaces: Dictionary = {}
+## Starting conditions and global rates (data/game.json).
+var settings: Dictionary = {}
 ## Problems found while loading. Empty when the data is valid.
 var errors: PackedStringArray = []
 
@@ -20,6 +25,11 @@ static func load_all() -> GameData:
 	var data := GameData.new()
 	for table: String in TABLES:
 		data.set(table, data._load_table(table, TABLES[table]))
+	var settings: Variant = JSON.parse_string(FileAccess.get_file_as_string(SETTINGS))
+	if settings is Dictionary:
+		data.settings = settings
+	else:
+		data.errors.append("%s: expected an object" % SETTINGS)
 	data._check_references()
 	return data
 
@@ -50,3 +60,6 @@ func _check_references() -> void:
 		for filament_id: String in product.get("allowed_filaments", []):
 			if not filaments.has(filament_id):
 				errors.append("product %s: unknown filament \"%s\"" % [product["id"], filament_id])
+	for product_id: String in settings.get("start", {}).get("designs", []):
+		if not products.has(product_id):
+			errors.append("game.json: unknown starting design \"%s\"" % product_id)

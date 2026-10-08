@@ -5,7 +5,7 @@ All content lives in `data/*.json` and is loaded by `scripts/data/game_data.gd`.
 Conventions:
 
 - `id` is a unique snake_case string and is how tables reference each other.
-- Money is an integer in pence (`*_pence`). GBP is assumed until the currency open question in the GDD is settled.
+- Money is an integer in cents (`*_cents`). US dollars.
 - Time is in game minutes (`*_minutes`). How long a game minute lasts in real time is a time scale question, not a data one.
 - Multipliers are relative to 1.0. Chances and ratings are 0.0 to 1.0.
 - `unlock_tier` is the progression tier (1 garage to 4 factory) where the entry first appears.
@@ -31,7 +31,7 @@ godot --headless --path . --script res://scripts/dev/validate_data.gd
 | `name`, `brand`, `description` | Display text. Parody brands only |
 | `kind` | `fdm` for now. Later: `resin`, `sls`, `industrial` |
 | `motion` | `bed_slinger` or `core_xy` |
-| `price_pence` | Supplier shop price |
+| `price_cents` | Supplier shop price |
 | `speed_multiplier` | Divides a product's `print_minutes` |
 | `build_volume_mm` | `[x, y, z]`. A product must fit to be printable |
 | `reliability` | Base chance a print succeeds before wear, filament and preset modifiers |
@@ -46,7 +46,7 @@ godot --headless --path . --script res://scripts/dev/validate_data.gd
 
 | Field | Meaning |
 | --- | --- |
-| `price_pence_per_kg`, `spool_grams` | Spool cost is derived from these |
+| `price_cents_per_kg`, `spool_grams` | Spool cost is derived from these |
 | `nozzle_temp_c` | Minimum nozzle temperature needed |
 | `speed_multiplier` | Below 1.0 prints slower (TPU) |
 | `value_multiplier` | Sale price uplift for items in this material |
@@ -68,8 +68,8 @@ godot --headless --path . --script res://scripts/dev/validate_data.gd
 | `needs_supports` | Adds post-processing time and waste |
 | `colour_count` | Above 1 needs a multicolour unit (Phase 7) |
 | `allowed_filaments` | Filament ids the design works in |
-| `base_price_pence` | Typical marketplace price before demand and rating effects |
-| `licence` | `type` is `one_off` (pay `fee_pence` once), `royalty` (`royalty_pct` of each sale) or `personal_use` (cannot be sold) |
+| `base_price_cents` | Typical marketplace price before demand and rating effects |
+| `licence` | `type` is `one_off` (pay `fee_cents` once), `royalty` (`royalty_pct` of each sale) or `personal_use` (cannot be sold) |
 
 ## Not drafted yet
 

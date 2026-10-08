@@ -98,6 +98,13 @@ def _rug(builder, args, rng):
         builder.box((0.08, 1.1, 0.004), (side * 0.55, 0, 0.018), "tape")
 
 
+def _floor_mat(builder, args, rng):
+    """Marked square on the floor showing where parcels wait for the courier."""
+    builder.box((0.9, 0.9, 0.008), (0, 0, 0.004), "charcoal")
+    builder.box((0.8, 0.8, 0.004), (0, 0, 0.01), args.colour)
+    builder.box((0.66, 0.66, 0.004), (0, 0, 0.012), "charcoal")
+
+
 def _desk_lamp(builder, args, rng):
     """Desk lamp with the shade leaning over the front (-Y)."""
     builder.cylinder(0.075, 0.02, (0, 0, 0.01), "charcoal", segments=8)
@@ -107,7 +114,7 @@ def _desk_lamp(builder, args, rng):
     builder.cylinder(0.06, 0.004, (0, -0.16, 0.298), "white", segments=8)
 
 
-VARIANTS = {"pc": _pc, "bin": _bin, "plant": _plant, "rug": _rug, "desk_lamp": _desk_lamp}
+VARIANTS = {"pc": _pc, "bin": _bin, "plant": _plant, "rug": _rug, "desk_lamp": _desk_lamp, "floor_mat": _floor_mat}
 
 if __name__ == "__main__":
     common.run(sys.modules[__name__])
