@@ -14,6 +14,8 @@ const HIGHLIGHT := preload("res://assets/materials/highlight.tres")
 ## Size of the click box, used to choose between overlapping objects.
 var click_volume := 0.0
 
+var _body: StaticBody3D = null
+
 
 func _ready() -> void:
 	add_to_group(&"interactable")
@@ -38,6 +40,13 @@ func set_highlighted(on: bool) -> void:
 		_visual().material_overlay = HIGHLIGHT if on else null
 
 
+## Stops this being clickable, e.g. while it is being carried.
+func remove_collider() -> void:
+	if _body != null:
+		_body.queue_free()
+		_body = null
+
+
 ## Moves `item` under `parent`, sitting exactly on it.
 static func attach(item: Node3D, parent: Node3D) -> void:
 	if item.get_parent() != null:
@@ -57,10 +66,10 @@ func _build_collider() -> void:
 	click_volume = shape.size.x * shape.size.y * shape.size.z
 	var collision := CollisionShape3D.new()
 	collision.shape = shape
-	var body := StaticBody3D.new()
-	body.add_child(collision)
-	body.set_meta(&"interactable", self)
+	_body = StaticBody3D.new()
+	_body.add_child(collision)
+	_body.set_meta(&"interactable", self)
 	# Placed in world space so this node's own rotation doesn't skew the box.
-	body.top_level = true
-	add_child(body)
-	body.global_transform = Transform3D(Basis.IDENTITY, box.get_center())
+	_body.top_level = true
+	add_child(_body)
+	_body.global_transform = Transform3D(Basis.IDENTITY, box.get_center())

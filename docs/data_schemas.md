@@ -69,8 +69,32 @@ godot --headless --path . --script res://scripts/dev/validate_data.gd
 | `colour_count` | Above 1 needs a multicolour unit (Phase 7) |
 | `allowed_filaments` | Filament ids the design works in |
 | `base_price_cents` | Typical marketplace price before demand and rating effects |
+| `demand_per_day` | Orders per game day when listed at the typical price |
 | `licence` | `type` is `one_off` (pay `fee_cents` once), `royalty` (`royalty_pct` of each sale) or `personal_use` (cannot be sold) |
+
+## marketplaces.json
+
+| Field | Meaning |
+| --- | --- |
+| `fee_pct`, `fee_fixed_cents` | Taken from every sale |
+| `dispatch_minutes` | How long an order can wait before it is cancelled |
+| `max_open_orders` | No new orders arrive while this many are waiting to be packed |
+| `price_sensitivity` | Demand is multiplied by (typical price / your price) to this power |
+| `max_demand_multiplier` | Cap on the boost from pricing below typical |
+
+## game.json
+
+Starting conditions and global rates. Not a table of rows.
+
+| Field | Meaning |
+| --- | --- |
+| `start.cash_cents`, `start.packaging`, `start.designs`, `start.minute_of_day` | What a new game begins with |
+| `electricity_cents_per_kwh` | Charged when a print finishes, from the printer's `power_watts` and the print time |
+| `courier_minute_of_day` | When parcels in the outbox are collected and paid |
+| `supplier` | Shop name, lead times in game minutes, and the packaging pack size and price |
+
+One game day is 1440 game minutes and lasts 10 real minutes at 1x (`GameClock.MINUTES_PER_SECOND`).
 
 ## Not drafted yet
 
-Parts and upgrades, marketplaces, print presets, contracts, staff and events. Each gets a table when its phase starts.
+Parts and upgrades, print presets, contracts, staff and events. Each gets a table when its phase starts.

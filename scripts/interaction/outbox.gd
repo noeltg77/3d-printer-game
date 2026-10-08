@@ -1,0 +1,41 @@
+class_name Outbox
+extends Interactable
+## The spot by the door where packed parcels wait. The courier takes everything
+## here once a day, which is when each sale is paid.
+
+## Parcels sit in a 2 x 2 grid and stack upwards.
+const GRID := 0.3
+const LAYER_HEIGHT := 0.15
+
+var _parcels: Array[Parcel] = []
+
+
+func _ready() -> void:
+	super()
+	add_to_group(&"outbox")
+	Game.courier_arrived.connect(_on_courier_arrived)
+
+
+func get_actions(_agent: Agent) -> Array[Action]:
+	var courier := int(Game.data.settings["courier_minute_of_day"])
+	return [Action.info("%d parcel%s waiting. Courier collects at %02d:%02d" % [
+		_parcels.size(), "" if _parcels.size() == 1 else "s", courier / 60, courier % 60])]
+
+
+func add(parcel: Parcel) -> void:
+	var index := _parcels.size()
+	Interactable.attach(parcel, self)
+	parcel.position = Vector3((index % 2 - 0.5) * GRID, 0.012 + (index / 4) * LAYER_HEIGHT, (index / 2 % 2 - 0.5) * GRID)
+	_parcels.append(parcel)
+
+
+func _on_courier_arrived() -> void:
+	if _parcels.is_empty():
+		return
+	var total := 0
+	for parcel in _parcels:
+		total += parcel.order.price
+		Game.complete_sale(parcel.order)
+		parcel.queue_free()
+	Game.notify("Courier collected %d parcel%s: %s in sales" % [_parcels.size(), "" if _parcels.size() == 1 else "s", Money.text(total)])
+	_parcels.clear()

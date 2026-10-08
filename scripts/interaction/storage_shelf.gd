@@ -17,15 +17,21 @@ func _ready() -> void:
 
 
 func get_actions(_agent: Agent) -> Array[Action]:
-	return [Action.info("%d of %d spaces used" % [count(), _slots.size()])]
-
-
-func count() -> int:
-	return _slots.filter(func(slot: Node3D) -> bool: return slot.get_child_count() > 0).size()
+	var actions: Array[Action] = [Action.info("%d of %d spaces used" % [_items().size(), _slots.size()])]
+	var counted: Array[StringName] = []
+	for item in _items():
+		if not counted.has(item.product):
+			counted.append(item.product)
+			actions.append(Action.info("%d x %s" % [count_of(item.product), Game.product_name(item.product)]))
+	return actions
 
 
 func has_space() -> bool:
-	return count() < _slots.size()
+	return _items().size() < _slots.size()
+
+
+func count_of(product: StringName) -> int:
+	return _items().filter(func(item: PrintedItem) -> bool: return item.product == product).size()
 
 
 ## Puts an item in the first empty space. False if the shelf is full.
@@ -33,5 +39,24 @@ func store(item: Node3D) -> bool:
 	for slot in _slots:
 		if slot.get_child_count() == 0:
 			Interactable.attach(item, slot)
+			Game.changed.emit()
 			return true
 	return false
+
+
+## Removes one item of a design from the shelf and returns it, or null if there is none.
+func take(product: StringName) -> PrintedItem:
+	for item in _items():
+		if item.product == product:
+			item.get_parent().remove_child(item)
+			Game.changed.emit()
+			return item
+	return null
+
+
+func _items() -> Array[PrintedItem]:
+	var items: Array[PrintedItem] = []
+	for slot in _slots:
+		if slot.get_child_count() > 0:
+			items.append(slot.get_child(0) as PrintedItem)
+	return items

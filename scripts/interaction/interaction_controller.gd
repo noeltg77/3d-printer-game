@@ -59,6 +59,9 @@ func _pick(screen_position: Vector2) -> Interactable:
 
 
 func _set_hovered(target: Interactable) -> void:
+	# The hovered object may have been removed since (a delivery box unpacked).
+	if not is_instance_valid(_hovered):
+		_hovered = null
 	if target == _hovered:
 		return
 	if _hovered != null:

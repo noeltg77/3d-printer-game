@@ -4,16 +4,19 @@ extends Node
 ## get_actions() menus the player uses. Does nothing unless asked (after `--`):
 ##   --autoplay="Finisher 3>Load filament>Red;Finisher 3>Start print;wait>20;PC>Use computer"
 ##       Steps separated by `;`. Each is an object's display name then the menu
-##       labels to pick (matched by prefix), `wait>seconds`, or `click>x,y` for
-##       a real left click at a screen position. A step starts once the
+##       labels to pick (matched by prefix), `wait>seconds`, `click>x,y` for
+##       a real left click at a screen position, or `call>expression` to run
+##       an expression on the Game autoload (what the PC screens would do),
+##       e.g. call>buy_design("phone_stand"). `shot>file.png` saves a
+##       screenshot at that point and `quit` exits. A step starts once the
 ##       character has finished the one before.
-##   --time-scale=4   run the whole game faster
+##   --time-scale=8   run the whole game faster
 
 
 func _ready() -> void:
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--time-scale="):
-			Engine.time_scale = arg.trim_prefix("--time-scale=").to_float()
+			Game.set_speed(arg.trim_prefix("--time-scale=").to_float())
 		elif arg.begins_with("--autoplay="):
 			_play(arg.trim_prefix("--autoplay=").split(";", false))
 
@@ -27,6 +30,21 @@ func _play(steps: PackedStringArray) -> void:
 		var parts := step.split(">")
 		if parts[0] == "wait":
 			await get_tree().create_timer(parts[1].to_float()).timeout
+			continue
+		if parts[0] == "shot":
+			await RenderingServer.frame_post_draw
+			get_viewport().get_texture().get_image().save_png(parts[1])
+			print("Autoplay: saved %s" % parts[1])
+			continue
+		if parts[0] == "quit":
+			get_tree().quit()
+			return
+		if parts[0] == "call":
+			var expression := Expression.new()
+			var result: Variant = null
+			if expression.parse(parts[1]) == OK:
+				result = expression.execute([], Game)
+			print("Autoplay: %s -> %s" % [parts[1], result])
 			continue
 		if parts[0] == "click":
 			await _click(Vector2(parts[1].get_slice(",", 0).to_float(), parts[1].get_slice(",", 1).to_float()))

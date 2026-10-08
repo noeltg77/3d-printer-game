@@ -1,14 +1,81 @@
 class_name Workbench
 extends Interactable
-## The workbench. A stand-in task for now; post-processing and packing happen
-## here from Phase 3.
+## The workbench: printers stand on it, and it is the packing station where a
+## finished item becomes a parcel for an order.
+
+## Where printers go on the bench top, relative to the bench.
+const PRINTER_SPOTS: Array[Vector3] = [Vector3(-0.42, 0.9, 0.03), Vector3(0.42, 0.9, 0.03)]
+
+var _printers: Array[PrinterStation] = []
+
+
+func _ready() -> void:
+	super()
+	add_to_group(&"workbench")
 
 
 func get_actions(_agent: Agent) -> Array[Action]:
-	return [Action.new("Tidy the bench", _tidy)]
+	var actions: Array[Action] = [Action.info("Mailer boxes: %d" % Game.packaging)]
+	var orders: Array[Action] = []
+	for order in Game.market.open_orders():
+		var label := "#%d %s, %s" % [order.id, Game.product_name(order.product), Money.text(order.price)]
+		var problem := _pack_problem(order)
+		var action := Action.new(label if problem == "" else "%s: %s" % [label, problem], _pack.bind(order), problem == "")
+		action.task_name = "Pack order #%d" % order.id
+		orders.append(action)
+	if orders.is_empty():
+		actions.append(Action.info("Pack order (no orders waiting)"))
+	else:
+		actions.append(Action.submenu("Pack order", orders))
+	return actions
 
 
-func _tidy(agent: Agent) -> void:
+func free_spots() -> int:
+	return PRINTER_SPOTS.size() - _printers.size()
+
+
+## Sets up a new printer on the next free spot. Null if the bench is full.
+func install_printer(printer_id: StringName) -> PrinterStation:
+	if free_spots() <= 0:
+		return null
+	var station := PrinterStation.create(printer_id)
+	# A sibling rather than a child, so the bench and printer highlight separately.
+	get_parent().add_child(station)
+	station.global_transform = global_transform * Transform3D(Basis.IDENTITY, PRINTER_SPOTS[_printers.size()])
+	_printers.append(station)
+	Game.changed.emit()
+	return station
+
+
+func _pack_problem(order: Marketplace.Order) -> String:
+	if _shelf().count_of(order.product) == 0:
+		return "not printed yet"
+	if Game.packaging <= 0:
+		return "no mailer boxes"
+	return ""
+
+
+func _pack(agent: Agent, order: Marketplace.Order) -> void:
+	if order.status != Marketplace.Status.OPEN or _pack_problem(order) != "":
+		agent.say("Can't pack order #%d right now" % order.id)
+		return
+	var shelf := _shelf()
+	await agent.go_to(shelf)
+	await agent.reach(func() -> void: agent.carry(shelf.take(order.product)))
+	if agent.carried == null:
+		return
 	await agent.go_to(self)
-	for i in 3:
-		await agent.reach()
+	await agent.reach()
+	# The item goes in a box and comes back out as a parcel.
+	agent.release().queue_free()
+	Game.packaging -= 1
+	Game.market.mark_packed(order)
+	Game.changed.emit()
+	await agent.reach(func() -> void: agent.carry(Parcel.create(order)))
+	var outbox: Outbox = get_tree().get_first_node_in_group(&"outbox")
+	await agent.go_to(outbox)
+	await agent.reach(func() -> void: outbox.add(agent.release() as Parcel))
+
+
+func _shelf() -> StorageShelf:
+	return get_tree().get_first_node_in_group(&"print_storage")

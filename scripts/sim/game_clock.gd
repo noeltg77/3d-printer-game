@@ -42,11 +42,11 @@ static func to_seconds(game_minutes: float) -> float:
 	return game_minutes / MINUTES_PER_SECOND
 
 
-## "3h 20m", "45m" or "1d 4h"
+## "3h 20m", "2h", "45m" or "1d 4h"
 static func duration_label(game_minutes: float) -> String:
 	var total := maxi(int(ceilf(game_minutes)), 0)
 	if total >= int(DAY):
 		return "%dd %dh" % [total / int(DAY), total % int(DAY) / 60]
 	if total >= 60:
-		return "%dh %02dm" % [total / 60, total % 60]
+		return "%dh" % (total / 60) if total % 60 == 0 else "%dh %02dm" % [total / 60, total % 60]
 	return "%dm" % total

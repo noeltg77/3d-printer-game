@@ -25,6 +25,8 @@ A cosy isometric 3D printing business sim with a proper tycoon brain underneath.
 | Perspective | Static isometric view, character moves around the space |
 | Control | Semi-autonomous. Click an object (printer, rack, PC) to get a list of actions, pick one and the character walks over and does the whole task. Tasks queue up |
 | Mode | Sandbox with milestones, no story campaign for now |
+| Start | Empty garage and $300: enough for the cheap printer and some starter filament, nothing more |
+| Selling | Made to order or from stock. Orders arrive on listed designs, get packed at the workbench and are paid when the daily courier collects |
 | Design work | No minigame. Character sits at the PC for a set time to create their own version of an existing item |
 | Business UI | An in-game computer is the hub for all business screens |
 | Slicing | Simplified presets with a risk meter, not a full slicer |
@@ -246,12 +248,12 @@ Build small and prove each step before moving on: assets and garage first, then 
 
 ### Phase 3: First playable loop (MVP)
 
-- [ ] Game time with speed controls (pause, 1x, 2x, 4x)
-- [ ] One printer, PLA only, a handful of bought designs
-- [ ] Filament stock tracking, usage per print
-- [ ] PC hub v1: design catalogue, supplier shop with deliveries, one marketplace, bank
-- [ ] Selling: list items, orders come in, pack and ship
-- [ ] Basic economy: costs, prices, cash
+- [x] Game time with speed controls (pause, 1x, 2x, 4x)
+- [x] One printer, PLA only, a handful of bought designs
+- [x] Filament stock tracking, usage per print
+- [x] PC hub v1: design catalogue, supplier shop with deliveries, one marketplace, bank
+- [x] Selling: list items, orders come in, pack and ship
+- [x] Basic economy: costs, prices, cash
 
 **Done when:** a 30 minute session lets you earn enough to buy a second printer and it feels good doing it.
 
@@ -337,7 +339,7 @@ Put this doc in the repo (export as Markdown, e.g. `docs/GDD.md`) and point CLAU
 
 - [ ] Final game name
 - [x] Currency and setting: US dollars
-- [ ] Time scale: how long is an in-game day, and how long does a typical print take in real time?
+- [x] Time scale: one game day is 10 real minutes at 1x, so prints take roughly 20 seconds to 2 minutes. Speeds are pause, 1x, 2x, 4x
 - [ ] Character: customisable or a fixed character?
 - [ ] Exact colour palette and mood board
 - [ ] Price point and whether to do a free demo first

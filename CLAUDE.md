@@ -55,7 +55,11 @@ Control is semi-autonomous: the player clicks an object, picks from its action l
 - `FloorGrid` is the navigation: an A* grid, with every node in the `obstacle` group blocking the cells under it. Add floor-standing furniture to that group. No baking.
 - Items are nodes that get reparented between slot markers, the character's `carry_socket` and printer mounts (`Spool`, `PrintedItem` in `scripts/items/`). Printed items use the tint material and take their filament's colour.
 - Objects find each other through groups (`filament_rack`, `print_storage`, `floor_grid`, `player`), not hard-wired paths.
-- Simulation state lives in plain classes (`PrintJob`) that the nodes advance and read.
+- The rules of the business live in `scripts/sim/` as plain classes with no node dependencies (`GameClock`, `Bank`, `Marketplace`, `Supplier`, plus `PrintJob`). Every one has tests in `scripts/dev/run_tests.gd`; add tests when adding rules.
+- The `Game` autoload (`scripts/game/game.gd`) owns those objects, advances them each frame and emits `changed`, `notified`, `delivery_arrived` and `courier_arrived`. Scene nodes and UI read from `Game` and call its methods; they don't keep their own copies of cash, orders or designs.
+- Game speed is `Engine.time_scale` (set through `Game.set_speed`), so walking, animation, prints and timers all follow it. Durations in data are game minutes; convert with `GameClock.to_seconds`.
+- Physical stock is nodes, not counters: spools on the rack carry their own grams, finished prints sit in shelf slots, parcels sit on the outbox. Mailer boxes are the one counted stock (`Game.packaging`).
+- The PC is `PcScreen` (`scripts/ui/`), one script per tab, each rebuilding itself in `refresh()` from `Game`. `Ui` has the helpers for building rows and labels in code.
 
 ## Art pipeline
 
