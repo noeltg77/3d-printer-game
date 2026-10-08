@@ -1,0 +1,69 @@
+[gd_scene load_steps=9 format=3]
+
+[ext_resource type="Script" path="res://scripts/dev/character_preview.gd" id="1_preview"]
+[ext_resource type="PackedScene" path="res://scenes/characters/character.tscn" id="2_character"]
+[ext_resource type="PackedScene" path="res://assets/models/characters/character_02.glb" id="3_variant"]
+[ext_resource type="PackedScene" path="res://assets/models/characters/character_03.glb" id="4_variant"]
+[ext_resource type="PackedScene" path="res://assets/models/furniture/chair.glb" id="5_chair"]
+
+[sub_resource type="Environment" id="Environment_preview"]
+background_mode = 1
+background_color = Color(0.89, 0.82, 0.72, 1)
+ambient_light_source = 2
+ambient_light_color = Color(1, 0.91, 0.82, 1)
+ambient_light_energy = 0.55
+ssao_enabled = true
+
+[sub_resource type="StandardMaterial3D" id="Material_ground"]
+albedo_color = Color(0.96, 0.91, 0.85, 1)
+
+[sub_resource type="PlaneMesh" id="Mesh_ground"]
+material = SubResource("Material_ground")
+size = Vector2(40, 40)
+
+[node name="CharacterPreview" type="Node3D"]
+script = ExtResource("1_preview")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_preview")
+
+[node name="Sun" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.848, -0.3999, 0.3477, 0, 0.6561, 0.7547, -0.5299, -0.64, 0.5564, 0, 5, 0)
+light_color = Color(1, 0.95, 0.87, 1)
+shadow_enabled = true
+directional_shadow_mode = 0
+directional_shadow_max_distance = 60.0
+
+[node name="Camera" type="Camera3D" parent="."]
+transform = Transform3D(0.7071, -0.4082, 0.5774, 0, 0.8165, 0.5774, -0.7071, -0.4082, 0.5774, 11.55, 12.25, 11.55)
+projection = 1
+size = 4.6
+far = 60.0
+
+[node name="Ground" type="MeshInstance3D" parent="."]
+mesh = SubResource("Mesh_ground")
+
+[node name="Idle" parent="." instance=ExtResource("2_character")]
+transform = Transform3D(0.7071, 0, 0.7071, 0, 1, 0, -0.7071, 0, 0.7071, -2.4, 0, 0)
+
+[node name="Walk" parent="." instance=ExtResource("2_character")]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -1.2, 0, 0)
+pose = 1
+model_override = ExtResource("3_variant")
+
+[node name="Carry" parent="." instance=ExtResource("2_character")]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 0, 0, 0)
+pose = 1
+carrying = true
+model_override = ExtResource("4_variant")
+
+[node name="Reach" parent="." instance=ExtResource("2_character")]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 1.2, 0, 0)
+
+[node name="Sit" parent="." instance=ExtResource("2_character")]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 2.4, 0, 0)
+pose = 2
+model_override = ExtResource("3_variant")
+
+[node name="Chair" parent="." instance=ExtResource("5_chair")]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 2.4, 0, 0)

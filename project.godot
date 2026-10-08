@@ -11,8 +11,13 @@ config_version=5
 [application]
 
 config/name="Print Shop Tycoon"
+run/main_scene="res://scenes/garage/garage.tscn"
 config/features=PackedStringArray("4.7", "Forward Plus")
 config/icon="res://icon.svg"
+
+[autoload]
+
+DevShot="*res://scripts/dev/dev_shot.gd"
 
 [display]
 

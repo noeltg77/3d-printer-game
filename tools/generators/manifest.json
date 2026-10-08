@@ -1,0 +1,39 @@
+{
+	"assets": [
+		{ "generator": "printers", "out": "assets/models/printers/printer_open_frame.glb", "args": { "variant": "open_frame", "colour": "orange" } },
+		{ "generator": "printers", "out": "assets/models/printers/printer_enclosed.glb", "args": { "variant": "enclosed", "colour": "orange" } },
+		{ "generator": "printers", "out": "assets/models/printers/multicolour_unit.glb", "args": { "variant": "multicolour_unit", "colour": "green" } },
+
+		{ "generator": "spools", "out": "assets/models/filament/spool_red.glb", "args": { "seed": 1, "colour": "red" } },
+		{ "generator": "spools", "out": "assets/models/filament/spool_orange.glb", "args": { "seed": 2, "colour": "orange", "fill": 0.7 } },
+		{ "generator": "spools", "out": "assets/models/filament/spool_yellow.glb", "args": { "seed": 3, "colour": "yellow" } },
+		{ "generator": "spools", "out": "assets/models/filament/spool_green.glb", "args": { "seed": 4, "colour": "green", "fill": 0.5 } },
+		{ "generator": "spools", "out": "assets/models/filament/spool_sky.glb", "args": { "seed": 5, "colour": "sky" } },
+		{ "generator": "spools", "out": "assets/models/filament/spool_blue.glb", "args": { "seed": 6, "colour": "blue", "fill": 0.85 } },
+		{ "generator": "spools", "out": "assets/models/filament/spool_purple.glb", "args": { "seed": 7, "colour": "purple" } },
+		{ "generator": "spools", "out": "assets/models/filament/spool_pink.glb", "args": { "seed": 8, "colour": "pink", "fill": 0.3 } },
+		{ "generator": "spools", "out": "assets/models/filament/spool_white.glb", "args": { "seed": 9, "colour": "white" } },
+		{ "generator": "spools", "out": "assets/models/filament/spool_empty.glb", "args": { "seed": 10, "fill": 0 } },
+
+		{ "generator": "garage", "out": "assets/models/garage/garage.glb" },
+
+		{ "generator": "furniture", "out": "assets/models/furniture/shelving.glb", "args": { "variant": "shelving" } },
+		{ "generator": "furniture", "out": "assets/models/furniture/workbench.glb", "args": { "variant": "workbench", "seed": 4 } },
+		{ "generator": "furniture", "out": "assets/models/furniture/desk.glb", "args": { "variant": "desk" } },
+		{ "generator": "furniture", "out": "assets/models/furniture/chair.glb", "args": { "variant": "chair", "colour": "teal" } },
+
+		{ "generator": "props", "out": "assets/models/props/pc.glb", "args": { "variant": "pc", "seed": 2, "colour": "red" } },
+		{ "generator": "props", "out": "assets/models/props/bin.glb", "args": { "variant": "bin", "seed": 5 } },
+		{ "generator": "props", "out": "assets/models/props/plant.glb", "args": { "variant": "plant", "seed": 3 } },
+		{ "generator": "props", "out": "assets/models/props/rug.glb", "args": { "variant": "rug", "colour": "terracotta" } },
+		{ "generator": "props", "out": "assets/models/props/desk_lamp.glb", "args": { "variant": "desk_lamp", "colour": "yellow" } },
+
+		{ "generator": "boxes", "out": "assets/models/props/box_closed_01.glb", "args": { "variant": "closed", "seed": 1 } },
+		{ "generator": "boxes", "out": "assets/models/props/box_closed_02.glb", "args": { "variant": "closed", "seed": 7, "size": [0.5, 0.4, 0.35] } },
+		{ "generator": "boxes", "out": "assets/models/props/box_open_01.glb", "args": { "variant": "open", "seed": 2 } },
+
+		{ "generator": "character", "out": "assets/models/characters/character_01.glb", "args": { "top": "teal", "bottom": "navy", "hair": "wood_dark", "hair-style": "short", "apron": "orange" } },
+		{ "generator": "character", "out": "assets/models/characters/character_02.glb", "args": { "skin": "skin_dark", "top": "yellow", "bottom": "slate", "hair": "ink", "hair-style": "bun", "shoes": "white" } },
+		{ "generator": "character", "out": "assets/models/characters/character_03.glb", "args": { "skin": "skin_mid", "top": "pink", "bottom": "charcoal", "hair": "brick", "hair-style": "long", "shoes": "red" } }
+	]
+}

@@ -14,11 +14,19 @@ import common
 THICKNESS = 0.012
 
 
-def build(builder, rng, size, variant, colour):
-    width, depth, height = (dimension * rng.uniform(0.92, 1.08) for dimension in size)
+def add_arguments(parser):
+    parser.add_argument("--variant", choices=("closed", "open"), default="closed")
+    parser.add_argument("--size", type=float, nargs=3, default=(0.4, 0.3, 0.28), metavar=("W", "D", "H"))
+    parser.add_argument("--colour", default="cardboard")
+
+
+def build(args, rng):
+    builder = common.MeshBuilder()
+    colour = args.colour
+    width, depth, height = (dimension * rng.uniform(0.92, 1.08) for dimension in args.size)
     builder.box((width, depth, height), (0, 0, height / 2), colour)
 
-    if variant == "closed":
+    if args.variant == "closed":
         tape_width = min(width, depth) * 0.16
         drop = height * rng.uniform(0.2, 0.35)
         builder.box((width + 0.006, tape_width, 0.004), (0, 0, height + 0.002), "tape")
@@ -32,6 +40,7 @@ def build(builder, rng, size, variant, colour):
         builder.box((width - THICKNESS * 2, depth - THICKNESS * 2, 0.004), (0, 0, height + 0.002), "wood_dark")
         for axis, side in ((0, 1), (0, -1), (1, 1), (1, -1)):
             _flap(builder, rng, (width, depth, height), axis, side, colour)
+    builder.finish(args.out.stem)
 
 
 def _flap(builder, rng, size, axis, side, colour):
@@ -50,18 +59,5 @@ def _flap(builder, rng, size, axis, side, colour):
         builder.box((width, length, THICKNESS), centre, colour, rotation=(side * angle, 0, 0))
 
 
-def main():
-    parser = common.make_parser(__doc__)
-    parser.add_argument("--variant", choices=("closed", "open"), default="closed")
-    parser.add_argument("--size", type=float, nargs=3, default=(0.4, 0.3, 0.28), metavar=("W", "D", "H"))
-    parser.add_argument("--colour", default="cardboard")
-    args = common.parse_args(parser)
-
-    common.reset_scene()
-    builder = common.MeshBuilder(common.Palette())
-    build(builder, common.make_rng(args.seed), args.size, args.variant, args.colour)
-    builder.finish(args.out.stem)
-    common.finish(args)
-
-
-main()
+if __name__ == "__main__":
+    common.run(sys.modules[__name__])

@@ -33,18 +33,26 @@ Neither tool is on PATH. Run from the repo root.
 godot --headless --path . --import                                        # import new or changed assets
 godot --headless --path . --script res://scripts/dev/validate_data.gd     # check data tables
 godot --headless --path . --script res://scripts/dev/build_palette.gd     # rebuild palette.png from data/palette.json
-godot --path . res://scenes/dev/asset_preview.tscn -- --shot=tools/previews/godot.png   # screenshot all models in engine
+godot --path . res://scenes/garage/garage.tscn -- --shot=tools/previews/godot_garage.png   # screenshot any scene, then quit
 ```
+
+`--shot=<png>` and `--shot-delay=<seconds>` work on every scene (the `DevShot` autoload, `scripts/dev/dev_shot.gd`). Use them to look at changes in engine rather than assuming they worked. Dev scenes: `scenes/dev/asset_preview.tscn` (every model in a grid) and `scenes/dev/character_preview.tscn` (one character per animation).
 
 ## Art pipeline
 
 - Low poly, flat shaded, warm. Every asset is coloured from the shared palette: `data/palette.json` is the source, `assets/palette/palette.png` is built from it. Append new colours rather than reordering, because cell position is baked into model UVs.
 - Generators are seeded, parameterised Blender Python scripts built on `tools/generators/common.py`. Same seed and parameters must give the same asset.
-- Units are metres, origin at the centre of the asset's base.
+- Units are metres, origin at the centre of the asset's base. The front of an asset faces Blender -Y, which is +Z in Godot.
+- Parts that move in game (printer bed, gantry and toolhead, roller door, character limbs) are separate objects with their origin on the pivot. Attachment points are empties ("markers") such as `plate`, `spool_mount`, `spool_slot_1`, `carry_socket`. They import as named nodes, so gameplay code finds them by name.
+- `tools/generators/manifest.json` lists every asset with its generator and arguments. Add new assets there, not as one-off commands, so everything can be rebuilt.
+- The character is short and chunky (about 1.5 m, hips at 0.6 m). Furniture it uses is sized to match: chair seat at 0.4 m, desk top at 0.7 m, workbench at 0.9 m.
+- Characters are animated in code, not with clips: `scripts/character/character_rig.gd` rotates the limb pivots (idle, walk, sit, plus carrying and a one-shot reach).
 - Generators give meshes a placeholder material named `palette_flat`. On import, `scripts/import/palette_post_import.gd` (set as the default scene import script in `project.godot`) swaps it for the shared `assets/materials/palette_flat.tres`.
 - The loop for every asset: run the generator, look at the preview PNG in `tools/previews/`, fix and rerun until it looks right, then import into Godot and check it in `scenes/dev/asset_preview.tscn`. Never import an asset without checking its preview.
 
 ```
+blender --background --factory-startup --python tools/generators/build_all.py                    # rebuild everything in the manifest (about 10 s)
+blender --background --factory-startup --python tools/generators/build_all.py -- --only printer  # only outputs whose path contains "printer"
 blender --background --factory-startup --python tools/generators/boxes.py -- --seed 1 --variant closed --out assets/models/props/box_closed_01.glb
 ```
 

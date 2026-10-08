@@ -3,10 +3,16 @@
 Conventions every generator follows:
 - 1 unit = 1 metre, Z up in Blender (the glTF exporter converts to Godot's Y up).
 - Origin at the centre of the asset's base, so it sits on the floor at y = 0 in Godot.
+- The front of an asset faces Blender -Y, which is +Z in Godot.
 - All faces are flat shaded and coloured by pointing their UVs at one cell of the
   shared palette texture (data/palette.json -> assets/palette/palette.png).
+- Parts that move in game (printer gantry, character limbs) are separate objects
+  with their origin on the pivot. Attachment points are empties ("markers").
 - Everything random comes from the seeded rng, so the same seed and parameters
   always give the same asset.
+
+A generator module defines `add_arguments(parser)` and `build(args, rng)`, and
+ends with `if __name__ == "__main__": common.run(sys.modules[__name__])`.
 """
 
 import argparse
@@ -26,24 +32,10 @@ PALETTE_PNG = ROOT / "assets" / "palette" / "palette.png"
 PREVIEW_DIR = ROOT / "tools" / "previews"
 # Godot's post-import script swaps the material with this name for the shared one.
 MATERIAL_NAME = "palette_flat"
+AXIS_ROTATIONS = {"X": (0.0, math.pi / 2, 0.0), "Y": (math.pi / 2, 0.0, 0.0), "Z": (0.0, 0.0, 0.0)}
 
-
-def make_parser(description):
-    """Argument parser with the options every generator shares."""
-    parser = argparse.ArgumentParser(description=description)
-    parser.add_argument("--seed", type=int, default=0)
-    parser.add_argument("--out", type=Path, required=True, help=".glb path, relative to the repo root")
-    parser.add_argument("--no-preview", action="store_true", help="skip the preview render")
-    return parser
-
-
-def parse_args(parser):
-    """Parses the arguments after Blender's own, i.e. everything following `--`."""
-    argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
-    args = parser.parse_args(argv)
-    if not args.out.is_absolute():
-        args.out = ROOT / args.out
-    return args
+# Pivot of each object in asset space, so children can be placed relative to parents.
+_pivots = {}
 
 
 class Palette:
@@ -63,20 +55,38 @@ class Palette:
 
 
 class MeshBuilder:
-    """Builds one flat shaded mesh out of palette-coloured primitives."""
+    """Builds one flat shaded mesh out of palette-coloured primitives.
 
-    def __init__(self, palette):
-        self.palette = palette
+    All positions are in asset space, whatever pivot the object ends up with.
+    """
+
+    def __init__(self):
+        self.palette = Palette()
         self.bm = bmesh.new()
         self.uv_layer = self.bm.loops.layers.uv.new("UVMap")
 
-    def box(self, size, centre, colour, rotation=(0.0, 0.0, 0.0)):
-        """Box of `size` (x, y, z) at `centre`, rotated by XYZ euler radians."""
-        verts = bmesh.ops.create_cube(self.bm, size=1.0)["verts"]
-        return self._place(verts, Matrix.Diagonal((*size, 1.0)), centre, rotation, colour)
+    def box(self, size, centre, colour, rotation=(0.0, 0.0, 0.0), taper=1.0, bevel=0.0):
+        """Box of `size` (x, y, z) at `centre`, rotated by XYZ euler radians.
 
-    def cylinder(self, radius, depth, centre, colour, segments=8, rotation=(0.0, 0.0, 0.0), radius_top=None):
-        """Cylinder (or cone, with radius_top) along Z before rotation."""
+        `taper` scales the top face (a number, or an (x, y) pair). `bevel` chamfers every edge.
+        """
+        before = set(self.bm.faces)
+        verts = bmesh.ops.create_cube(self.bm, size=1.0)["verts"]
+        taper_x, taper_y = taper if isinstance(taper, tuple) else (taper, taper)
+        for vert in verts:
+            if vert.co.z > 0:
+                vert.co.x *= taper_x
+                vert.co.y *= taper_y
+        matrix = _transform(centre, rotation) @ Matrix.Diagonal((*size, 1.0))
+        bmesh.ops.transform(self.bm, matrix=matrix, verts=verts)
+        if bevel > 0:
+            edges = list({edge for vert in verts for edge in vert.link_edges})
+            bmesh.ops.bevel(self.bm, geom=edges, offset=bevel, segments=1, affect="EDGES", profile=0.5)
+        return self._paint_new(before, colour)
+
+    def cylinder(self, radius, depth, centre, colour, segments=8, axis="Z", rotation=None, radius_top=None):
+        """Cylinder along `axis` (or an explicit rotation). `radius_top` makes it a cone."""
+        before = set(self.bm.faces)
         verts = bmesh.ops.create_cone(
             self.bm,
             cap_ends=True,
@@ -85,7 +95,9 @@ class MeshBuilder:
             radius2=radius if radius_top is None else radius_top,
             depth=depth,
         )["verts"]
-        return self._place(verts, Matrix.Identity(4), centre, rotation, colour)
+        matrix = _transform(centre, AXIS_ROTATIONS[axis] if rotation is None else rotation)
+        bmesh.ops.transform(self.bm, matrix=matrix, verts=verts)
+        return self._paint_new(before, colour)
 
     def paint(self, faces, colour, facing=None):
         """Recolours faces. With `facing`, only those whose normal points that way."""
@@ -96,26 +108,48 @@ class MeshBuilder:
                 for loop in face.loops:
                     loop[self.uv_layer].uv = uv
 
-    def _place(self, verts, scale, centre, rotation, colour):
-        matrix = Matrix.Translation(centre) @ Euler(rotation).to_matrix().to_4x4() @ scale
-        bmesh.ops.transform(self.bm, matrix=matrix, verts=verts)
-        faces = list({face for vert in verts for face in vert.link_faces})
+    def _paint_new(self, before, colour):
+        faces = [face for face in self.bm.faces if face not in before]
         self.paint(faces, colour)
         return faces
 
-    def finish(self, name):
-        """Writes the mesh into a new object linked to the scene."""
+    def finish(self, name, pivot=(0.0, 0.0, 0.0), parent=None):
+        """Writes the mesh into a new object whose origin is at `pivot`."""
+        bmesh.ops.translate(self.bm, verts=self.bm.verts, vec=-Vector(pivot))
         mesh = bpy.data.meshes.new(name)
         self.bm.to_mesh(mesh)
         self.bm.free()
         mesh.materials.append(palette_material())
-        obj = bpy.data.objects.new(name, mesh)
-        bpy.context.scene.collection.objects.link(obj)
-        return obj
+        return _link(bpy.data.objects.new(name, mesh), pivot, parent)
+
+
+def marker(name, position, parent=None, rotation=(0.0, 0.0, 0.0)):
+    """Empty that marks an attachment point. Imports into Godot as a Node3D."""
+    empty = bpy.data.objects.new(name, None)
+    empty.empty_display_size = 0.05
+    empty.rotation_euler = rotation
+    return _link(empty, position, parent)
+
+
+def _link(obj, pivot, parent):
+    bpy.context.scene.collection.objects.link(obj)
+    obj.parent = parent
+    obj.location = Vector(pivot) - Vector(_pivots[parent.name] if parent else (0.0, 0.0, 0.0))
+    _pivots[obj.name] = tuple(pivot)
+    return obj
+
+
+def _transform(centre, rotation):
+    return Matrix.Translation(centre) @ Euler(rotation).to_matrix().to_4x4()
 
 
 def reset_scene():
-    bpy.ops.wm.read_factory_settings(use_empty=True)
+    for obj in list(bpy.data.objects):
+        bpy.data.objects.remove(obj, do_unlink=True)
+    for blocks in (bpy.data.meshes, bpy.data.materials, bpy.data.cameras, bpy.data.lights, bpy.data.worlds, bpy.data.images):
+        for block in list(blocks):
+            blocks.remove(block)
+    _pivots.clear()
 
 
 def palette_material():
@@ -147,9 +181,10 @@ def export_glb(path):
     print(f"Exported {path}")
 
 
-def render_preview(path, resolution=768):
+def render_preview(path, resolution=512):
     """Renders the scene's meshes from the game's isometric angle to a PNG."""
     scene = bpy.context.scene
+    bpy.context.view_layer.update()
     objects = [obj for obj in scene.objects if obj.type == "MESH"]
     corners = [obj.matrix_world @ Vector(corner) for obj in objects for corner in obj.bound_box]
     low = Vector(min(corner[i] for corner in corners) for i in range(3))
@@ -157,14 +192,14 @@ def render_preview(path, resolution=768):
     centre = (low + high) / 2
     extent = max((high - low).length, 0.1)
 
-    ground = MeshBuilder(Palette())
+    ground = MeshBuilder()
     ground.box((extent * 20, extent * 20, 0.01), (centre.x, centre.y, low.z - 0.005), "cream")
     ground.finish("preview_ground")
 
     camera = bpy.data.objects.new("preview_camera", bpy.data.cameras.new("preview_camera"))
     scene.collection.objects.link(camera)
     camera.data.type = "ORTHO"
-    camera.data.ortho_scale = extent * 1.25
+    camera.data.ortho_scale = extent * 1.15
     # True isometric: 45 degrees round, ~35.26 degrees down.
     offset = Vector((1.0, -1.0, math.sqrt(2.0) * math.tan(math.radians(35.264)))).normalized() * extent * 10
     camera.location = centre + offset
@@ -201,12 +236,24 @@ def render_preview(path, resolution=768):
     print(f"Rendered {path}")
 
 
-def finish(args):
-    """Standard tail for a generator: export, then render the preview next to it."""
+def run(module, argv=None):
+    """Runs one generator: parse arguments, build, export, render the preview.
+
+    `argv` defaults to everything after `--` on Blender's command line.
+    """
+    parser = argparse.ArgumentParser(description=module.__doc__)
+    parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument("--out", type=Path, required=True, help=".glb path, relative to the repo root")
+    parser.add_argument("--no-preview", action="store_true", help="skip the preview render")
+    module.add_arguments(parser)
+    if argv is None:
+        argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
+    args = parser.parse_args(argv)
+    if not args.out.is_absolute():
+        args.out = ROOT / args.out
+
+    reset_scene()
+    module.build(args, random.Random(args.seed))
     export_glb(args.out)
     if not args.no_preview:
         render_preview(PREVIEW_DIR / f"{args.out.stem}.png")
-
-
-def make_rng(seed):
-    return random.Random(seed)

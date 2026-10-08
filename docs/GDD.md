@@ -224,12 +224,12 @@ Build small and prove each step before moving on: assets and garage first, then 
 
 ### Phase 1: Asset prototyping
 
-- [ ] Printer generator: 2 to 3 models (cheap open frame, mid enclosed, multicolour unit)
-- [ ] Filament spool generator (colour as a parameter)
-- [ ] Garage shell: walls, floor, roller door, window, lighting
-- [ ] Props: shelving, workbench, desk, PC, chair, boxes, bins
-- [ ] Segmented character: body parts on pivots, a few colour variants
-- [ ] Animations: idle, walk, carry, reach and place, sit at PC
+- [x] Printer generator: 2 to 3 models (cheap open frame, mid enclosed, multicolour unit)
+- [x] Filament spool generator (colour as a parameter)
+- [x] Garage shell: walls, floor, roller door, window, lighting
+- [x] Props: shelving, workbench, desk, PC, chair, boxes, bins
+- [x] Segmented character: body parts on pivots, a few colour variants
+- [x] Animations: idle, walk, carry, reach and place, sit at PC
 
 **Done when:** everything sits together in one garage scene and looks cohesive and cosy.
 
