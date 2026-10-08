@@ -10,7 +10,7 @@ config_version=5
 
 [application]
 
-config/name="3D Print Farm"
+config/name="Print Shop Tycoon"
 config/features=PackedStringArray("4.7", "Forward Plus")
 config/icon="res://icon.svg"
 
@@ -18,6 +18,12 @@ config/icon="res://icon.svg"
 
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
+
+[importer_defaults]
+
+scene={
+"import_script/path": "res://scripts/import/palette_post_import.gd"
+}
 
 [physics]
 

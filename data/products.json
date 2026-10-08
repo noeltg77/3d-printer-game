@@ -1,0 +1,53 @@
+{
+	"schema_version": 1,
+	"products": [
+		{
+			"id": "desk_organiser",
+			"name": "Desk Organiser",
+			"category": "home_organisation",
+			"description": "Pen pot, phone slot and a tray for the bits that live on every desk.",
+			"unlock_tier": 1,
+			"filament_grams": 120,
+			"print_minutes": 240,
+			"size_mm": [140, 90, 80],
+			"difficulty": 0.15,
+			"needs_supports": false,
+			"colour_count": 1,
+			"allowed_filaments": ["pla", "petg"],
+			"base_price_pence": 1200,
+			"licence": { "type": "one_off", "fee_pence": 1500, "royalty_pct": 0.0 }
+		},
+		{
+			"id": "cable_clips",
+			"name": "Cable Clips (set of 6)",
+			"category": "home_organisation",
+			"description": "Small, quick and boring. Sells forever.",
+			"unlock_tier": 1,
+			"filament_grams": 25,
+			"print_minutes": 50,
+			"size_mm": [90, 60, 12],
+			"difficulty": 0.05,
+			"needs_supports": false,
+			"colour_count": 1,
+			"allowed_filaments": ["pla", "petg"],
+			"base_price_pence": 450,
+			"licence": { "type": "one_off", "fee_pence": 500, "royalty_pct": 0.0 }
+		},
+		{
+			"id": "flexi_dragon",
+			"name": "Flexi Dragon",
+			"category": "fidget_toys",
+			"description": "Articulated print-in-place dragon. Lots of tiny joints to go wrong.",
+			"unlock_tier": 1,
+			"filament_grams": 85,
+			"print_minutes": 300,
+			"size_mm": [200, 60, 30],
+			"difficulty": 0.4,
+			"needs_supports": false,
+			"colour_count": 1,
+			"allowed_filaments": ["pla"],
+			"base_price_pence": 1500,
+			"licence": { "type": "royalty", "fee_pence": 0, "royalty_pct": 0.1 }
+		}
+	]
+}

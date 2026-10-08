@@ -1,0 +1,42 @@
+{
+	"schema_version": 1,
+	"columns": 8,
+	"cell_px": 16,
+	"colours": [
+		{ "name": "white", "hex": "#FBF7F0" },
+		{ "name": "cream", "hex": "#F4E9D8" },
+		{ "name": "linen", "hex": "#E3D2B8" },
+		{ "name": "sand", "hex": "#CDB591" },
+		{ "name": "stone", "hex": "#A39480" },
+		{ "name": "slate", "hex": "#6E6A70" },
+		{ "name": "charcoal", "hex": "#3E3B42" },
+		{ "name": "ink", "hex": "#26232B" },
+
+		{ "name": "wood_light", "hex": "#D9A66B" },
+		{ "name": "wood", "hex": "#B97F4A" },
+		{ "name": "wood_dark", "hex": "#8A5A35" },
+		{ "name": "cardboard", "hex": "#C89B6A" },
+		{ "name": "cardboard_dark", "hex": "#A67C50" },
+		{ "name": "tape", "hex": "#E0C48A" },
+		{ "name": "terracotta", "hex": "#D2774F" },
+		{ "name": "brick", "hex": "#B5553C" },
+
+		{ "name": "red", "hex": "#D9534A" },
+		{ "name": "orange", "hex": "#EE8B3A" },
+		{ "name": "yellow", "hex": "#F2C14E" },
+		{ "name": "lime", "hex": "#A8C256" },
+		{ "name": "green", "hex": "#5E9E5B" },
+		{ "name": "teal", "hex": "#3F8F8C" },
+		{ "name": "sky", "hex": "#6FB3D2" },
+		{ "name": "blue", "hex": "#3F6FA8" },
+
+		{ "name": "navy", "hex": "#2F4366" },
+		{ "name": "purple", "hex": "#7D5BA6" },
+		{ "name": "pink", "hex": "#E58FA3" },
+		{ "name": "skin_light", "hex": "#F1C9A5" },
+		{ "name": "skin_mid", "hex": "#C98F62" },
+		{ "name": "skin_dark", "hex": "#8A5A3C" },
+		{ "name": "metal_light", "hex": "#B9BEC4" },
+		{ "name": "metal_dark", "hex": "#6B7078" }
+	]
+}

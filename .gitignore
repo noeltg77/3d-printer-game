@@ -1,3 +1,7 @@
 # Godot 4+ specific ignores
 .godot/
 /android/
+
+# Generator preview renders
+tools/previews/
+__pycache__/

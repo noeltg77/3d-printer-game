@@ -1,0 +1,47 @@
+{
+	"schema_version": 1,
+	"printers": [
+		{
+			"id": "finisher_3",
+			"name": "Finisher 3",
+			"brand": "Crudeality",
+			"description": "Cheap, loud, open-frame bed slinger. Everyone's first printer.",
+			"unlock_tier": 1,
+			"kind": "fdm",
+			"motion": "bed_slinger",
+			"price_pence": 15900,
+			"speed_multiplier": 1.0,
+			"build_volume_mm": [220, 220, 250],
+			"reliability": 0.86,
+			"max_nozzle_temp_c": 240,
+			"enclosed": false,
+			"direct_drive": false,
+			"auto_bed_levelling": false,
+			"supported_filaments": ["pla", "petg"],
+			"power_watts": 120,
+			"upgrade_slots": ["nozzle", "enclosure", "auto_bed_levelling"],
+			"model": { "generator": "printers", "variant": "open_frame", "colour": "charcoal" }
+		},
+		{
+			"id": "kernel_one",
+			"name": "Kernel One",
+			"brand": "Proosa",
+			"description": "Enclosed core XY workhorse. Dependable, and it knows it.",
+			"unlock_tier": 2,
+			"kind": "fdm",
+			"motion": "core_xy",
+			"price_pence": 64900,
+			"speed_multiplier": 2.2,
+			"build_volume_mm": [250, 220, 270],
+			"reliability": 0.95,
+			"max_nozzle_temp_c": 290,
+			"enclosed": true,
+			"direct_drive": true,
+			"auto_bed_levelling": true,
+			"supported_filaments": ["pla", "petg", "abs"],
+			"power_watts": 200,
+			"upgrade_slots": ["nozzle", "multicolour_unit"],
+			"model": { "generator": "printers", "variant": "enclosed", "colour": "orange" }
+		}
+	]
+}
