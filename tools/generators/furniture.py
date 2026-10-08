@@ -20,6 +20,8 @@ _pending_markers = []
 def add_arguments(parser):
     parser.add_argument("--variant", choices=tuple(VARIANTS), default="shelving")
     parser.add_argument("--colour", default="teal", help="accent colour (chair fabric)")
+    parser.add_argument("--tiers", type=int, default=5, help="filament rack rows")
+    parser.add_argument("--per-tier", type=int, default=14, help="filament rack spools per row")
 
 
 def build(args, rng):
@@ -45,12 +47,13 @@ def _shelving(builder, args, rng):
 
 
 def _filament_rack(builder, args, rng):
-    """Spool rack, 1.2 x 0.32 x 1.72: five tiers of rails, 14 spools side by side on each.
+    """Spool rack: `--tiers` rows of rails with `--per-tier` spools side by side on each.
 
-    Markers `spool_slot_1..70` run left to right, top tier first.
+    The default 5 x 14 is 1.2 wide and 1.72 tall. Markers `spool_slot_1..N` run
+    left to right, top tier first.
     """
-    width, depth, height = 1.2, 0.32, 1.72
-    tiers, per_tier, pitch = 5, 14, 0.078
+    tiers, per_tier, pitch = args.tiers, args.per_tier, 0.078
+    width, depth, height = per_tier * pitch + 0.108, 0.32, 0.44 + (tiers - 1) * 0.32
     rail_gap, rail_radius, spool_radius = 0.06, 0.012, 0.1
     for x in (-1, 1):
         post_x = x * (width / 2 - 0.015)

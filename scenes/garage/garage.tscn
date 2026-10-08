@@ -27,7 +27,7 @@
 [ext_resource type="PackedScene" path="res://assets/models/filament/spool_white.glb" id="25_spool_white"]
 [ext_resource type="PackedScene" path="res://scenes/characters/character.tscn" id="26_character"]
 
-[ext_resource type="PackedScene" path="res://assets/models/furniture/filament_rack.glb" id="27_rack"]
+[ext_resource type="PackedScene" path="res://assets/models/furniture/filament_rack_small.glb" id="27_rack"]
 [ext_resource type="Script" path="res://scripts/props/slot_filler.gd" id="28_filler"]
 [ext_resource type="PackedScene" path="res://assets/models/filament/spool_teal.glb" id="29_spool_teal"]
 [ext_resource type="PackedScene" path="res://assets/models/filament/spool_lime.glb" id="30_spool_lime"]
@@ -109,7 +109,7 @@ transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -1.4575, 1.43, -2.1)
 transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -1.3725, 1.43, -2.1)
 
 [node name="FilamentRack" parent="." instance=ExtResource("27_rack")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.3, 0, -2.32)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.6, 0, -2.32)
 script = ExtResource("28_filler")
 items = Array[PackedScene]([ExtResource("17_spool_red"), ExtResource("18_spool_orange"), ExtResource("19_spool_yellow"), ExtResource("20_spool_green"), ExtResource("21_spool_sky"), ExtResource("22_spool_blue"), ExtResource("23_spool_purple"), ExtResource("24_spool_pink"), ExtResource("25_spool_white"), ExtResource("29_spool_teal"), ExtResource("30_spool_lime"), ExtResource("31_spool_black")])
 

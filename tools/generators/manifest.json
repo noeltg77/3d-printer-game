@@ -21,7 +21,8 @@
 		{ "generator": "garage", "out": "assets/models/garage/garage.glb" },
 
 		{ "generator": "furniture", "out": "assets/models/furniture/shelving.glb", "args": { "variant": "shelving" } },
-		{ "generator": "furniture", "out": "assets/models/furniture/filament_rack.glb", "args": { "variant": "filament_rack" } },
+		{ "generator": "furniture", "out": "assets/models/furniture/filament_rack_small.glb", "args": { "variant": "filament_rack", "tiers": 3, "per-tier": 8 } },
+		{ "generator": "furniture", "out": "assets/models/furniture/filament_rack_large.glb", "args": { "variant": "filament_rack" } },
 		{ "generator": "furniture", "out": "assets/models/furniture/workbench.glb", "args": { "variant": "workbench", "seed": 4 } },
 		{ "generator": "furniture", "out": "assets/models/furniture/desk.glb", "args": { "variant": "desk" } },
 		{ "generator": "furniture", "out": "assets/models/furniture/chair.glb", "args": { "variant": "chair", "colour": "teal" } },

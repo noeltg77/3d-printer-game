@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://b0qw3yw310iua"
-path="res://.godot/imported/filament_rack.glb-3149f69cf96deb8811b892a4c0cffef3.scn"
+uid="uid://hv3h4iaut4x3"
+path="res://.godot/imported/filament_rack_small.glb-c42354a8fc584ead63b61a1a3201bab9.scn"
 
 [deps]
 
-source_file="res://assets/models/furniture/filament_rack.glb"
-dest_files=["res://.godot/imported/filament_rack.glb-3149f69cf96deb8811b892a4c0cffef3.scn"]
+source_file="res://assets/models/furniture/filament_rack_small.glb"
+dest_files=["res://.godot/imported/filament_rack_small.glb-c42354a8fc584ead63b61a1a3201bab9.scn"]
 
 [params]
 
