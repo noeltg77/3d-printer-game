@@ -25,8 +25,15 @@ func refresh() -> void:
 	var orders := market.active_orders()
 	if orders.is_empty():
 		add_child(Ui.label("No orders waiting. Listed designs bring them in.", 16, Ui.MUTED))
+	# Stock is shared out oldest order first, so one item only makes one order ready.
+	var unclaimed: Dictionary[StringName, int] = {}
 	for order in orders:
-		add_child(_order_row(order))
+		if not unclaimed.has(order.product):
+			unclaimed[order.product] = Game.stock_of(order.product)
+		var in_stock := order.status == Marketplace.Status.OPEN and unclaimed[order.product] > 0
+		if in_stock:
+			unclaimed[order.product] -= 1
+		add_child(_order_row(order, in_stock))
 
 
 func _listing_row(product: StringName) -> Control:
@@ -53,11 +60,10 @@ func _listing_row(product: StringName) -> Control:
 	])
 
 
-func _order_row(order: Marketplace.Order) -> Control:
+func _order_row(order: Marketplace.Order, in_stock: bool) -> Control:
 	var status := "Packed, waiting for the courier"
 	var colour := Ui.GOOD
 	if order.status == Marketplace.Status.OPEN:
-		var in_stock := Game.stock_of(order.product) > 0
 		status = "Ready to pack" if in_stock else "Needs printing"
 		colour = Color.WHITE if in_stock else Ui.BAD
 	return Ui.row([
