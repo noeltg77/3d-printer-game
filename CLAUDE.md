@@ -44,7 +44,7 @@ Checking gameplay without clicking: the `DevAutoplay` autoload (`scripts/dev/dev
 
 ```
 godot --headless --path . --script res://scripts/dev/run_tests.gd    # unit tests for simulation classes
-godot --headless --path . --script res://scripts/dev/balance_report.gd   # play the garage 200 times and report the economy (see docs/balance_notes.md)
+godot --headless --path . --script res://scripts/dev/balance_report.gd   # play the garage, then on into the small unit, many times and report the economy (see docs/balance_notes.md)
 godot --path . res://scenes/garage/garage.tscn -- --time-scale=2 "--autoplay=call>place_supplier_order({\"printers\":{\"plodder_mini\":1},\"spools\":{\"red\":1}});wait>80;Delivery: 1 spool>Unpack;Delivery: Printer>Unpack;Plodder Mini>Load filament>Red;Plodder Mini>Print...;on>print_dialog>choose(\"cable_management_clips_x12\",\"standard\");shot>tools/previews/play.png;quit"
 ```
 
