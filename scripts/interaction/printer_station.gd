@@ -31,6 +31,8 @@ var scrap: FailedPrint = null
 var preset: StringName = &"standard"
 ## The state of this printer's wear parts.
 var wear: PrinterWear
+## The upgrades fitted to it.
+var mods: PrinterMods
 
 ## Filament the current print was set to use.
 var _grams := 0.0
@@ -50,6 +52,7 @@ static func create(printer_id: StringName) -> PrinterStation:
 	var station := PrinterStation.new()
 	station.spec = Game.data.printers[printer_id]
 	station.wear = PrinterWear.new(Game.data.parts, station.spec, float(Game.data.settings["wear_rate"]))
+	station.mods = PrinterMods.new(Game.data.upgrades)
 	station.display_name = station.spec["name"]
 	station.stand_offset = Vector3(0.0, 0.0, 0.72)
 	station.add_child((load(MODEL_PATH % station.spec["model"]["variant"]) as PackedScene).instantiate())
@@ -104,8 +107,9 @@ func get_actions(_agent: Agent) -> Array[Action]:
 			fix.task_name = "Sort out the %s" % display_name
 			return [Action.info("%s: %s" % [failure["name"], Game.product_name(scrap.product)]), fix]
 	if spool == null:
-		return [_load_menu(), _parts_menu()]
-	return [Action.info("Loaded: %s" % spool.describe()), _print_menu(), Action.new("Unload filament", _unload), _parts_menu()]
+		return [_load_menu(), _parts_menu(), _upgrades_menu()]
+	return [Action.info("Loaded: %s" % spool.describe()), _print_menu(), Action.new("Unload filament", _unload),
+		_parts_menu(), _upgrades_menu()]
 
 
 func _load_menu() -> Action:
@@ -147,6 +151,25 @@ func _parts_menu() -> Action:
 	return Action.submenu("Parts", lines)
 
 
+## What is fitted, and the task of fitting each kit on the shelving that will go on.
+func _upgrades_menu() -> Action:
+	var lines: Array[Action] = []
+	for upgrade in mods.fitted:
+		lines.append(Action.info("Fitted: %s" % Game.data.upgrades[upgrade]["name"]))
+	for box in _shelf().spares():
+		if not Game.data.upgrades.has(box.part):
+			continue
+		var row: Dictionary = Game.data.upgrades[box.part]
+		var problem := mods.problem(box.part, spec)
+		var label := "Fit %s (%s)" % [String(row["name"]).to_lower(), GameClock.duration_label(row["install_minutes"])]
+		var action := Action.new(label if problem == "" else "%s: %s" % [row["name"], problem.to_lower()], _fit_upgrade.bind(box.part), problem == "")
+		action.task_name = "Fit the %s to the %s" % [String(row["name"]).to_lower(), display_name]
+		lines.append(action)
+	if lines.is_empty():
+		return Action.info("Upgrades (none fitted: buy kits at the PC)")
+	return Action.submenu("Upgrades", lines)
+
+
 ## "84%", "24%, worn" or "worn out"
 func health_label(slot: StringName) -> String:
 	if wear.is_broken(slot):
@@ -179,7 +202,7 @@ func print_problem(product: StringName, p_preset: StringName) -> String:
 ## Game minutes this printer takes to print a design at a preset.
 func print_minutes(product: StringName, p_preset: StringName) -> float:
 	return (float(Game.data.products[product]["print_minutes"]) * float(Game.data.presets[p_preset]["time_multiplier"])
-		/ float(spec["speed_multiplier"]))
+		* mods.time_multiplier() / float(spec["speed_multiplier"]))
 
 
 func load_spool(p_spool: Spool) -> void:
@@ -201,7 +224,7 @@ func start_print(product: StringName, p_preset: StringName) -> void:
 	Interactable.attach(item, _plate)
 	item.scale.y = 0.02
 	job = PrintJob.new(GameClock.to_seconds(print_minutes(product, preset)))
-	var fate := Game.roll_print(spec, preset, spool.material, product, wear)
+	var fate := Game.roll_print(spec, preset, spool.material, product, wear, mods)
 	if not fate.is_empty():
 		job.fail(fate["failure"], fate["at"])
 	# A part that runs out before anything else goes wrong stops the print there.
@@ -353,6 +376,25 @@ func _replace(agent: Agent, slot: StringName) -> void:
 	agent.say("Fitted a new %s" % String(wear.part(slot)["slot_name"]).to_lower())
 
 
+func _fit_upgrade(agent: Agent, upgrade: StringName) -> void:
+	var shelf := _shelf()
+	if status == Status.PRINTING or shelf.spare_count(upgrade) == 0 or mods.problem(upgrade, spec) != "":
+		agent.say("Can't fit that to the %s right now" % display_name)
+		return
+	await agent.go_to(shelf)
+	await agent.reach(func() -> void: agent.carry(shelf.take_spare(upgrade)))
+	if agent.carried == null:
+		return
+	await agent.go_to(self)
+	await agent.work(float(Game.data.upgrades[upgrade]["install_minutes"]))
+	await agent.reach(func() -> void:
+		agent.release().queue_free()
+		mods.fit(upgrade)
+		wear.upgrade_multiplier = mods.wear_multiplier()
+		Game.changed.emit())
+	agent.say("Fitted the %s" % String(Game.data.upgrades[upgrade]["name"]).to_lower())
+
+
 func _rack() -> FilamentRack:
 	return get_tree().get_first_node_in_group(&"filament_rack")
 
@@ -362,7 +404,7 @@ func _shelf() -> StorageShelf:
 
 
 func save() -> Dictionary:
-	var state := {"id": spec["id"], "status": status, "preset": preset, "grams": _grams, "wear": wear.save()}
+	var state := {"id": spec["id"], "status": status, "preset": preset, "grams": _grams, "wear": wear.save(), "mods": mods.save()}
 	if spool != null:
 		state["spool"] = spool.save()
 	if job != null:
@@ -378,6 +420,9 @@ func save() -> Dictionary:
 ## A print of a design the game no longer has is dropped, leaving it idle.
 func restore(state: Dictionary) -> void:
 	wear.restore(state["wear"])
+	if state.has("mods"):
+		mods.restore(state["mods"])
+		wear.upgrade_multiplier = mods.wear_multiplier()
 	if state.has("spool"):
 		load_spool(Spool.restored(state["spool"]))
 	preset = StringName(state["preset"]) if Game.data.presets.has(state["preset"]) else preset

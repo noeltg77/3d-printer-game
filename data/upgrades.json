@@ -1,0 +1,57 @@
+{
+	"schema_version": 1,
+	"upgrades": [
+		{
+			"id": "auto_bed_levelling_kit",
+			"name": "Auto bed levelling kit",
+			"description": "A probe that maps the bed before every print, so the first layer goes down evenly. The big one for prints that won't stick.",
+			"unlock_tier": 1,
+			"price_pence": 3899,
+			"install_minutes": 60,
+			"fits_motion": ["bed_slinger"],
+			"grants": ["auto_bed_levelling"],
+			"failure_multipliers": { "first_layer": 0.4, "bed_adhesion": 0.7 },
+			"time_multiplier": 1.0,
+			"wear_multiplier": 1.0
+		},
+		{
+			"id": "frame_stiffening_braces",
+			"name": "Frame stiffening braces",
+			"description": "Stops a wobbly frame swaying. Fewer layer shifts, and it can print a touch faster.",
+			"unlock_tier": 1,
+			"price_pence": 2499,
+			"install_minutes": 45,
+			"fits_motion": ["bed_slinger"],
+			"grants": [],
+			"failure_multipliers": { "layer_shift": 0.8 },
+			"time_multiplier": 0.95,
+			"wear_multiplier": 1.0
+		},
+		{
+			"id": "anti_vibration_feet",
+			"name": "Anti vibration feet",
+			"description": "Squashy feet that soak up the shaking. Cheap and cheerful, for a slightly smoother finish.",
+			"unlock_tier": 1,
+			"price_pence": 1199,
+			"install_minutes": 5,
+			"fits_motion": [],
+			"grants": [],
+			"failure_multipliers": { "poor_surface": 0.9 },
+			"time_multiplier": 1.0,
+			"wear_multiplier": 1.0
+		},
+		{
+			"id": "cable_chain_kit",
+			"name": "Cable chain kit",
+			"description": "Tidies the wiring so nothing rubs or snags. Every part lasts a little longer.",
+			"unlock_tier": 1,
+			"price_pence": 1899,
+			"install_minutes": 45,
+			"fits_motion": [],
+			"grants": [],
+			"failure_multipliers": {},
+			"time_multiplier": 1.0,
+			"wear_multiplier": 0.9
+		}
+	]
+}

@@ -11,6 +11,7 @@ const TABLES := {
 	"presets": "res://data/presets.json",
 	"failures": "res://data/failures.json",
 	"parts": "res://data/parts.json",
+	"upgrades": "res://data/upgrades.json",
 }
 const FAILURE_HAPPENS: PackedStringArray = ["start", "mid", "end"]
 const FAILURE_OUTCOMES: PackedStringArray = ["scrap", "stop", "degraded"]
@@ -26,6 +27,8 @@ var presets: Dictionary = {}
 var failures: Dictionary = {}
 ## Wear parts, by id.
 var parts: Dictionary = {}
+## Printer upgrades, by id.
+var upgrades: Dictionary = {}
 ## What each durability score (1 to 5) means, keyed by the score as text.
 var durability_labels: Dictionary = {}
 ## Lines buyers write in reviews, by kind (data/reviews.json).
@@ -57,6 +60,12 @@ static func load_all() -> GameData:
 	return data
 
 
+## The row for something that is bought as a kit and kept on the shelving:
+## a wear part or an upgrade. {} if there is no such thing.
+func kit(id: String) -> Dictionary:
+	return parts.get(id, upgrades.get(id, {}))
+
+
 func _load_table(table: String, path: String) -> Dictionary:
 	var by_id := {}
 	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
@@ -78,6 +87,12 @@ func _check_references() -> void:
 	var slots := {}
 	for part: Dictionary in parts.values():
 		slots[part["slot"]] = true
+	for upgrade: Dictionary in upgrades.values():
+		if parts.has(upgrade["id"]):
+			errors.append("upgrade %s: a part has the same id" % upgrade["id"])
+		for failure_id: String in upgrade.get("failure_multipliers", {}):
+			if not failures.has(failure_id):
+				errors.append("upgrade %s: unknown failure \"%s\"" % [upgrade["id"], failure_id])
 	for printer: Dictionary in printers.values():
 		var fitted := {}
 		for part_id: String in printer.get("parts", []):

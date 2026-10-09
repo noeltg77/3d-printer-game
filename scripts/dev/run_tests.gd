@@ -9,6 +9,7 @@ func _init() -> void:
 	_test_print_job()
 	_test_print_risk()
 	_test_printer_wear()
+	_test_printer_mods()
 	_test_clock()
 	_test_bank()
 	_test_money()
@@ -159,6 +160,56 @@ func _test_printer_wear() -> void:
 	gritty["abrasive"] = true
 	_check(is_equal_approx(wear.wear_per_hour(&"nozzle", standard, gritty), wear.wear_per_hour(&"nozzle", standard, pla) * 10.0), "abrasive filament eats a brass nozzle ten times faster")
 	_check(is_equal_approx(wear.wear_per_hour(&"belts", standard, gritty), wear.wear_per_hour(&"belts", standard, pla)), "abrasive filament does not wear the belts any faster")
+
+
+func _test_printer_mods() -> void:
+	var data := GameData.load_all()
+	var plodder: Dictionary = data.printers["plodder_mini"]
+	var zippy: Dictionary = data.printers["zippy_x1"]
+	var pla: Dictionary = data.filaments["pla"]
+	var mods := PrinterMods.new(data.upgrades)
+	_check(mods.failure_multipliers().is_empty() and is_equal_approx(mods.time_multiplier(), 1.0) and is_equal_approx(mods.wear_multiplier(), 1.0), "a printer with no upgrades is unchanged")
+	_check(mods.problem(&"auto_bed_levelling_kit", plodder) == "", "bed levelling fits the starter printer")
+	_check(mods.problem(&"auto_bed_levelling_kit", zippy) != "", "but not a printer of the wrong kind, or one that has it already")
+	_check(mods.problem(&"anti_vibration_feet", zippy) == "", "an upgrade that fits anything fits a core XY")
+
+	var flags := PrintRisk.conditions(plodder, data.presets["standard"], data.products["cable_clips"])
+	var before := PrintRisk.fail_chance(plodder, data.presets["standard"], pla, data.products["cable_clips"])
+	mods.fit(&"auto_bed_levelling_kit")
+	_check(mods.has(&"auto_bed_levelling_kit") and mods.problem(&"auto_bed_levelling_kit", plodder) != "", "an upgrade can only be fitted once")
+	var improved := mods.apply(plodder)
+	_check(improved["auto_bed_levelling"] and not plodder["auto_bed_levelling"], "bed levelling gives the printer the capability without touching its data row")
+	var levelled := PrintRisk.conditions(improved, data.presets["standard"], data.products["cable_clips"])
+	_check(flags.has(&"no_auto_level") and not levelled.has(&"no_auto_level"), "so the missing bed levelling flag goes")
+	var scale := PrintRisk.upgrade_scale(data.failures, levelled, pla, mods.failure_multipliers())
+	_check(scale < 0.92 and scale > 0.6, "bed levelling clearly cuts the chance of a failure (to %.2f of what it was)" % scale)
+	_check(before * scale < before, "and the print is less likely to fail")
+	var first_layer: Dictionary = data.failures["first_layer"]
+	_check(is_equal_approx(PrintRisk.weight_of(first_layer, levelled, pla, mods.failure_multipliers()), float(first_layer["weight"]) * 0.4), "first layer failures become much rarer")
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 9
+	var plain := 0
+	var upgraded := 0
+	for attempt in 3000:
+		plain += 1 if PrintRisk.pick(data.failures, flags, pla, rng)["id"] == "first_layer" else 0
+		upgraded += 1 if PrintRisk.pick(data.failures, levelled, pla, rng, mods.failure_multipliers())["id"] == "first_layer" else 0
+	_check(upgraded * 3 < plain, "and are picked far less often (%d against %d)" % [upgraded, plain])
+	_check(is_equal_approx(PrintRisk.upgrade_scale(data.failures, flags, pla, {}), 1.0), "no upgrades means no change to the chance")
+
+	mods.fit(&"frame_stiffening_braces")
+	mods.fit(&"cable_chain_kit")
+	_check(is_equal_approx(mods.time_multiplier(), 0.95) and is_equal_approx(mods.wear_multiplier(), 0.9), "braces speed prints up and a cable chain slows wear")
+	_check(is_equal_approx(float(mods.failure_multipliers()["layer_shift"]), 0.8), "upgrades' effects on failures combine")
+	var wear := PrinterWear.new(data.parts, plodder, 1.0)
+	var plain_wear := wear.wear_per_hour(&"nozzle", data.presets["standard"], pla)
+	wear.upgrade_multiplier = mods.wear_multiplier()
+	_check(is_equal_approx(wear.wear_per_hour(&"nozzle", data.presets["standard"], pla), plain_wear * 0.9), "slower wear reaches every part")
+
+	var saved := _through_file(mods.save())
+	saved["fitted"].append("gone_upgrade")
+	var again := PrinterMods.new(data.upgrades)
+	again.restore(saved)
+	_check(again.fitted == mods.fitted, "upgrades come back from a save, without any the game no longer has")
 
 
 func _test_clock() -> void:
@@ -431,5 +482,7 @@ func _test_supplier() -> void:
 	_check(supplier.price_of(spares) == 2 * 699 + 449, "spare parts are priced by the pack")
 	var parts_box := supplier.place(spares, 0.0)
 	_check(parts_box.size() == 1 and parts_box[0].parts[&"brass_nozzle_0_4mm"] == 6 and parts_box[0].parts[&"ptfe_tube"] == 1, "a delivery holds every part in each pack")
-	_check(parts_box[0].describe() == "7 spare parts", "a parts delivery says how many parts it holds")
+	_check(parts_box[0].describe() == "7 parts", "a parts delivery says how many parts it holds")
+	_check(supplier.price_of({"parts": {"auto_bed_levelling_kit": 1}}) == 3899, "upgrade kits are bought the same way as parts")
+	_check(supplier.place({"parts": {"auto_bed_levelling_kit": 2}}, 5000.0)[0].parts[&"auto_bed_levelling_kit"] == 2, "and come one to a pack")
 	_check(supplier.collect_due(120.0).size() == 1, "spare parts arrive after the parts lead time")

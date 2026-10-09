@@ -62,24 +62,36 @@ static func conditions(printer: Dictionary, preset: Dictionary, product: Diction
 
 
 ## How heavily a failure counts when choosing which one happens: its weight,
-## times every cause that applies, times the filament's own modifier for it.
-static func weight_of(failure: Dictionary, flags: Array[StringName], filament: Dictionary) -> float:
+## times every cause that applies, times the filament's own modifier for it,
+## times what the printer's upgrades do to it (`multipliers`, by failure id).
+static func weight_of(failure: Dictionary, flags: Array[StringName], filament: Dictionary, multipliers := {}) -> float:
 	var weight := float(failure["weight"])
 	for cause: String in failure["causes"]:
 		if flags.has(StringName(cause)):
 			weight *= float(failure["causes"][cause])
-	return weight * float(filament["failure_modifiers"].get(failure["id"], 1.0))
+	return weight * float(filament["failure_modifiers"].get(failure["id"], 1.0)) * float(multipliers.get(failure["id"], 1.0))
+
+
+## How much upgrades cut the chance of a print failing at all: the share of
+## the failures that are left once each is scaled by its multiplier.
+static func upgrade_scale(failures: Dictionary, flags: Array[StringName], filament: Dictionary, multipliers: Dictionary) -> float:
+	var before := 0.0
+	var after := 0.0
+	for failure: Dictionary in failures.values():
+		before += weight_of(failure, flags, filament)
+		after += weight_of(failure, flags, filament, multipliers)
+	return after / before if before > 0.0 else 1.0
 
 
 ## Picks which failure happens, given that one does. `failures` is the table by id.
-static func pick(failures: Dictionary, flags: Array[StringName], filament: Dictionary, rng: RandomNumberGenerator) -> Dictionary:
+static func pick(failures: Dictionary, flags: Array[StringName], filament: Dictionary, rng: RandomNumberGenerator, multipliers := {}) -> Dictionary:
 	var total := 0.0
 	for failure: Dictionary in failures.values():
-		total += weight_of(failure, flags, filament)
+		total += weight_of(failure, flags, filament, multipliers)
 	var roll := rng.randf() * total
 	var last := {}
 	for failure: Dictionary in failures.values():
-		var weight := weight_of(failure, flags, filament)
+		var weight := weight_of(failure, flags, filament, multipliers)
 		# Weightless failures are never rolled: something else sets them off.
 		if weight <= 0.0:
 			continue
@@ -98,8 +110,8 @@ static func strike_point(failure: Dictionary, rng: RandomNumberGenerator) -> flo
 
 ## Rolls one print. Returns {} if it goes well, or { failure, at } with the
 ## failure's row and the progress at which it strikes.
-static func roll(chance: float, failures: Dictionary, flags: Array[StringName], filament: Dictionary, rng: RandomNumberGenerator) -> Dictionary:
+static func roll(chance: float, failures: Dictionary, flags: Array[StringName], filament: Dictionary, rng: RandomNumberGenerator, multipliers := {}) -> Dictionary:
 	if failures.is_empty() or rng.randf() >= chance:
 		return {}
-	var failure := pick(failures, flags, filament, rng)
+	var failure := pick(failures, flags, filament, rng, multipliers)
 	return {"failure": failure, "at": strike_point(failure, rng)}

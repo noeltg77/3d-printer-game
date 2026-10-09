@@ -193,24 +193,40 @@ func print_grams(product: StringName, preset: StringName) -> float:
 	return float(data.products[product]["filament_grams"]) * float(data.presets[preset]["filament_multiplier"])
 
 
-## Chance (0 to 1) that printing a design this way goes wrong. `wear` is the
-## state of the printer's parts, if it has any to count.
-func fail_chance(printer: Dictionary, preset: StringName, filament: StringName, product: StringName, wear: PrinterWear = null) -> float:
-	return PrintRisk.fail_chance(printer, data.presets[preset], data.filaments[filament], data.products[product],
+## Chance (0 to 1) that printing a design this way goes wrong. `wear` and
+## `mods` are the state of the printer's parts and its upgrades, if it has any.
+func fail_chance(printer: Dictionary, preset: StringName, filament: StringName, product: StringName,
+		wear: PrinterWear = null, mods: PrinterMods = null) -> float:
+	var spec := mods.apply(printer) if mods != null else printer
+	var chance := PrintRisk.fail_chance(spec, data.presets[preset], data.filaments[filament], data.products[product],
 		wear.extra_fail_chance() if wear != null else 0.0)
+	if mods == null:
+		return chance
+	var flags := _print_flags(spec, preset, product, wear)
+	return chance * PrintRisk.upgrade_scale(data.failures, flags, data.filaments[filament], mods.failure_multipliers())
 
 
 ## Decides the fate of a print as it starts. Returns {} if it will go well, or
 ## { failure, at } with the failure's row and the progress at which it strikes.
-func roll_print(printer: Dictionary, preset: StringName, filament: StringName, product: StringName, wear: PrinterWear = null) -> Dictionary:
+func roll_print(printer: Dictionary, preset: StringName, filament: StringName, product: StringName,
+		wear: PrinterWear = null, mods: PrinterMods = null) -> Dictionary:
 	if data.failures.has(force_failure):
 		var forced: Dictionary = data.failures[force_failure]
 		force_failure = ""
 		return {"failure": forced, "at": PrintRisk.strike_point(forced, rng)}
-	var flags := PrintRisk.conditions(printer, data.presets[preset], data.products[product])
+	var spec := mods.apply(printer) if mods != null else printer
+	return PrintRisk.roll(fail_chance(printer, preset, filament, product, wear, mods), data.failures,
+		_print_flags(spec, preset, product, wear), data.filaments[filament], rng,
+		mods.failure_multipliers() if mods != null else {})
+
+
+## The condition flags for a print: from the printer, preset and design, plus
+## any worn parts.
+func _print_flags(spec: Dictionary, preset: StringName, product: StringName, wear: PrinterWear) -> Array[StringName]:
+	var flags := PrintRisk.conditions(spec, data.presets[preset], data.products[product])
 	if wear != null:
 		flags.append_array(wear.flags())
-	return PrintRisk.roll(fail_chance(printer, preset, filament, product, wear), data.failures, flags, data.filaments[filament], rng)
+	return flags
 
 
 ## Buys a design licence. False if it can't be afforded or is already owned.

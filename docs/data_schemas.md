@@ -148,6 +148,20 @@ A ruined print only uses the filament and electricity up to the point it failed.
 
 A failure with `weight` 0 is never rolled. `breakdown` is the one so far: the printer sets it off when a part runs out mid-print, filling `{part}` and `{text}` from the part's `slot_name` and `break_text`.
 
+## upgrades.json
+
+Kits fitted to a printer for good. Imported from `docs/design_data/parts.json` (`upgrades`): so far only the Garage ones whose effects the game models. Bought and delivered like spare parts (one to a pack), so an upgrade id must not match a part id.
+
+| Field | Meaning |
+| --- | --- |
+| `description` | Plain-words pitch on its shop row |
+| `price_pence`, `install_minutes` | Shop price, and character time to fit it |
+| `fits_motion` | Printer `motion` values it fits. Empty for any printer |
+| `grants` | Printer capability fields it switches on, e.g. `auto_bed_levelling`. It can't be fitted to a printer that already has one of them |
+| `failure_multipliers` | Failure id to multiplier on that failure's weight. The chance of a print failing at all shrinks by the share of weight removed (`PrintRisk.upgrade_scale`) |
+| `time_multiplier` | Applied to print time |
+| `wear_multiplier` | Applied to the wear of every part |
+
 ## parts.json
 
 Wear parts. Imported from `docs/design_data/parts.json`: one part for each slot in the GDD's list (nozzle, hotend, build plate, belts, PTFE tube, fans). The other Garage parts, alternative parts for a slot and upgrades are not in yet. Prices are the design's base prices; brand multipliers and own-brand parts are not applied.
@@ -183,4 +197,4 @@ One game day is 1440 game minutes and lasts 10 real minutes at 1x (`GameClock.MI
 
 ## Not drafted yet
 
-Upgrades, packaging and courier choices, contracts, staff and events. Each gets a table when its phase starts.
+Packaging and courier choices, contracts, staff and events. Each gets a table when its phase starts.
