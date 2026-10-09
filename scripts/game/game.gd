@@ -15,6 +15,8 @@ signal courier_arrived
 const SPEEDS: Array[int] = [0, 1, 2, 4]
 ## Player preferences, kept apart from save games.
 const SETTINGS_FILE := "user://settings.cfg"
+## Bumped when a save from before can no longer be read.
+const SAVE_VERSION := 1
 
 var data: GameData
 var clock: GameClock
@@ -28,10 +30,21 @@ var speed := 1
 var rng := RandomNumberGenerator.new()
 ## Dev: id of a failure the next print is certain to hit. Cleared once used.
 var force_failure := ""
+## Where the game is saved. Empty turns saving and loading off, as it is for
+## dev runs driven from the command line unless they pass --save=<path>.
+var save_path := "user://save.json"
+## Game minute of the last save this session, or -1 if there hasn't been one.
+var saved_at := -1.0
 
 
 func _ready() -> void:
 	_load_settings()
+	for arg in OS.get_cmdline_user_args():
+		if arg.begins_with("--autoplay=") or arg.begins_with("--shot"):
+			save_path = ""
+	for arg in OS.get_cmdline_user_args():
+		if arg.begins_with("--save="):
+			save_path = arg.trim_prefix("--save=")
 	new_game()
 
 
@@ -66,7 +79,74 @@ func new_game() -> void:
 	owned_designs.assign(start["designs"])
 	packaging = int(start["packaging"])
 	rng.randomize()
+	saved_at = -1.0
 	set_speed(1)
+
+
+func has_save() -> bool:
+	return save_path != "" and FileAccess.file_exists(save_path)
+
+
+## Writes the business, and the state of the world it is given, to the save
+## file. False if saving is off or the file couldn't be written.
+func save_game(world: Dictionary) -> bool:
+	if save_path == "":
+		return false
+	var content := JSON.stringify({"version": SAVE_VERSION, "business": save(), "world": world}, "\t")
+	# Written beside the save and swapped in, so a crash can't leave half a file.
+	var file := FileAccess.open(save_path + ".tmp", FileAccess.WRITE)
+	if file == null:
+		return false
+	file.store_string(content)
+	file.close()
+	if DirAccess.rename_absolute(save_path + ".tmp", save_path) != OK:
+		return false
+	saved_at = clock.minutes
+	return true
+
+
+## Reads the save file and restores the business from it. Returns the saved
+## state of the world for the scene to rebuild, or {} if there is no save or it
+## can't be read. An unreadable save is moved aside rather than overwritten.
+func load_game() -> Dictionary:
+	if not has_save():
+		return {}
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(save_path))
+	if parsed is Dictionary and int(parsed.get("version", 0)) == SAVE_VERSION and parsed.get("business") is Dictionary:
+		restore(parsed["business"])
+		saved_at = clock.minutes
+		return parsed.get("world", {})
+	DirAccess.rename_absolute(save_path, save_path + ".unreadable")
+	notify("The saved game couldn't be read, so this is a new one")
+	return {}
+
+
+func delete_save() -> void:
+	if has_save():
+		DirAccess.remove_absolute(save_path)
+	saved_at = -1.0
+
+
+## The business as plain data: everything here that a save needs.
+func save() -> Dictionary:
+	return {
+		"clock": clock.save(), "bank": bank.save(), "market": market.save(), "supplier": supplier.save(),
+		"owned_designs": owned_designs, "packaging": packaging,
+	}
+
+
+## Puts the business back from save(). Designs the game no longer has are dropped.
+func restore(state: Dictionary) -> void:
+	clock.restore(state["clock"])
+	bank.restore(state["bank"])
+	market.restore(state["market"])
+	supplier.restore(state["supplier"])
+	owned_designs.clear()
+	for product: String in state["owned_designs"]:
+		if data.products.has(product):
+			owned_designs.append(StringName(product))
+	packaging = int(state["packaging"])
+	changed.emit()
 
 
 ## Changes the currency amounts are shown in and remembers it. Nothing in the

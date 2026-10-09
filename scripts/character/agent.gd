@@ -65,6 +65,22 @@ func is_busy() -> bool:
 	return _busy
 
 
+## True when nothing is half done: no task under way and nothing in hand. Held
+## at the PC counts, though jobs lined up from the screen haven't started.
+func is_between_tasks() -> bool:
+	return carried == null and current_label == "" and _path.is_empty()
+
+
+func save() -> Dictionary:
+	var spot := _seat_return if seated else global_position
+	return {"x": spot.x, "z": spot.z, "facing": rotation.y}
+
+
+func restore(data: Dictionary) -> void:
+	global_position = Vector3(float(data["x"]), 0.0, float(data["z"]))
+	rotation.y = float(data["facing"])
+
+
 func get_queued_labels() -> PackedStringArray:
 	var labels: PackedStringArray = []
 	for action in _queue:

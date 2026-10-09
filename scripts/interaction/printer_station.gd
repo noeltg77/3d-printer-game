@@ -359,3 +359,39 @@ func _rack() -> FilamentRack:
 
 func _shelf() -> StorageShelf:
 	return get_tree().get_first_node_in_group(&"print_storage")
+
+
+func save() -> Dictionary:
+	var state := {"id": spec["id"], "status": status, "preset": preset, "grams": _grams, "wear": wear.save()}
+	if spool != null:
+		state["spool"] = spool.save()
+	if job != null:
+		state["job"] = job.save()
+	if item != null:
+		state["item"] = item.save()
+	if scrap != null:
+		state["scrap"] = {"failure": scrap.failure, "item": scrap.item.save()}
+	return state
+
+
+## Puts a newly installed printer back as it was saved, mid-print included.
+## A print of a design the game no longer has is dropped, leaving it idle.
+func restore(state: Dictionary) -> void:
+	wear.restore(state["wear"])
+	if state.has("spool"):
+		load_spool(Spool.restored(state["spool"]))
+	preset = StringName(state["preset"]) if Game.data.presets.has(state["preset"]) else preset
+	_grams = float(state["grams"])
+	var saved_status := int(state["status"]) as Status
+	var on_plate: PrintedItem = PrintedItem.restored(state["scrap"]["item"] if state.has("scrap") else state.get("item", {"product": "", "preset": ""}))
+	if saved_status == Status.IDLE or on_plate == null or not state.has("job") or spool == null:
+		return
+	job = PrintJob.restored(state["job"])
+	Interactable.attach(on_plate, _plate)
+	on_plate.scale.y = maxf(job.progress, 0.02)
+	if saved_status == Status.FAILED:
+		scrap = FailedPrint.create(on_plate, state["scrap"]["failure"])
+		Interactable.attach(scrap, _plate)
+	else:
+		item = on_plate
+	status = saved_status

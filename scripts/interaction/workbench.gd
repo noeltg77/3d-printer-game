@@ -91,3 +91,15 @@ func _pack(agent: Agent, order: Marketplace.Order) -> void:
 
 func _shelf() -> StorageShelf:
 	return get_tree().get_first_node_in_group(&"print_storage")
+
+
+func save() -> Dictionary:
+	return {"printers": _printers.map(func(station: PrinterStation) -> Dictionary: return station.save())}
+
+
+func restore(data: Dictionary) -> void:
+	for entry: Dictionary in data["printers"]:
+		if Game.data.printers.has(entry["id"]):
+			var station := install_printer(StringName(entry["id"]))
+			if station != null:
+				station.restore(entry)

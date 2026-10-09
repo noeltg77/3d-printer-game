@@ -13,6 +13,8 @@ const NEST_SINK := 0.015
 ## Row from data/failures.json.
 var failure: Dictionary
 var product: StringName
+## The part-built print inside the mess.
+var item: PrintedItem
 
 
 ## Wraps `item`, which is on the plate squashed to the height it reached.
@@ -20,6 +22,7 @@ static func create(item: PrintedItem, p_failure: Dictionary) -> FailedPrint:
 	var scrap := FailedPrint.new()
 	scrap.failure = p_failure
 	scrap.product = item.product
+	scrap.item = item
 	scrap.name = "FailedPrint"
 	var built := item.height * item.scale.y
 	Interactable.attach(item, scrap)

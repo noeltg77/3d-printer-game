@@ -46,6 +46,8 @@ godot --headless --path . --script res://scripts/dev/run_tests.gd    # unit test
 godot --path . res://scenes/garage/garage.tscn -- --time-scale=2 "--autoplay=call>place_supplier_order({\"printers\":{\"plodder_mini\":1},\"spools\":{\"red\":1}});wait>80;Delivery: 1 spool>Unpack;Delivery: Printer>Unpack;Plodder Mini>Load filament>Red;Plodder Mini>Print...;on>print_dialog>choose(\"cable_clips\",\"standard\");shot>tools/previews/play.png;quit"
 ```
 
+Runs with `--autoplay` or `--shot` neither load nor write the save game, so they always start fresh and never touch a real one. Add `--save=user://some_test.json` to a run to have it load and save that file instead; `on>world_save>save_now()` saves on the spot.
+
 To wear a part without printing for hours, use `on>printer>wear.damage(\"nozzle\",0.9)`. To see a particular failure, put `call>set(\"force_failure\",\"spaghetti\")` before the print step: the next print is certain to hit it.
 
 ## Gameplay architecture
@@ -64,6 +66,7 @@ Control is semi-autonomous: the player clicks an object, picks from its action l
 - Objects find each other through groups (`filament_rack`, `print_storage`, `floor_grid`, `player`), not hard-wired paths.
 - The rules of the business live in `scripts/sim/` as plain classes with no node dependencies (`GameClock`, `Bank`, `Marketplace`, `Supplier`, plus `PrintJob`). Every one has tests in `scripts/dev/run_tests.gd`; add tests when adding rules.
 - The `Game` autoload (`scripts/game/game.gd`) owns those objects, advances them each frame and emits `changed`, `notified`, `delivery_arrived` and `courier_arrived`. Scene nodes and UI read from `Game` and call its methods; they don't keep their own copies of cash, orders or designs.
+- Saving: anything with state has `save()` returning plain data and `restore(data)` (or a static `restored(data)` for things created from a save). `Game.save()` covers the business; `WorldSave` (`scripts/game/world_save.gd`, a node in the scene) gathers the world from the nodes in its `PARTS` groups, loads the save when the scene starts and saves whenever the character is between tasks. Give new stateful things both methods and, for a new kind of scene node, an entry in `PARTS`. Saves are JSON, so restore with explicit `int()`, `float()` and `StringName()` and skip ids the data tables no longer have. Bump `Game.SAVE_VERSION` when an old save can't be read.
 - Game speed is `Engine.time_scale` (set through `Game.set_speed`), so walking, animation, prints and timers all follow it. Durations in data are game minutes; convert with `GameClock.to_seconds`.
 - Money is GBP pence (integers) in all data, simulation and saves. Show it only through `Money.format(pence)` in `scripts/sim/money.gd`, which converts every amount the same exact way so a price shown always equals the amount charged; don't add rounding to tidy price endings. Never write a currency symbol in UI code. The player picks GBP, USD or EUR in the Settings app; `Game.set_currency` saves it to `user://settings.cfg` and emits `changed`.
 - Physical stock is nodes, not counters: spools on the rack carry their own grams, finished prints and boxes of spare parts share the shelf slots, parcels sit on the outbox. Mailer boxes are the one counted stock (`Game.packaging`).

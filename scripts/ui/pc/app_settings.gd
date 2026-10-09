@@ -1,6 +1,7 @@
 extends VBoxContainer
-## PC app: Settings. For now, the currency that money is shown in. Choosing one
-## calls Game.set_currency, which redraws the HUD and whatever is open on the PC.
+## PC app: Settings. The currency that money is shown in (choosing one calls
+## Game.set_currency, which redraws the HUD and whatever is open on the PC), and
+## the saved game: when it was last saved, saving now and starting again.
 
 const SLATE := Color("5C6B73")
 const SHADOW := Color("DDE1E3")
@@ -9,6 +10,9 @@ const CHOSEN_SHADOW := Color("0F171B")
 const SAMPLE_PENCE := 123456
 
 var screen: PcScreen
+
+## True while "Start a new game" is waiting for the player to confirm.
+var _confirming := false
 
 
 func refresh() -> void:
@@ -38,9 +42,56 @@ func refresh() -> void:
 	card.custom_minimum_size.x = 760
 	card.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	card.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
-	var page := Ui.margin(card, 32, 24, 32, 24)
+	var page := Ui.margin(Ui.scroll(Ui.vbox([card, _save_card()], 20)), 32, 24, 32, 24)
 	page.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	add_child(page)
+
+
+## When the game was last saved, with buttons to save now and to start again.
+func _save_card() -> Control:
+	var rows := Ui.vbox([Ui.title("Saved game", 22)], 16)
+	if Game.save_path == "":
+		rows.add_child(Ui.wrap(Ui.text("Saving is switched off for this run.", 14, Ui.MUTED)))
+	else:
+		var saved := GameClock.new()
+		saved.minutes = Game.saved_at
+		rows.add_child(Ui.wrap(Ui.text("The game saves itself each time you finish a job and when you close it, and carries on from there next time. "
+			+ "Jobs still waiting in the queue aren't kept.", 14, Ui.MUTED)))
+		rows.add_child(Ui.text("Last saved: %s" % saved.label() if Game.saved_at >= 0.0 else "Not saved yet", 15, Ui.INK, 800))
+		if _confirming:
+			rows.add_child(Ui.panel(Ui.vbox([
+				Ui.wrap(Ui.text("Start again from nothing? Your printers, stock, cash and reviews will all be gone for good.", 14, Ui.RED_DARK, 800)),
+				Ui.hbox([
+					Ui.button("Yes, start again", _start_again, Ui.RED, Ui.WHITE, 44, 14, Ui.RED_DARK, 15),
+					Ui.button("Keep my business", _confirm.bind(false), Ui.SOFT, Ui.INK, 44, 14, Ui.CLEAR, 15),
+				], 12),
+			], 12), Ui.box(Ui.RED_SOFT, 16, 16, 14)))
+		else:
+			rows.add_child(Ui.hbox([
+				Ui.button("Save now", _save_now, SLATE, Ui.WHITE, 44, 14, CHOSEN_SHADOW, 15),
+				Ui.button("Start a new game", _confirm.bind(true), Ui.SOFT, Ui.INK, 44, 14, Ui.CLEAR, 15),
+			], 12))
+	var card := Ui.card(rows, 22, 24, SHADOW)
+	card.custom_minimum_size.x = 760
+	card.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	return card
+
+
+func _save_now() -> void:
+	var world: WorldSave = get_tree().get_first_node_in_group(&"world_save")
+	Game.notify("Game saved" if world.save_now() else "The game couldn't be saved")
+	screen.refresh()
+
+
+func _confirm(asking: bool) -> void:
+	_confirming = asking
+	screen.refresh()
+
+
+func _start_again() -> void:
+	Game.delete_save()
+	Game.new_game()
+	get_tree().reload_current_scene()
 
 
 ## One currency as a big button: symbol, name and a sample amount in its format.

@@ -146,3 +146,24 @@ func _items() -> Array[PrintedItem]:
 		if slot.get_child_count() > 0 and slot.get_child(0) is PrintedItem:
 			items.append(slot.get_child(0))
 	return items
+
+
+func save() -> Dictionary:
+	var stored: Array[Dictionary] = []
+	for slot in _slots:
+		if slot.get_child_count() == 0:
+			continue
+		var thing := slot.get_child(0)
+		var entry: Dictionary = thing.call(&"save")
+		entry["slot"] = slot.name
+		entry["kind"] = "spare" if thing is SparePart else "print"
+		stored.append(entry)
+	return {"slots": stored}
+
+
+func restore(data: Dictionary) -> void:
+	for entry: Dictionary in data["slots"]:
+		var slot: Node3D = find_child(entry["slot"], true, false)
+		var thing: Node3D = SparePart.restored(entry) if entry["kind"] == "spare" else PrintedItem.restored(entry)
+		if slot != null and thing != null and slot.get_child_count() == 0:
+			Interactable.attach(thing, slot)

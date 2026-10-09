@@ -45,3 +45,15 @@ func advance(delta: float) -> bool:
 		return false
 	elapsed = minf(elapsed + delta, duration * stop_at)
 	return is_finished()
+
+
+func save() -> Dictionary:
+	return {"duration": duration, "elapsed": elapsed, "failure": failure, "stop_at": stop_at}
+
+
+static func restored(data: Dictionary) -> PrintJob:
+	var job := PrintJob.new(float(data["duration"]))
+	job.elapsed = float(data["elapsed"])
+	job.failure = data["failure"]
+	job.stop_at = float(data["stop_at"])
+	return job

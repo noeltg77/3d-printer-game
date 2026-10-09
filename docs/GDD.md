@@ -268,7 +268,7 @@ Build small and prove each step before moving on: assets and garage first, then 
 
 ### Phase 5: Vertical slice polish
 
-- [ ] Save and load
+- [x] Save and load
 - [ ] UI polish, sound effects, music, lighting pass
 - [ ] Light onboarding hints for non printer owners
 - [ ] Balance pass on the garage tier

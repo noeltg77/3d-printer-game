@@ -50,6 +50,29 @@ class Order:
 	## Why it was refunded: "damaged" or "returned". Empty otherwise.
 	var refund_reason := ""
 
+	func save() -> Dictionary:
+		return {
+			"id": id, "product": product, "price": price, "placed_at": placed_at, "due_at": due_at,
+			"shipped_at": shipped_at, "deliver_at": deliver_at, "status": status, "durability": durability,
+			"quality": quality, "flawed": flawed, "refund_reason": refund_reason,
+		}
+
+	static func restored(data: Dictionary) -> Order:
+		var order := Order.new()
+		order.id = int(data["id"])
+		order.product = StringName(data["product"])
+		order.price = int(data["price"])
+		order.placed_at = float(data["placed_at"])
+		order.due_at = float(data["due_at"])
+		order.shipped_at = float(data["shipped_at"])
+		order.deliver_at = float(data["deliver_at"])
+		order.status = int(data["status"]) as Status
+		order.durability = int(data["durability"])
+		order.quality = int(data["quality"])
+		order.flawed = bool(data["flawed"])
+		order.refund_reason = String(data["refund_reason"])
+		return order
+
 
 ## Row from data/marketplaces.json.
 var config: Dictionary
@@ -253,3 +276,40 @@ func _review(order: Order, stars: int, kind: String, minute: float, rng: RandomN
 	}
 	reviews.append(review)
 	return review
+
+
+## The order with this id, or null.
+func order_by_id(id: int) -> Order:
+	for order in orders:
+		if order.id == id:
+			return order
+	return null
+
+
+func save() -> Dictionary:
+	return {
+		"listings": listings, "reviews": reviews, "next_id": _next_id,
+		"orders": orders.map(func(order: Order) -> Dictionary: return order.save()),
+	}
+
+
+## Puts back a saved shop. Listings, orders and reviews for designs the game
+## no longer has are dropped.
+func restore(data: Dictionary) -> void:
+	listings.clear()
+	orders.clear()
+	reviews.clear()
+	for product: String in data["listings"]:
+		if products.has(product):
+			var entry: Dictionary = data["listings"][product]
+			listings[StringName(product)] = {"listed": bool(entry["listed"]), "price": int(entry["price"]), "sold": int(entry["sold"])}
+	for entry: Dictionary in data["orders"]:
+		if products.has(entry["product"]):
+			orders.append(Order.restored(entry))
+	for entry: Dictionary in data["reviews"]:
+		if products.has(entry["product"]):
+			reviews.append({
+				"order": int(entry["order"]), "product": StringName(entry["product"]), "stars": int(entry["stars"]),
+				"minute": float(entry["minute"]), "text": String(entry["text"]),
+			})
+	_next_id = int(data["next_id"])

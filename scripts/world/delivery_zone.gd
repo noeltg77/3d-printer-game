@@ -7,6 +7,7 @@ const SPOTS := 3
 
 
 func _ready() -> void:
+	add_to_group(&"delivery_zone")
 	Game.delivery_arrived.connect(_on_delivery_arrived)
 
 
@@ -19,6 +20,24 @@ func _on_delivery_arrived(delivery: Supplier.Delivery) -> void:
 	var spot := 0
 	while spot < SPOTS - 1 and taken.has(spot):
 		spot += 1
+	_put_down(delivery, spot)
+
+
+func save() -> Dictionary:
+	var waiting: Array[Dictionary] = []
+	for box: DeliveryBox in get_tree().get_nodes_in_group(&"delivery_box"):
+		waiting.append({"spot": box.get_meta(&"spot", 0), "delivery": box.delivery.save()})
+	return {"boxes": waiting}
+
+
+func restore(data: Dictionary) -> void:
+	for entry: Dictionary in data["boxes"]:
+		var delivery := Supplier.Delivery.restored(entry["delivery"])
+		if delivery.printer == &"" or Game.data.printers.has(delivery.printer):
+			_put_down(delivery, int(entry["spot"]))
+
+
+func _put_down(delivery: Supplier.Delivery, spot: int) -> void:
 	var box := DeliveryBox.create(delivery)
 	box.set_meta(&"spot", spot)
 	get_parent().add_child(box)

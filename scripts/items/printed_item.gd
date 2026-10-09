@@ -47,3 +47,19 @@ func is_flawed() -> bool:
 func describe() -> String:
 	var title := Game.product_name(product)
 	return "%s (%s)" % [title, String(Game.data.failures[flaw]["name"]).to_lower()] if is_flawed() else title
+
+
+func save() -> Dictionary:
+	return {"product": product, "colour": colour, "preset": preset, "durability": durability, "quality": quality, "flaw": flaw}
+
+
+## Null if the design or preset is no longer in the game.
+static func restored(data: Dictionary) -> PrintedItem:
+	if not Game.data.products.has(data["product"]) or not Game.data.presets.has(data["preset"]):
+		return null
+	var item := PrintedItem.create(StringName(data["product"]), StringName(data["colour"]), StringName(data["preset"]))
+	item.durability = int(data["durability"])
+	item.quality = int(data["quality"])
+	if Game.data.failures.has(data["flaw"]):
+		item.flaw = StringName(data["flaw"])
+	return item

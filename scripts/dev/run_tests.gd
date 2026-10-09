@@ -15,6 +15,7 @@ func _init() -> void:
 	_test_marketplace()
 	_test_deliveries()
 	_test_supplier()
+	_test_saving()
 	print("Tests passed" if _failures == 0 else "%d test(s) FAILED" % _failures)
 	quit(1 if _failures > 0 else 0)
 
@@ -333,6 +334,83 @@ func _test_deliveries() -> void:
 	_check(is_equal_approx(market.rating(), 5.0), "only the most recent reviews count towards the rating")
 	_check(market.rating_multiplier() > 1.0 and market.orders_per_day(&"desk_organiser", 1200) > poor * 1.5, "a great rating brings the orders back, and a few more")
 	_check(market.rating_multiplier() <= float(market.config["max_rating_multiplier"]), "the boost from a great rating is capped")
+
+
+## What a save file does to state: written as JSON text and read back.
+func _through_file(state: Dictionary) -> Dictionary:
+	return JSON.parse_string(JSON.stringify(state))
+
+
+func _test_saving() -> void:
+	var data := GameData.load_all()
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 3
+
+	var clock := GameClock.new()
+	clock.minutes = 3456.5
+	var clock_again := GameClock.new()
+	clock_again.restore(_through_file(clock.save()))
+	_check(is_equal_approx(clock_again.minutes, 3456.5) and clock_again.label() == clock.label(), "the clock comes back at the same time")
+
+	var bank := Bank.new(30000)
+	bank.spend(1599, "Spoolhouse order", 10.0)
+	bank.earn(449, "Sale", 20.0)
+	var bank_again := Bank.new()
+	bank_again.restore(_through_file(bank.save()))
+	_check(bank_again.cash == bank.cash and bank_again.entries == bank.entries, "the bank comes back with its cash and every entry")
+	_check(typeof(bank_again.cash) == TYPE_INT and typeof(bank_again.entries[0]["amount"]) == TYPE_INT, "money is still whole pence after loading")
+
+	var market := Marketplace.new(data.marketplaces["craftsy"].duplicate(), data.products)
+	market.comments = data.review_comments
+	market.config["review_chance"] = 1.0
+	market.set_listing(&"cable_clips", true, 399)
+	for step in 2000:
+		market.tick(step, step + 1.0, rng)
+	var first := market.orders[0]
+	var second := market.orders[1]
+	market.mark_packed(first, 5, 3, false)
+	market.ship(first, 100.0, 200.0)
+	market.deliver(200.0, rng, data.settings["courier"])
+	market.mark_packed(second, 2, 1, true)
+	market.ship(second, 100.0, 9000.0)
+	var saved_market := _through_file(market.save())
+	saved_market["listings"]["gone_design"] = {"listed": true, "price": 100, "sold": 0}
+	var market_again := Marketplace.new(market.config, data.products)
+	market_again.restore(saved_market)
+	_check(market_again.listing(&"cable_clips") == market.listing(&"cable_clips"), "listings come back with their price and sales")
+	_check(not market_again.listings.has(&"gone_design"), "a listing for a design the game no longer has is dropped")
+	_check(market_again.orders.size() == market.orders.size() and market_again.open_orders().size() == market.open_orders().size(), "every order comes back in the state it was in")
+	var second_again := market_again.order_by_id(second.id)
+	_check(second_again.status == Marketplace.Status.SHIPPED and second_again.durability == 2 and second_again.flawed and is_equal_approx(second_again.deliver_at, 9000.0), "a parcel in the post comes back with what is inside it")
+	_check(market_again.reviews.size() == 1 and is_equal_approx(market_again.rating(), market.rating()), "reviews and the rating come back")
+	var next_before := market.tick(0.0, 1440.0 * 50.0, rng)
+	var next_after := market_again.tick(0.0, 1440.0 * 50.0, rng)
+	_check(not next_before.is_empty() and not next_after.is_empty() and next_after[0].id == next_before[0].id, "new orders carry on numbering from where they left off")
+	_check(market_again.deliver(9000.0, rng, data.settings["courier"]).size() == 1, "a loaded parcel is still delivered when its time comes")
+
+	var supplier := Supplier.new(data)
+	supplier.place({"printers": {"plodder_mini": 1}, "spools": {"red": 2}, "packaging": 1, "parts": {"brass_nozzle_0_4mm": 1}}, 50.0, "Printbay")
+	var supplier_again := Supplier.new(data)
+	supplier_again.restore(_through_file(supplier.save()))
+	_check(supplier_again.pending.size() == 2 and supplier_again.pending[0].describe() == supplier.pending[0].describe(), "deliveries on their way come back")
+	var due := supplier_again.collect_due(50.0 + 180.0)
+	_check(due.size() == 2 and due[0].parts[&"brass_nozzle_0_4mm"] == 3 and due[1].printer == &"plodder_mini" and due[0].shop == "Printbay", "and arrive with everything that was ordered")
+
+	var wear := PrinterWear.new(data.parts, data.printers["plodder_mini"], 4.0)
+	wear.apply(30.0, data.presets["standard"], data.filaments["pla"])
+	var saved_wear := _through_file(wear.save())
+	saved_wear["fitted"]["belts"] = "gone_part"
+	var wear_again := PrinterWear.new(data.parts, data.printers["plodder_mini"], 4.0)
+	wear_again.restore(saved_wear)
+	_check(is_equal_approx(wear_again.health[&"nozzle"], wear.health[&"nozzle"]) and wear_again.worst() == &"nozzle", "a printer's parts come back as worn as they were")
+	_check(wear_again.fitted[&"belts"] == &"gt2_timing_belt" and is_equal_approx(wear_again.health[&"belts"], 1.0), "a part the game no longer has is swapped for the standard one")
+
+	var job := PrintJob.new(120.0)
+	job.fail(data.failures["spaghetti"], 0.6)
+	job.advance(30.0)
+	var job_again := PrintJob.restored(_through_file(job.save()))
+	_check(is_equal_approx(job_again.progress, 0.25) and job_again.ruined, "a print in progress comes back part way through, still doomed")
+	_check(not job_again.advance(30.0) and job_again.advance(30.0) and is_equal_approx(job_again.progress, 0.6), "and fails at the same point it would have")
 
 
 func _test_supplier() -> void:

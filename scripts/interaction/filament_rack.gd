@@ -71,3 +71,20 @@ func spools() -> Array[Spool]:
 		if slot.get_child_count() > 0:
 			found.append(slot.get_child(0) as Spool)
 	return found
+
+
+func save() -> Dictionary:
+	var stored: Array[Dictionary] = []
+	for index in _slots.size():
+		if _slots[index].get_child_count() > 0:
+			var entry := (_slots[index].get_child(0) as Spool).save()
+			entry["slot"] = index
+			stored.append(entry)
+	return {"spools": stored}
+
+
+func restore(data: Dictionary) -> void:
+	for entry: Dictionary in data["spools"]:
+		var index := int(entry["slot"])
+		if index < _slots.size() and _slots[index].get_child_count() == 0:
+			Interactable.attach(Spool.restored(entry), _slots[index])

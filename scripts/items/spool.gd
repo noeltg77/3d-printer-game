@@ -30,3 +30,13 @@ func is_empty() -> bool:
 ## "Red PLA, 880 g"
 func describe() -> String:
 	return "%s %s, %d g" % [Palette.display_name(colour), String(material).to_upper(), roundi(grams)]
+
+
+func save() -> Dictionary:
+	return {"colour": colour, "material": material, "grams": grams}
+
+
+static func restored(data: Dictionary) -> Spool:
+	var spool := Spool.create(StringName(data["colour"]), float(data["grams"]))
+	spool.material = StringName(data["material"])
+	return spool

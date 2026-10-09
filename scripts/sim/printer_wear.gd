@@ -121,3 +121,16 @@ func flags() -> Array[StringName]:
 		if is_worn(slot):
 			found.append(StringName("worn_%s" % slot))
 	return found
+
+
+func save() -> Dictionary:
+	return {"fitted": fitted, "health": health}
+
+
+## Puts back saved parts and their health. A part the game no longer has keeps
+## the new one the printer came with.
+func restore(data: Dictionary) -> void:
+	for slot: String in data["fitted"]:
+		if parts.has(data["fitted"][slot]) and data["health"].has(slot):
+			fitted[StringName(slot)] = StringName(data["fitted"][slot])
+			health[StringName(slot)] = clampf(float(data["health"][slot]), 0.0, 1.0)

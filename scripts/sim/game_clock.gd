@@ -50,3 +50,11 @@ static func duration_label(game_minutes: float) -> String:
 	if total >= 60:
 		return "%dh" % (total / 60) if total % 60 == 0 else "%dh %02dm" % [total / 60, total % 60]
 	return "%dm" % total
+
+
+func save() -> Dictionary:
+	return {"minutes": minutes}
+
+
+func restore(data: Dictionary) -> void:
+	minutes = float(data["minutes"])

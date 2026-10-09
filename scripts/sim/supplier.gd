@@ -21,6 +21,21 @@ class Delivery:
 	## Spare parts, part id -> individual parts, not packs.
 	var parts: Dictionary[StringName, int] = {}
 
+	func save() -> Dictionary:
+		return {"arrive_at": arrive_at, "shop": shop, "printer": printer, "spools": spools, "packaging": packaging, "parts": parts}
+
+	static func restored(data: Dictionary) -> Delivery:
+		var delivery := Delivery.new()
+		delivery.arrive_at = float(data["arrive_at"])
+		delivery.shop = String(data["shop"])
+		delivery.printer = StringName(data["printer"])
+		for colour: String in data["spools"]:
+			delivery.spools.append(StringName(colour))
+		delivery.packaging = int(data["packaging"])
+		for part: String in data["parts"]:
+			delivery.parts[StringName(part)] = int(data["parts"][part])
+		return delivery
+
 	func describe() -> String:
 		if printer != &"":
 			return "Printer"
@@ -115,3 +130,13 @@ func collect_due(minute: float) -> Array[Delivery]:
 
 func _config() -> Dictionary:
 	return data.settings["supplier"]
+
+
+func save() -> Dictionary:
+	return {"pending": pending.map(func(delivery: Delivery) -> Dictionary: return delivery.save())}
+
+
+func restore(data: Dictionary) -> void:
+	pending.clear()
+	for entry: Dictionary in data["pending"]:
+		pending.append(Delivery.restored(entry))

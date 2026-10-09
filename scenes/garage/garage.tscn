@@ -1,4 +1,4 @@
-[gd_scene load_steps=33 format=3]
+[gd_scene load_steps=34 format=3]
 
 [ext_resource type="PackedScene" path="res://assets/models/garage/garage.glb" id="1_garage"]
 [ext_resource type="PackedScene" path="res://assets/models/furniture/workbench.glb" id="2_workbench"]
@@ -32,6 +32,7 @@
 [ext_resource type="PackedScene" path="res://assets/models/props/outbox_mat.glb" id="33_outbox_mat"]
 [ext_resource type="Script" path="res://scripts/ui/pc/pc_screen.gd" id="34_pc_screen"]
 [ext_resource type="Script" path="res://scripts/ui/print_dialog.gd" id="35_print_dialog"]
+[ext_resource type="Script" path="res://scripts/game/world_save.gd" id="36_world_save"]
 
 [sub_resource type="Environment" id="Environment_garage"]
 background_mode = 1
@@ -162,6 +163,9 @@ hud_path = NodePath("../Hud")
 [node name="Hud" type="CanvasLayer" parent="."]
 script = ExtResource("28_hud")
 agent_path = NodePath("../Player")
+
+[node name="WorldSave" type="Node" parent="."]
+script = ExtResource("36_world_save")
 
 [node name="PrintDialog" type="CanvasLayer" parent="."]
 script = ExtResource("35_print_dialog")

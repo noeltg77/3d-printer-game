@@ -27,6 +27,9 @@ func _play(steps: PackedStringArray) -> void:
 	await get_tree().create_timer(0.5).timeout
 	var agent: Agent = get_tree().get_first_node_in_group(&"player")
 	for step in steps:
+		# The scene may have been reloaded by the last step (starting a new game).
+		if not is_instance_valid(agent):
+			agent = get_tree().get_first_node_in_group(&"player")
 		# A character held at the PC has jobs queued but won't start them, so
 		# there is nothing to wait for.
 		if agent.is_busy() and not agent.held:
