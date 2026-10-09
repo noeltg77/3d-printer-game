@@ -43,15 +43,19 @@ Checking gameplay without clicking: the `DevAutoplay` autoload (`scripts/dev/dev
 
 ```
 godot --headless --path . --script res://scripts/dev/run_tests.gd    # unit tests for simulation classes
-godot --path . res://scenes/garage/garage.tscn -- --time-scale=2 "--autoplay=call>place_supplier_order({\"printers\":{\"plodder_mini\":1},\"spools\":{\"red\":1}});wait>80;Delivery: 1 spool>Unpack;Delivery: Printer>Unpack;Plodder Mini>Load filament>Red;Plodder Mini>Print>Cable;shot>tools/previews/play.png;quit"
+godot --path . res://scenes/garage/garage.tscn -- --time-scale=2 "--autoplay=call>place_supplier_order({\"printers\":{\"plodder_mini\":1},\"spools\":{\"red\":1}});wait>80;Delivery: 1 spool>Unpack;Delivery: Printer>Unpack;Plodder Mini>Load filament>Red;Plodder Mini>Print...;on>print_dialog>choose(\"cable_clips\",\"standard\");shot>tools/previews/play.png;quit"
 ```
+
+To see a particular failure, put `call>set(\"force_failure\",\"spaghetti\")` before the print step: the next print is certain to hit it.
 
 ## Gameplay architecture
 
 Control is semi-autonomous: the player clicks an object, picks from its action list, and the character does the whole task. Tasks queue.
 
 - `Interactable` (`scripts/interaction/`) is the base for anything clickable. Subclasses override `get_actions(agent)` to return `Action`s; each Action's `run` is a coroutine that drives the character. The script goes straight on the instanced model node in the scene, with `display_name` and `stand_offset` set there. It builds its own click collider from its meshes.
-- `Agent` (`scripts/character/agent.gd`, `scenes/characters/player.tscn`) owns the task queue. Task code is a plain sequence of awaits: `go_to()`, `reach(callable)`, `carry()`, `release()`, `sit()`. A task must re-check its preconditions when it starts, because the world may have changed while it was queued.
+- An Action with `immediate` set runs when picked instead of being queued. It is for opening a dialog (the printer's "Print..." opens `PrintDialog`, which then queues the real task).
+- A print's fate is decided when it starts: `Game.roll_print` uses `PrintRisk` (`scripts/sim/`) with `data/presets.json` and `data/failures.json`. A ruined print leaves a `FailedPrint` on the plate until the character clears it; a spoiled one finishes as a flawed `PrintedItem`.
+- `Agent` (`scripts/character/agent.gd`, `scenes/characters/player.tscn`) owns the task queue. Task code is a plain sequence of awaits: `go_to()`, `reach(callable)`, `work(game_minutes)`, `carry()`, `release()`, `sit()`. A task must re-check its preconditions when it starts, because the world may have changed while it was queued.
 - `InteractionController` handles hover, the popup menu and floor clicks. `Hud` shows the current task and queue.
 - `FloorGrid` is the navigation: an A* grid, with every node in the `obstacle` group blocking the cells under it. Add floor-standing furniture to that group. No baking.
 - Items are nodes that get reparented between slot markers, the character's `carry_socket` and printer mounts (`Spool`, `PrintedItem` in `scripts/items/`). Printed items use the tint material and take their filament's colour.

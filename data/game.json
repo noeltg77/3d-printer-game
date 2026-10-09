@@ -10,6 +10,7 @@
 	"business_name": "Garage Prints",
 	"electricity_pence_per_kwh": 30,
 	"courier_minute_of_day": 1020,
+	"default_preset": "standard",
 	"supplier": {
 		"filament_shop": "Spoolhouse",
 		"hardware_shop": "Printbay",

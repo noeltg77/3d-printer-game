@@ -1,0 +1,120 @@
+{
+	"schema_version": 1,
+	"failures": [
+		{
+			"id": "first_layer",
+			"name": "First layer failed",
+			"happens": "start",
+			"outcome": "scrap",
+			"weight": 14,
+			"causes": { "no_auto_level": 2.0, "draft_preset": 1.2 },
+			"clear_minutes": 2,
+			"visual": "noodles",
+			"fix": "Clean the plate and restart",
+			"player_text": "The first layer looks like a plate of noodles. Nothing else is going to stick to that."
+		},
+		{
+			"id": "bed_adhesion",
+			"name": "Print came loose",
+			"happens": "mid",
+			"outcome": "scrap",
+			"weight": 12,
+			"causes": { "tall_thin_part": 1.6, "large_part": 1.3 },
+			"clear_minutes": 4,
+			"visual": "toppled",
+			"fix": "Clear the bed and restart",
+			"player_text": "The print let go halfway and is now being pushed around like a hockey puck."
+		},
+		{
+			"id": "spaghetti",
+			"name": "Spaghetti monster",
+			"happens": "mid",
+			"outcome": "scrap",
+			"weight": 10,
+			"causes": {},
+			"clear_minutes": 8,
+			"visual": "spaghetti",
+			"fix": "Clear the mess and restart",
+			"player_text": "The printer has spent hours knitting a bird's nest. Silently. Lovingly."
+		},
+		{
+			"id": "clog",
+			"name": "Nozzle clog",
+			"happens": "mid",
+			"outcome": "stop",
+			"weight": 9,
+			"causes": {},
+			"clear_minutes": 15,
+			"visual": "stalled",
+			"fix": "Clear the nozzle with a cold pull",
+			"player_text": "The printer is very confidently printing nothing at all."
+		},
+		{
+			"id": "tangled_spool",
+			"name": "Tangled spool",
+			"happens": "mid",
+			"outcome": "stop",
+			"weight": 3,
+			"causes": {},
+			"clear_minutes": 6,
+			"visual": "stalled",
+			"fix": "Untangle the spool",
+			"player_text": "A knot formed somewhere deep in the spool. Nobody knows how. Nobody ever knows how."
+		},
+		{
+			"id": "warping",
+			"name": "Corners warped",
+			"happens": "mid",
+			"outcome": "degraded",
+			"weight": 10,
+			"causes": { "large_part": 1.6 },
+			"quality_loss": 1,
+			"fix": "Smaller parts warp less",
+			"player_text": "The corners have curled up. It still sort of works, if your customer doesn't own a ruler."
+		},
+		{
+			"id": "layer_shift",
+			"name": "Layer shift",
+			"happens": "mid",
+			"outcome": "degraded",
+			"weight": 6,
+			"causes": { "bedslinger_tall_part": 1.3 },
+			"quality_loss": 2,
+			"fix": "Tall prints on a bed slinger are the risky ones",
+			"player_text": "Halfway up, the whole print decided to move one centimetre to the left. Bold choice."
+		},
+		{
+			"id": "under_extrusion",
+			"name": "Under extrusion",
+			"happens": "mid",
+			"outcome": "degraded",
+			"weight": 9,
+			"causes": {},
+			"quality_loss": 2,
+			"fix": "Usually a sign the hotend wants attention",
+			"player_text": "Looks like it was printed by someone who was rationing plastic."
+		},
+		{
+			"id": "stringing",
+			"name": "Stringy mess",
+			"happens": "end",
+			"outcome": "degraded",
+			"weight": 12,
+			"causes": {},
+			"quality_loss": 1,
+			"fix": "Some filaments string more than others",
+			"player_text": "It's covered in fine little hairs. Seasonal for Halloween. Less so for a phone stand."
+		},
+		{
+			"id": "poor_surface",
+			"name": "Rough surface finish",
+			"happens": "end",
+			"outcome": "degraded",
+			"weight": 12,
+			"causes": { "draft_preset": 1.8 },
+			"quality_loss": 1,
+			"fix": "A finer preset gives a smoother finish",
+			"player_text": "It works, but it has the texture of a cheese grater."
+		}
+	]
+}

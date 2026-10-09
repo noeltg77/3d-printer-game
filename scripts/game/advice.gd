@@ -24,6 +24,8 @@ static func todo(tree: SceneTree) -> PackedStringArray:
 	for printer: PrinterStation in printers:
 		if printer.status == PrinterStation.Status.DONE:
 			lines.append("Collect the finished print")
+		if printer.status == PrinterStation.Status.FAILED:
+			lines.append("Sort out the failed print on the %s" % printer.display_name)
 		if printer.spool != null:
 			spools.append(printer.spool)
 	var spools_coming := Game.supplier.pending.any(func(d: Supplier.Delivery) -> bool: return not d.spools.is_empty())

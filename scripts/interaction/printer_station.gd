@@ -4,9 +4,12 @@ extends Interactable
 ## model's bed, gantry and toolhead while it prints. Offers the load, print,
 ## collect and unload tasks. Animation is written for the open frame model.
 ##
-## Prints never fail yet; that arrives in Phase 4.
+## A print's fate is rolled as it starts (Game.roll_print). One that is ruined
+## stops part way and leaves a FailedPrint on the plate, which has to be cleared
+## before the printer can be used again; one that is only spoiled finishes as a
+## flawed item.
 
-enum Status { IDLE, PRINTING, DONE }
+enum Status { IDLE, PRINTING, DONE, FAILED }
 
 const MODEL_PATH := "res://assets/models/printers/printer_%s.glb"
 ## How far the gantry drops from its parked height to put the nozzle on the plate.
@@ -18,7 +21,13 @@ var status := Status.IDLE
 var spool: Spool = null
 var job: PrintJob = null
 var item: PrintedItem = null
+## What a ruined print left on the plate, while status is FAILED.
+var scrap: FailedPrint = null
+## Preset of the print on the plate.
+var preset: StringName = &"standard"
 
+## Filament the current print was set to use.
+var _grams := 0.0
 var _time := 0.0
 var _spool_mount: Node3D
 var _plate: Node3D
@@ -59,13 +68,14 @@ func _process(delta: float) -> void:
 	var toolhead_target := _toolhead_rest
 	if status == Status.PRINTING:
 		_time += delta
-		if job.advance(delta):
-			_finish_print()
 		# The item grows from the plate while the nozzle rides just above it.
+		var ended := job.advance(delta)
 		item.scale.y = maxf(job.progress, 0.02)
 		gantry_target.y += item.height * job.progress - GANTRY_DROP
 		toolhead_target.x += sin(_time * 5.0) * 0.09 - 0.05
 		bed_target.z += sin(_time * 3.1) * 0.05
+		if ended:
+			_end_print()
 	var weight := 1.0 - exp(-10.0 * delta)
 	_bed.position = _bed.position.lerp(bed_target, weight)
 	_gantry.position = _gantry.position.lerp(gantry_target, weight)
@@ -79,8 +89,13 @@ func get_actions(_agent: Agent) -> Array[Action]:
 			return [Action.info("Printing %s: %d%%, %s left" % [Game.product_name(item.product), roundi(job.progress * 100.0), left])]
 		Status.DONE:
 			if _shelf().has_space():
-				return [Action.new("Collect %s" % Game.product_name(item.product), _collect)]
+				return [Action.new("Collect %s" % item.describe(), _collect)]
 			return [Action.info("Collect print (shelving is full)")]
+		Status.FAILED:
+			var failure := scrap.failure
+			var fix := Action.new("%s (%s)" % [failure["fix"], GameClock.duration_label(failure["clear_minutes"])], _clear)
+			fix.task_name = "Sort out the %s" % display_name
+			return [Action.info("%s: %s" % [failure["name"], Game.product_name(scrap.product)]), fix]
 	if spool == null:
 		return [_load_menu()]
 	return [Action.info("Loaded: %s" % spool.describe()), _print_menu(), Action.new("Unload filament", _unload)]
@@ -100,22 +115,36 @@ func _load_menu() -> Action:
 
 
 func _print_menu() -> Action:
-	var designs: Array[Action] = []
-	for product in Game.owned_designs:
-		var row: Dictionary = Game.data.products[product]
-		var label := "%s (%d g, %s)" % [row["name"], row["filament_grams"], GameClock.duration_label(print_minutes(product))]
-		var enough := spool.grams >= float(row["filament_grams"])
-		var action := Action.new(label if enough else label + ": not enough filament", _start.bind(product), enough)
-		action.task_name = "Print %s" % row["name"]
-		designs.append(action)
-	if designs.is_empty():
+	if Game.owned_designs.is_empty():
 		return Action.info("Print (no designs owned: buy one at the PC)")
-	return Action.submenu("Print", designs)
+	var action := Action.new("Print...", _open_print_dialog)
+	action.immediate = true
+	return action
 
 
-## Game minutes this printer takes to print a design.
-func print_minutes(product: StringName) -> float:
-	return float(Game.data.products[product]["print_minutes"]) / float(spec["speed_multiplier"])
+## The task of printing a design at a preset, as set up in the print dialog.
+func print_action(product: StringName, p_preset: StringName) -> Action:
+	return Action.new("Print %s" % Game.product_name(product), _start.bind(product, p_preset),
+		print_problem(product, p_preset) == "")
+
+
+## Why a design can't be printed here right now, or "" if it can.
+func print_problem(product: StringName, p_preset: StringName) -> String:
+	if spool == null:
+		return "No filament loaded"
+	if status != Status.IDLE:
+		return "The printer is busy"
+	if not Game.data.products[product]["allowed_filaments"].has(String(spool.material)):
+		return "This design can't be printed in %s" % String(spool.material).to_upper()
+	if spool.grams < Game.print_grams(product, p_preset):
+		return "Not enough filament on the spool"
+	return ""
+
+
+## Game minutes this printer takes to print a design at a preset.
+func print_minutes(product: StringName, p_preset: StringName) -> float:
+	return (float(Game.data.products[product]["print_minutes"]) * float(Game.data.presets[p_preset]["time_multiplier"])
+		/ float(spec["speed_multiplier"]))
 
 
 func load_spool(p_spool: Spool) -> void:
@@ -129,12 +158,17 @@ func unload_spool() -> Spool:
 	return removed
 
 
-func start_print(product: StringName) -> void:
-	spool.grams -= float(Game.data.products[product]["filament_grams"])
-	item = PrintedItem.create(product, spool.colour)
+func start_print(product: StringName, p_preset: StringName) -> void:
+	preset = p_preset
+	_grams = Game.print_grams(product, preset)
+	spool.grams -= _grams
+	item = PrintedItem.create(product, spool.colour, preset)
 	Interactable.attach(item, _plate)
 	item.scale.y = 0.02
-	job = PrintJob.new(GameClock.to_seconds(print_minutes(product)))
+	job = PrintJob.new(GameClock.to_seconds(print_minutes(product, preset)))
+	var fate := Game.roll_print(spec, preset, spool.material, product)
+	if not fate.is_empty():
+		job.fail(fate["failure"], fate["at"])
 	status = Status.PRINTING
 
 
@@ -146,10 +180,36 @@ func take_item() -> PrintedItem:
 	return taken
 
 
-func _finish_print() -> void:
-	status = Status.DONE
-	Game.charge_electricity(spec["power_watts"], print_minutes(item.product), Game.product_name(item.product))
-	Game.notify("%s finished printing: %s" % [display_name, Game.product_name(item.product)])
+## Hands over the ruined print, leaving the printer ready to use again.
+func take_scrap() -> FailedPrint:
+	var taken := scrap
+	scrap = null
+	job = null
+	status = Status.IDLE
+	Game.changed.emit()
+	return taken
+
+
+func _end_print() -> void:
+	var title := Game.product_name(item.product)
+	Game.charge_electricity(spec["power_watts"], print_minutes(item.product, preset) * job.progress, title)
+	if job.ruined:
+		# Filament the print never got to is still on the spool.
+		spool.grams += _grams * (1.0 - job.progress)
+		scrap = FailedPrint.create(item, job.failure)
+		Interactable.attach(scrap, _plate)
+		item = null
+		status = Status.FAILED
+		Game.notify("%s: %s. %s" % [display_name, job.failure["name"], job.failure["player_text"]])
+	elif not job.failure.is_empty():
+		item.spoil(job.failure)
+		status = Status.DONE
+		Game.notify("%s finished %s, but: %s. %s" % [
+			display_name, title, String(job.failure["name"]).to_lower(), job.failure["player_text"]])
+	else:
+		status = Status.DONE
+		Game.notify("%s finished printing: %s" % [display_name, title])
+	Game.changed.emit()
 
 
 # Tasks. Each checks it still makes sense when its turn comes, because the
@@ -185,12 +245,17 @@ func _unload(agent: Agent) -> void:
 	await agent.reach(func() -> void: rack.store(agent.release() as Spool))
 
 
-func _start(agent: Agent, product: StringName) -> void:
-	if spool == null or status != Status.IDLE or spool.grams < float(Game.data.products[product]["filament_grams"]):
+func _start(agent: Agent, product: StringName, p_preset: StringName) -> void:
+	if print_problem(product, p_preset) != "":
 		agent.say("The printer isn't ready to print that")
 		return
 	await agent.go_to(self)
-	await agent.reach(start_print.bind(product))
+	await agent.reach(start_print.bind(product, p_preset))
+
+
+## Not a task: opens the print set-up card, which queues the print itself.
+func _open_print_dialog(_agent: Agent) -> void:
+	(get_tree().get_first_node_in_group(&"print_dialog") as PrintDialog).open(self)
 
 
 func _collect(agent: Agent) -> void:
@@ -202,6 +267,18 @@ func _collect(agent: Agent) -> void:
 	await agent.reach(func() -> void: agent.carry(take_item()))
 	await agent.go_to(shelf)
 	await agent.reach(func() -> void: shelf.store(agent.release()))
+
+
+func _clear(agent: Agent) -> void:
+	if status != Status.FAILED:
+		agent.say("Nothing to sort out on the %s" % display_name)
+		return
+	await agent.go_to(self)
+	await agent.work(float(scrap.failure["clear_minutes"]))
+	await agent.reach(func() -> void: agent.carry(take_scrap()))
+	await agent.walk_to(get_tree().get_first_node_in_group(&"bin").global_position)
+	await agent.reach(func() -> void: agent.release().queue_free())
+	agent.say("Binned the failed print")
 
 
 func _rack() -> FilamentRack:

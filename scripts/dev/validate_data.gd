@@ -5,7 +5,8 @@ extends SceneTree
 
 func _init() -> void:
 	var data := GameData.load_all()
-	print("printers: %d, filaments: %d, products: %d" % [data.printers.size(), data.filaments.size(), data.products.size()])
+	print("printers: %d, filaments: %d, products: %d, presets: %d, failures: %d" % [
+		data.printers.size(), data.filaments.size(), data.products.size(), data.presets.size(), data.failures.size()])
 	for error in data.errors:
 		printerr("DATA ERROR: ", error)
 	if data.errors.is_empty():

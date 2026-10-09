@@ -130,7 +130,11 @@ func _printer_row(number: int, printer: PrinterStation) -> Control:
 		PrinterStation.Status.DONE:
 			status = "Needs you"
 			colour = Ui.RED
-			detail = "%s is finished. Collect it to free the printer." % Game.product_name(printer.item.product)
+			detail = "%s is finished. Collect it to free the printer." % printer.item.describe()
+		PrinterStation.Status.FAILED:
+			status = "Failed"
+			colour = Ui.RED
+			detail = "%s: %s. %s." % [Game.product_name(printer.scrap.product), printer.scrap.failure["name"], printer.scrap.failure["fix"]]
 	column.add_child(Ui.hbox([
 		Ui.text("Printer %d · %s" % [number, printer.display_name], 14, Ui.INK, 800), null,
 		Ui.text(status, 14, colour, 800),

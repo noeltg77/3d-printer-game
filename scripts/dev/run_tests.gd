@@ -7,6 +7,7 @@ var _failures := 0
 
 func _init() -> void:
 	_test_print_job()
+	_test_print_risk()
 	_test_clock()
 	_test_bank()
 	_test_money()
@@ -31,6 +32,76 @@ func _test_print_job() -> void:
 	_check(job.is_finished() and is_equal_approx(job.progress, 1.0), "a finished job is at full progress")
 	_check(not job.advance(1.0), "a finished job does not finish twice")
 	_check(is_equal_approx(job.progress, 1.0), "progress never goes past 1")
+	_check(not job.ruined, "a job with no failure is not ruined")
+
+	var scrapped := PrintJob.new(10.0)
+	scrapped.fail({"id": "spaghetti", "outcome": "scrap"}, 0.4)
+	_check(not scrapped.advance(3.0), "a doomed print runs normally until the failure strikes")
+	_check(scrapped.advance(3.0) and scrapped.is_finished(), "a ruined print ends when the failure strikes")
+	_check(scrapped.ruined and is_equal_approx(scrapped.progress, 0.4), "a ruined print stops at the point it failed")
+	_check(not scrapped.advance(5.0) and is_equal_approx(scrapped.elapsed, 4.0), "a ruined print does not carry on")
+
+	var spoiled := PrintJob.new(10.0)
+	spoiled.fail({"id": "warping", "outcome": "degraded"}, 0.4)
+	_check(not spoiled.advance(6.0), "a spoiled print keeps going past the point it went wrong")
+	_check(spoiled.advance(4.0) and not spoiled.ruined and is_equal_approx(spoiled.progress, 1.0), "a spoiled print runs to the end")
+
+
+func _test_print_risk() -> void:
+	var data := GameData.load_all()
+	var plodder: Dictionary = data.printers["plodder_mini"]
+	var zippy: Dictionary = data.printers["zippy_x1"]
+	var pla: Dictionary = data.filaments["pla"]
+	var clips: Dictionary = data.products["cable_clips"]
+	var dragon: Dictionary = data.products["flexi_dragon"]
+	var draft: Dictionary = data.presets["draft"]
+	var standard: Dictionary = data.presets["standard"]
+	var strong: Dictionary = data.presets["strong"]
+
+	var base := PrintRisk.fail_chance(plodder, standard, pla, clips)
+	_check(base > 0.02 and base < 0.08, "a simple PLA print on the starter printer fails a few times in a hundred (got %.3f)" % base)
+	_check(is_equal_approx(PrintRisk.fail_chance(plodder, draft, pla, clips), base * 1.5), "Draft is half as risky again as Standard")
+	_check(PrintRisk.fail_chance(plodder, strong, pla, clips) < base, "Strong is a little safer than Standard")
+	_check(PrintRisk.fail_chance(plodder, standard, pla, dragon) > base, "a harder design is riskier")
+	_check(PrintRisk.fail_chance(plodder, standard, data.filaments["petg"], clips) > base, "a fussier filament is riskier")
+	_check(PrintRisk.fail_chance(zippy, standard, pla, clips) < base * 0.5, "a more reliable printer clearly cuts the risk")
+	_check(is_equal_approx(PrintRisk.fail_chance(plodder, standard, pla, clips, 0.1), base + 0.1), "extra risk is added on top")
+	_check(is_equal_approx(PrintRisk.fail_chance(plodder, standard, pla, clips, 5.0), PrintRisk.MAX_CHANCE), "the chance is capped")
+	_check(PrintRisk.band(0.03) == "Low" and PrintRisk.band(0.08) == "Medium" and PrintRisk.band(0.2) == "High", "risk bands")
+
+	var flags := PrintRisk.conditions(plodder, draft, clips)
+	_check(flags.has(&"draft_preset") and flags.has(&"no_auto_level"), "conditions note the preset and the missing bed levelling")
+	_check(not PrintRisk.conditions(zippy, standard, clips).has(&"no_auto_level"), "a printer with bed levelling does not get that flag")
+	_check(PrintRisk.conditions(plodder, standard, dragon).has(&"large_part"), "a part that nearly fills the bed is large")
+	var tower := {"size_mm": [40, 40, 160]}
+	var tall := PrintRisk.conditions(plodder, standard, tower)
+	_check(tall.has(&"tall_thin_part") and tall.has(&"bedslinger_tall_part"), "a tower is tall and thin, and shaken by a bed slinger")
+	_check(not PrintRisk.conditions(zippy, standard, tower).has(&"bedslinger_tall_part"), "a core XY does not shake tall parts")
+
+	var first_layer: Dictionary = data.failures["first_layer"]
+	_check(is_equal_approx(PrintRisk.weight_of(first_layer, [], pla), first_layer["weight"]), "with no causes a failure has its plain weight")
+	_check(is_equal_approx(PrintRisk.weight_of(first_layer, flags, pla), float(first_layer["weight"]) * 2.0 * 1.2), "causes that apply multiply the weight")
+	var stringing: Dictionary = data.failures["stringing"]
+	_check(is_equal_approx(PrintRisk.weight_of(stringing, [], data.filaments["petg"]), float(stringing["weight"]) * 1.5), "a filament's own modifier multiplies the weight")
+
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 11
+	_check(PrintRisk.roll(0.0, data.failures, flags, pla, rng).is_empty(), "a print with no risk never fails")
+	var counts := {}
+	for attempt in 4000:
+		var fate := PrintRisk.roll(1.0, data.failures, [], pla, rng)
+		var failure: Dictionary = fate["failure"]
+		counts[failure["id"]] = counts.get(failure["id"], 0) + 1
+		var span: Array = PrintRisk.WHEN[failure["happens"]]
+		if fate["at"] < span[0] or fate["at"] > span[1]:
+			_check(false, "%s struck at %.2f, outside when it happens" % [failure["id"], fate["at"]])
+			break
+	_check(counts.size() == data.failures.size(), "every failure can happen")
+	_check(counts["first_layer"] > counts["tangled_spool"] * 2, "heavier failures happen more often")
+	var failed := 0
+	for attempt in 4000:
+		failed += 0 if PrintRisk.roll(0.25, data.failures, [], pla, rng).is_empty() else 1
+	_check(absi(failed - 1000) < 120, "prints fail about as often as their chance says (got %d of 4000)" % failed)
 
 
 func _test_clock() -> void:

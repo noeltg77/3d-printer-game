@@ -259,8 +259,8 @@ Build small and prove each step before moving on: assets and garage first, then 
 
 ### Phase 4: Things go wrong
 
-- [ ] Print presets (Draft / Standard / Strong) with risk meter
-- [ ] Print failures with visible results
+- [x] Print presets (Draft / Standard / Strong) with risk meter
+- [x] Print failures with visible results
 - [ ] Part wear, breakdowns, replacements, spares on shelves
 - [ ] Durability stat, delivery damage, returns, refunds, reviews, seller rating
 

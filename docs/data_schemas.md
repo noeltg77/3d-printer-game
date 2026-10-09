@@ -62,10 +62,11 @@ Display currencies, keyed by code. Not a table of rows with ids.
 | `nozzle_temp_c` | Minimum nozzle temperature needed |
 | `speed_multiplier` | Below 1.0 prints slower (TPU) |
 | `value_multiplier` | Sale price uplift for items in this material |
+| `ease_of_printing` | 1 (fussy) to 5 (easy). Scales the chance of a print failing by (6 - ease) / 3 |
 | `abrasive` | Speeds up nozzle wear, needs a hardened nozzle |
 | `moisture_sensitivity` | How fast badly stored spools absorb moisture (Phase 6) |
 | `requires` | `enclosure`, `hardened_nozzle`, `direct_drive` |
-| `failure_modifiers` | Multipliers per failure type, e.g. `{ "warping": 1.6 }` (Phase 4) |
+| `failure_modifiers` | Multipliers on the weight of a failure from `failures.json`, by its id, e.g. `{ "warping": 1.6 }` |
 | `colours` | Colours this filament is sold in |
 
 ## products.json
@@ -94,6 +95,41 @@ Display currencies, keyed by code. Not a table of rows with ids.
 | `price_sensitivity` | Demand is multiplied by (typical price / your price) to this power |
 | `max_demand_multiplier` | Cap on the boost from pricing below typical |
 
+## presets.json
+
+Print presets, offered in file order. Imported from `docs/design_data/presets.json` (the three Garage ones so far).
+
+| Field | Meaning |
+| --- | --- |
+| `description` | Shown on the preset's card in the print dialog |
+| `settings_hint` | The real slicer settings it stands for, shown as a tooltip |
+| `time_multiplier`, `filament_multiplier` | Applied to the product's `print_minutes` and `filament_grams` |
+| `failure_multiplier` | Applied to the chance of the print failing |
+| `wear_multiplier` | Applied to part wear from the print (used once parts wear) |
+| `durability` | 1 to 5, not 0 to 1. How well the item survives the post |
+| `quality` | 1 to 5, not 0 to 1. The finish, before any failure lowers it |
+
+`durability_labels`, beside the table, gives the sentence shown for each durability score.
+
+## failures.json
+
+Ways a print can go wrong. Imported from `docs/design_data/failures.json`: the FDM failures that don't depend on worn parts, upgrades or multicolour units, which come in as those systems do.
+
+The chance that a print fails at all is `(1 - printer reliability) x preset failure_multiplier x (6 - filament ease_of_printing) / 3 x (0.8 + 0.8 x product difficulty)`, capped at 85% (`PrintRisk.fail_chance`). If it does, one failure is picked by weight.
+
+| Field | Meaning |
+| --- | --- |
+| `happens` | `start` (first 5% of the print), `mid` (anywhere from 10% to 90%) or `end` (found on completion) |
+| `outcome` | `scrap`: the print stops and is binned. `stop`: the same, but the fix is to the printer rather than the bed. `degraded`: the print finishes as a flawed item |
+| `weight` | How often it is the failure picked, relative to the others |
+| `causes` | Condition flag to multiplier on `weight`. Flags so far: `draft_preset`, `no_auto_level`, `large_part`, `tall_thin_part`, `bedslinger_tall_part` (`PrintRisk.conditions`) |
+| `clear_minutes` | Scrap and stop only. Character time to put the printer right |
+| `visual` | Scrap and stop only. What is left on the plate: `noodles`, `toppled`, `spaghetti` or `stalled` |
+| `quality_loss` | Degraded only. Taken off the item's quality |
+| `fix`, `player_text` | The action offered on the printer, and the message when it happens |
+
+A ruined print only uses the filament and electricity up to the point it failed.
+
 ## game.json
 
 Starting conditions and global rates. Not a table of rows.
@@ -103,6 +139,7 @@ Starting conditions and global rates. Not a table of rows.
 | `start.cash_pence`, `start.packaging`, `start.designs`, `start.minute_of_day` | What a new game begins with |
 | `electricity_pence_per_kwh` | Charged when a print finishes, from the printer's `power_watts` and the print time |
 | `courier_minute_of_day` | When parcels in the outbox are collected and paid |
+| `default_preset` | The preset the print dialog opens on |
 | `bank_name`, `business_name` | Names shown on the PC |
 | `supplier` | The filament and hardware shop names, lead times in game minutes, and the packaging pack size and price |
 
@@ -110,4 +147,4 @@ One game day is 1440 game minutes and lasts 10 real minutes at 1x (`GameClock.MI
 
 ## Not drafted yet
 
-Parts and upgrades, print presets, contracts, staff and events. Each gets a table when its phase starts.
+Parts and upgrades, shipping, contracts, staff and events. Each gets a table when its phase starts.

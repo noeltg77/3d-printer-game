@@ -8,13 +8,22 @@ const TABLES := {
 	"filaments": "res://data/filaments.json",
 	"products": "res://data/products.json",
 	"marketplaces": "res://data/marketplaces.json",
+	"presets": "res://data/presets.json",
+	"failures": "res://data/failures.json",
 }
+const FAILURE_HAPPENS: PackedStringArray = ["start", "mid", "end"]
+const FAILURE_OUTCOMES: PackedStringArray = ["scrap", "stop", "degraded"]
 const SETTINGS := "res://data/game.json"
 
 var printers: Dictionary = {}
 var filaments: Dictionary = {}
 var products: Dictionary = {}
 var marketplaces: Dictionary = {}
+## Print presets, in the order they are offered.
+var presets: Dictionary = {}
+var failures: Dictionary = {}
+## What each durability score (1 to 5) means, keyed by the score as text.
+var durability_labels: Dictionary = {}
 ## Starting conditions and global rates (data/game.json).
 var settings: Dictionary = {}
 ## Problems found while loading. Empty when the data is valid.
@@ -30,6 +39,9 @@ static func load_all() -> GameData:
 		data.settings = settings
 	else:
 		data.errors.append("%s: expected an object" % SETTINGS)
+	var presets_file: Variant = JSON.parse_string(FileAccess.get_file_as_string(TABLES["presets"]))
+	if presets_file is Dictionary:
+		data.durability_labels = presets_file.get("durability_labels", {})
 	data._check_references()
 	return data
 
@@ -63,3 +75,12 @@ func _check_references() -> void:
 	for product_id: String in settings.get("start", {}).get("designs", []):
 		if not products.has(product_id):
 			errors.append("game.json: unknown starting design \"%s\"" % product_id)
+	if not presets.has(settings.get("default_preset", "")):
+		errors.append("game.json: unknown default_preset \"%s\"" % settings.get("default_preset", ""))
+	for failure: Dictionary in failures.values():
+		if not FAILURE_HAPPENS.has(failure.get("happens", "")):
+			errors.append("failure %s: happens must be one of %s" % [failure["id"], ", ".join(FAILURE_HAPPENS)])
+		if not FAILURE_OUTCOMES.has(failure.get("outcome", "")):
+			errors.append("failure %s: outcome must be one of %s" % [failure["id"], ", ".join(FAILURE_OUTCOMES)])
+		elif failure["outcome"] == "degraded" and failure["happens"] == "start":
+			errors.append("failure %s: a degraded print can't happen at the start" % failure["id"])

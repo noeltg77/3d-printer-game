@@ -124,6 +124,13 @@ func reach(at_peak := Callable()) -> void:
 	await get_tree().create_timer(CharacterRig.REACH_TIME / 2.0).timeout
 
 
+## Stays put, working with the hands, for a span of game minutes.
+func work(game_minutes: float) -> void:
+	var until := Game.clock.minutes + game_minutes
+	while Game.clock.minutes < until:
+		await reach()
+
+
 ## Takes hold of an item. Does nothing if given null.
 func carry(item: Node3D) -> void:
 	if item == null:

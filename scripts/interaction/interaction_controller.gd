@@ -114,4 +114,8 @@ func _style(menu: PopupMenu) -> void:
 
 
 func _on_action_chosen(id: int) -> void:
-	_agent.enqueue(_menu_actions[id])
+	var action := _menu_actions[id]
+	if action.immediate:
+		action.run.call(_agent)
+	else:
+		_agent.enqueue(action)
