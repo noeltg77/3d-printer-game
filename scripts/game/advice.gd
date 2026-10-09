@@ -59,6 +59,8 @@ static func items(tree: SceneTree) -> Array[Dictionary]:
 	var shelf: StorageShelf = tree.get_first_node_in_group(&"print_storage")
 	for box in (shelf.spares() if shelf != null else ([] as Array[SparePart])):
 		var kit: Dictionary = Game.data.upgrades.get(box.part, {})
+		if kit.get("fixture", "") == MouldingMachine.FIXTURE:
+			_add(found, "Install the moulding machine", "Click the marked bay on the factory floor and choose Install. Then order a mould for the design you want made by the hundred.")
 		if kit.get("fixture", "") == Conveyor.FIXTURE:
 			_add(found, "Fit the conveyor", "It carries prints from every printer with an auto-eject plate to the shelving. Click the control cabinet by the shelving and choose Fit.")
 		if kit.has("multicolour"):

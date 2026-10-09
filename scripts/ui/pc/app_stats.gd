@@ -32,6 +32,7 @@ func refresh() -> void:
 		_figure("Contracts finished", str(stats["contracts_done"])),
 		_figure("Biggest contract", "%d items" % stats["largest_contract"] if stats["largest_contract"] > 0 else "None yet"),
 		_figure("People taken on", str(stats["staff_hired"])),
+		_figure("Items moulded", str(stats["moulded_items"])),
 		_figure("Premises", Game.premises_row()["name"]),
 	], 10)
 	figures.custom_minimum_size.x = 420

@@ -48,6 +48,22 @@
 		"step": 0.2,
 		"extra_fail_per_step": 0.03
 	},
+	"moulding": {
+		"mould_fee_multiple": 200,
+		"mould_fee_min_pence": 79999,
+		"mould_days": 2,
+		"batch": 100,
+		"minutes_per_item": 0.5,
+		"setup_minutes": 10,
+		"pellet_pence_per_kg": 399,
+		"power_watts": 6000,
+		"output_capacity": 1000,
+		"quality": 4,
+		"durability": 5,
+		"sold_as_preset": "strong",
+		"sold_as_filament": "pla",
+		"colours": ["white", "ink", "red", "blue", "yellow", "green"]
+	},
 	"events": {
 		"unlock_tier": 2,
 		"days": [3.0, 6.0]

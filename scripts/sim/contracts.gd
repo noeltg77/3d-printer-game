@@ -234,6 +234,9 @@ func wants(contract: Contract, item: Dictionary) -> bool:
 		return false
 	if contract.colour != &"" and StringName(item["colour"]) != contract.colour:
 		return false
+	# A moulded part stands in for a printed one in any material.
+	if item.get("moulded", false):
+		return true
 	return data.filaments[item["material"]]["family"] == data.filaments[contract.material]["family"]
 
 

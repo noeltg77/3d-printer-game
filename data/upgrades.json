@@ -207,6 +207,20 @@
 			"failure_multipliers": {},
 			"time_multiplier": 1.0,
 			"wear_multiplier": 1.0
+		},
+		{
+			"id": "injection_moulding_machine",
+			"name": "Injection moulding machine",
+			"description": "The end of the road for printing something a thousand times. Pay for a mould of one design, and it turns pellets into copies in seconds, for pennies. It stands on the marked bay in the factory.",
+			"unlock_tier": 4,
+			"price_pence": 2499999,
+			"install_minutes": 480,
+			"fits_motion": [],
+			"fixture": "moulder",
+			"grants": [],
+			"failure_multipliers": {},
+			"time_multiplier": 1.0,
+			"wear_multiplier": 1.0
 		}
 	]
 }

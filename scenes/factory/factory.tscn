@@ -46,6 +46,9 @@
 [ext_resource type="PackedScene" path="res://assets/models/automation/control_box.glb" id="47_control_box"]
 [ext_resource type="PackedScene" path="res://assets/models/automation/conveyor.glb" id="48_conveyor"]
 [ext_resource type="Script" path="res://scripts/interaction/conveyor.gd" id="49_conveyor"]
+[ext_resource type="PackedScene" path="res://assets/models/automation/moulding_bay.glb" id="50_moulding_bay"]
+[ext_resource type="PackedScene" path="res://assets/models/automation/moulding_machine.glb" id="51_moulding_machine"]
+[ext_resource type="Script" path="res://scripts/interaction/moulding_machine.gd" id="52_moulding"]
 
 [sub_resource type="Environment" id="Environment_garage"]
 background_mode = 1
@@ -221,6 +224,13 @@ display_name = "Conveyor controls"
 stand_offset = Vector3(0, 0, 0.6)
 belt_scene = ExtResource("48_conveyor")
 belt_position = Vector3(0.8, 0, -1.2)
+
+[node name="MouldingBay" parent="." instance=ExtResource("50_moulding_bay")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.0, 0, 4.1)
+script = ExtResource("52_moulding")
+display_name = "Moulding bay"
+stand_offset = Vector3(0.6, 0, 1.15)
+machine_scene = ExtResource("51_moulding_machine")
 
 [node name="FloorBox1" parent="." groups=["obstacle"] instance=ExtResource("15_box_b")]
 transform = Transform3D(0.9659, 0, 0.2588, 0, 1, 0, -0.2588, 0, 0.9659, 8.3, 0, 5.3)

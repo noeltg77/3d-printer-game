@@ -752,6 +752,8 @@
 		{ "generator": "automation", "out": "assets/models/automation/eject_tray.glb", "args": { "variant": "eject_tray" } },
 		{ "generator": "automation", "out": "assets/models/automation/conveyor.glb", "args": { "variant": "conveyor", "length": 7.6, "height": 2.05, "ceiling": 3.6 } },
 		{ "generator": "automation", "out": "assets/models/automation/control_box.glb", "args": { "variant": "control_box" } },
+		{ "generator": "automation", "out": "assets/models/automation/moulding_bay.glb", "args": { "variant": "moulding_bay" } },
+		{ "generator": "automation", "out": "assets/models/automation/moulding_machine.glb", "args": { "variant": "moulding_machine" } },
 
 		{ "generator": "print_fails", "out": "assets/models/fails/spaghetti.glb", "args": { "variant": "spaghetti", "seed": 3 } },
 		{ "generator": "print_fails", "out": "assets/models/fails/noodles.glb", "args": { "variant": "noodles", "seed": 2 } }

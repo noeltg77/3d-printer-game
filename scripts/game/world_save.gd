@@ -22,6 +22,7 @@ const PARTS := {
 	"dryer": &"dryer_spot",
 	"shelf": &"print_storage",
 	"conveyor": &"conveyor",
+	"moulder": &"moulder",
 	"outbox": &"outbox",
 	"deliveries": &"delivery_zone",
 	"character": &"player",

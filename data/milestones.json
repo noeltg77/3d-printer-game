@@ -11,6 +11,7 @@
 		{ "id": "open_the_workshop", "name": "A proper workshop", "description": "Running a print farm from a rented workshop.", "stat": "tier", "at": 3 },
 		{ "id": "open_the_factory", "name": "The factory", "description": "Moved into an industrial unit.", "stat": "tier", "at": 4 },
 		{ "id": "ten_thousand_month", "name": "Ten thousand in a month", "description": "The business took {amount} in thirty days.", "stat": "best_month_pence", "at": 1000000 },
+		{ "id": "first_moulded_batch", "name": "Tooled up", "description": "The moulding machine has made its first hundred.", "stat": "moulded_items", "at": 100 },
 		{ "id": "thousand_unit_contract", "name": "A thousand of the same thing", "description": "Finished a contract for a thousand items.", "stat": "largest_contract", "at": 1000 }
 	]
 }

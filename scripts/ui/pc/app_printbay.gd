@@ -240,7 +240,7 @@ func _upgrades() -> Control:
 			fits = " and ".join(models)
 		var fixture: bool = upgrade.has("fixture")
 		if fixture:
-			fits = "the building, from the conveyor controls"
+			fits = "the building, once, where it is marked out"
 		var words := Ui.vbox([
 			Ui.text(upgrade["name"], 16, Ui.INK, 800),
 			Ui.wrap(Ui.text(upgrade["description"], 13, Ui.MUTED)),
@@ -257,12 +257,15 @@ func _upgrades() -> Control:
 		var state := Ui.pill("On the shelf: %d" % owned, Ui.GREEN_DARK, Ui.GREEN_SOFT) if owned > 0 else Ui.pill(
 			"Fitted to %d printer%s" % [fitted, "" if fitted == 1 else "s"] if fitted > 0 else "Not fitted", Ui.MUTED, TILE)
 		if fixture:
-			var conveyor: Conveyor = get_tree().get_first_node_in_group(&"conveyor")
-			if conveyor == null:
-				problem = "There is nowhere to hang it here"
-			elif conveyor.installed:
+			# The thing in the scene it goes on is in a group named after the fixture.
+			var place := get_tree().get_first_node_in_group(StringName(upgrade["fixture"]))
+			if place == null:
+				problem = "There is nowhere for it here"
+			elif place.get(&"installed"):
 				problem = "Already fitted"
 				state = Ui.pill("Fitted", Ui.GREEN_DARK, Ui.GREEN_SOFT)
+			elif owned > 0 and problem == "":
+				problem = "You have one waiting to be fitted"
 		var buy := _disabled_if(Ui.button("Buy", _buy.bind(order), BLUE, Ui.WHITE, 44, 14), problem != "")
 		buy.tooltip_text = problem
 		var cells: Array = [Ui.icon_tile("wrench", 52, 26, TILE, NAVY), words]

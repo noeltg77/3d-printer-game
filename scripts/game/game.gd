@@ -155,7 +155,7 @@ func new_game() -> void:
 	events = Events.new(data.events, data.settings["events"])
 	milestones = Milestones.new(data.milestones)
 	stats = {"sales": 0, "month": 0, "month_pence": 0, "best_month_pence": 0, "streak": 0, "best_streak": 0,
-		"contracts_done": 0, "largest_contract": 0, "staff_hired": 0}
+		"contracts_done": 0, "largest_contract": 0, "staff_hired": 0, "moulded_items": 0}
 	_stock_blocked.clear()
 	owned_designs.assign(start["designs"])
 	packaging = int(start["packaging"])

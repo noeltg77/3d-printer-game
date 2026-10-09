@@ -21,6 +21,7 @@ func _init() -> void:
 	_test_contracts()
 	_test_staff()
 	_test_events_and_milestones()
+	_test_moulding()
 	_test_clock()
 	_test_bank()
 	_test_money()
@@ -228,7 +229,7 @@ func _test_printer_mods() -> void:
 	_check(eject.apply(plodder)["auto_eject"] and int(eject.block("auto_eject")["tray"]) > 0, "and gives it a tray that holds a few prints")
 	_check(eject.problem(&"overhead_conveyor", plodder) != "" and eject.problem(&"overhead_conveyor", zippy) != "", "the conveyor goes on the building, never on a printer")
 	var fixtures := data.upgrades.values().filter(func(row: Dictionary) -> bool: return row.has("fixture"))
-	_check(fixtures.size() == 1 and int(fixtures[0]["unlock_tier"]) == 4, "there is one conveyor kit, for the factory")
+	_check(fixtures.size() == 2 and fixtures.all(func(row: Dictionary) -> bool: return int(row["unlock_tier"]) == 4), "the conveyor and the moulding machine are both for the factory")
 
 	var saved := _through_file(mods.save())
 	saved["fitted"].append("gone_upgrade")
@@ -934,9 +935,68 @@ func _test_events_and_milestones() -> void:
 	saved_milestones["reached"]["gone_milestone"] = 1.0
 	milestones_again.restore(saved_milestones)
 	_check(milestones_again.reached.size() == 4 and milestones_again.check(stats, 80.0).is_empty(), "milestones come back from a save and aren't reached twice")
-	var known := ["sales", "best_month_pence", "best_streak", "contracts_done", "largest_contract", "staff_hired", "tier"]
+	var known := ["sales", "best_month_pence", "best_streak", "contracts_done", "largest_contract", "staff_hired", "moulded_items", "tier"]
 	for row: Dictionary in data.milestones.values():
 		_check(known.has(row["stat"]) and float(row["at"]) > 0.0, "every milestone is judged on a figure the game keeps (%s)" % row["id"])
+
+
+func _test_moulding() -> void:
+	var data := GameData.load_all()
+	var rules: Dictionary = data.settings["moulding"]
+	var moulding := Moulding.new(data.products, rules)
+	var clips: StringName = &"cable_management_clips_x12"
+	_check(moulding.run_problem(clips, 0.0, 100) != "" and moulding.stored() == 0, "nothing can be moulded without a mould")
+	_check(moulding.mould_problem(clips) == "" and moulding.mould_problem(&"desk_nameplate") != "", "a mould can be made for a design in one colour, and not for one in several")
+	_check(moulding.mould_fee(clips) == maxi(roundi(float(data.products[clips]["base_price_pence"]) * float(rules["mould_fee_multiple"])), int(rules["mould_fee_min_pence"])) and moulding.mould_fee(clips) >= int(rules["mould_fee_min_pence"]), "a mould costs a multiple of what the design sells for, and never less than the least a mould can")
+	var dear: StringName = &"stackable_storage_bin"
+	_check(moulding.mould_fee(dear) == roundi(float(data.products[dear]["base_price_pence"]) * float(rules["mould_fee_multiple"])) and moulding.mould_fee(dear) > moulding.mould_fee(clips), "and a dearer design's costs more")
+	moulding.order_mould(clips, 100.0)
+	var ready_at := 100.0 + float(rules["mould_days"]) * GameClock.DAY
+	_check(moulding.mould_problem(clips) != "" and not moulding.mould_ready(clips, ready_at - 1.0) and moulding.mould_ready(clips, ready_at), "a mould takes the toolmaker some days, and is only ordered once")
+	_check(moulding.run_problem(clips, ready_at - 1.0, 100) != "" and moulding.run_problem(clips, ready_at, 100) == "", "then a batch can be run")
+	var grams := float(data.products[clips]["filament_grams"])
+	_check(moulding.run_cost(clips, 100) == roundi(grams * 100 / 1000.0 * float(rules["pellet_pence_per_kg"])), "a batch costs its weight in pellets")
+	var filament_cost := grams * 100 / 1000.0 * float(data.filaments["pla"]["price_pence_per_kg"])
+	_check(moulding.run_cost(clips, 100) < filament_cost * 0.5, "which is far less than the filament to print it")
+	_check(moulding.run_minutes(100) < float(data.products[clips]["print_minutes"]) * 100 * 0.2, "and it takes a fraction of the time")
+	_check(moulding.mould_fee(clips) > moulding.run_cost(clips, 1000), "the mould is the real cost: more than the pellets for a thousand")
+
+	moulding.start(clips, &"red", 100)
+	_check(moulding.run_problem(clips, ready_at, 100) != "", "the machine makes one batch at a time")
+	var half := moulding.advance(moulding.run_minutes(100) / 2.0)
+	var red := Moulding.key(clips, &"red")
+	_check(half == 50 and moulding.output[red] == 50 and not moulding.run.is_empty(), "half way through, half the batch is in the bin")
+	_check(moulding.advance(0.01) == 0, "nothing comes out between items")
+	var saved := _through_file(moulding.save())
+	var rest := moulding.advance(moulding.run_minutes(100))
+	_check(rest == 50 and moulding.output[red] == 100 and moulding.run.is_empty() and moulding.stored() == 100, "and the rest when it finishes, and no more")
+	saved["moulds"]["gone_design"] = 5.0
+	saved["output"]["gone_design:red"] = 9
+	var again := Moulding.new(data.products, rules)
+	again.restore(saved)
+	_check(again.moulds.size() == 1 and again.output == ({red: 50} as Dictionary[String, int]) and int(again.run["made"]) == 50, "a machine comes back from a save part way through its batch")
+	_check(again.advance(again.run_minutes(100)) == 50 and again.run.is_empty(), "and finishes it")
+
+	_check(moulding.take(red, 30) == 30 and moulding.output[red] == 70 and moulding.take(red, 500) == 70 and not moulding.output.has(red), "items come out of the bin as they are taken, and no more than are there")
+	moulding.output[red] = int(rules["output_capacity"]) - 50
+	_check(moulding.run_problem(clips, ready_at, 100) != "" and moulding.run_problem(clips, ready_at, 50) == "", "the machine won't overfill its bin")
+
+	var book := Contracts.new(data)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 3
+	var owned: Array[StringName] = [clips]
+	var job := book.offer(0.0, rng, owned, 4)
+	job.product = clips
+	job.material = &"petg"
+	job.colour = &"red"
+	job.min_quality = 3
+	job.min_durability = 5
+	book.accept(job, 0.0, 1020.0)
+	_check(book.wants(job, moulding.facts(red)), "a client takes a moulded part whatever material they asked for, if it is the right colour and good enough")
+	_check(not book.wants(job, moulding.facts(Moulding.key(clips, &"blue"))) and not book.wants(job, moulding.facts(Moulding.key(dear, &"red"))), "but not the wrong colour or the wrong thing")
+	for colour: String in rules["colours"]:
+		_check(Palette.colour(StringName(colour)) != Color.MAGENTA, "every pellet colour is in the palette (%s)" % colour)
+	_check(data.presets.has(rules["sold_as_preset"]) and data.filaments.has(rules["sold_as_filament"]), "moulded items are sold as a preset and filament the game has")
 
 
 func _test_clock() -> void:
