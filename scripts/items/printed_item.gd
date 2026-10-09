@@ -29,6 +29,8 @@ var quality := 3
 var flaw: StringName = &""
 ## Finished height in metres, for the printer's build-up animation.
 var height := 0.0
+## How much of the plate it covers, in metres: across and front to back.
+var footprint := Vector2.ZERO
 
 
 static func create(p_product: StringName, p_colours: Array[StringName], p_preset: StringName = &"standard",
@@ -45,7 +47,9 @@ static func create(p_product: StringName, p_colours: Array[StringName], p_preset
 	item.add_child(model)
 	for mesh: MeshInstance3D in item.find_children("*", "MeshInstance3D", true, false):
 		mesh.set_instance_shader_parameter(&"tint", Palette.colour(item.colours[mini(part_of(mesh.name), item.colours.size() - 1)]))
-		item.height = maxf(item.height, mesh.get_aabb().end.y)
+		var box := mesh.transform * mesh.get_aabb()
+		item.height = maxf(item.height, box.end.y)
+		item.footprint = item.footprint.max(Vector2(maxf(-box.position.x, box.end.x), maxf(-box.position.z, box.end.z)) * 2.0)
 	return item
 
 

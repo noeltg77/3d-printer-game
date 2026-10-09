@@ -135,7 +135,7 @@ Print presets, offered in file order. Imported from `docs/design_data/presets.js
 
 `durability_labels`, beside the table, gives the sentence shown for each durability score.
 
-`toggles`, also beside the table, holds print options that are on or off, by `id`. Imported from the design's `toggles`; only `multicolour` so far.
+`toggles`, also beside the table, holds print options, by `id`. Imported from the design's `toggles`: `multicolour` and `batch_plate` so far.
 
 | Field | Meaning |
 | --- | --- |
@@ -143,6 +143,8 @@ Print presets, offered in file order. Imported from `docs/design_data/presets.js
 | `off_name`, `off_description` | The same when it is off |
 | `off_price_multiplier` | A multicolour design printed in one colour sells for the listed price times this |
 | `off_star_penalty` | Stars such a print loses in its review (`Marketplace.plain_star_penalty`) |
+
+`batch_plate` is printing several copies at once. As many as fit on the bed can go on, all turned the same way and `gap_mm` apart (`PrintRisk.copies`), up to `max_copies`. A batch takes the copies' filament and `time_multiplier` of their time added up. It is rolled for once, so the copies fail or come out flawed together, and a multicolour unit changes colour the same number of times however many copies there are: the purged filament is shared.
 
 ## failures.json
 
@@ -185,11 +187,12 @@ Kits fitted to a printer for good. Imported from `docs/design_data/parts.json` (
 
 ### Multicolour units
 
-A unit is an upgrade with `grants: ["multicolour"]` (so a printer takes only one) and a `multicolour` block. Imported from `docs/design_data/accessories.json` (`multicolour_units`): the four slot Spare room units that fit a printer the game has. Linking units together, the five slot Kestrel unit and the Workshop and Factory units are not in yet. The printer has to be empty of filament to have one fitted.
+A unit is an upgrade with `grants: ["multicolour"]` (so a printer takes only one) and a `multicolour` block. Imported from `docs/design_data/accessories.json` (`multicolour_units`): the four slot Spare room units that fit a printer the game has. The five slot Kestrel unit and the Workshop and Factory units are not in yet. The printer has to be empty of filament to have its first unit fitted.
 
 | Field | Meaning |
 | --- | --- |
 | `slots` | Spools it holds. No more than the unit model has `spool_slot_*` markers |
+| `max_linked` | How many of this unit one printer can have, the first included. Each further one is the same kit bought again and fitted to the same printer; it stacks on the last and adds its slots. The design allows up to 4; 2 is the most there is height for on the bench |
 | `swap_seconds` | Real seconds a colour change takes, added to the print as game minutes |
 | `purge_grams_per_swap` | Filament thrown away on each colour change, before the extra for contrast |
 | `jam_chance_per_swap` | Added to the chance of the print failing, for each colour change. Against the game's `multicolour.reference_jam_chance` it also scales how often the failure is a jam |

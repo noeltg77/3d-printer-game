@@ -50,6 +50,14 @@
 			"off_description": "The whole thing in a single colour. No swaps and no waste, but it sells for less and buyers like it less.",
 			"off_price_multiplier": 0.7,
 			"off_star_penalty": 0.5
+		},
+		{
+			"id": "batch_plate",
+			"name": "Copies",
+			"description": "Print several at once. Quicker than one at a time, and a multicolour unit changes colour for all of them together, so each one wastes less. If the print fails, they all do.",
+			"time_multiplier": 0.85,
+			"max_copies": 6,
+			"gap_mm": 5
 		}
 	],
 	"durability_labels": {

@@ -35,6 +35,22 @@ static func fits(printer: Dictionary, product: Dictionary) -> bool:
 	return straight or turned
 
 
+## How many copies of a design fit on a printer's bed at once, `gap_mm` apart
+## and all turned the same way. 0 if it doesn't fit at all.
+static func copies(printer: Dictionary, product: Dictionary, gap_mm := 5.0) -> int:
+	if not fits(printer, product):
+		return 0
+	var size: Array = product["size_mm"]
+	var bed: Array = printer["build_volume_mm"]
+	var straight := _in_a_row(bed[0], size[0], gap_mm) * _in_a_row(bed[1], size[1], gap_mm)
+	var turned := _in_a_row(bed[0], size[1], gap_mm) * _in_a_row(bed[1], size[0], gap_mm)
+	return maxi(straight, turned)
+
+
+static func _in_a_row(bed: float, size: float, gap: float) -> int:
+	return floori((bed + gap) / (size + gap))
+
+
 ## Chance (0 to 1) that a print goes wrong in any way. `extra` is added on top
 ## for things outside the print itself, such as worn parts.
 static func fail_chance(printer: Dictionary, preset: Dictionary, filament: Dictionary, product: Dictionary, extra := 0.0) -> float:

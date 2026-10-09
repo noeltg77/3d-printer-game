@@ -242,6 +242,39 @@ func _test_multicolour() -> void:
 		if upgrade.has("multicolour"):
 			_check(not upgrade["fits_printers"].is_empty() and int(upgrade["multicolour"]["slots"]) <= 4, "every unit names its printers and fits the unit model's four slots (%s)" % upgrade["id"])
 
+	_check(mods.unit_count() == 1 and mods.unit_slots() == 4, "one unit, four slots")
+	var hub := PrinterMods.new(data.upgrades)
+	hub.fit(&"zippy_colourhub")
+	_check(hub.problem(&"zippy_colourhub", a1) == "", "a second unit of the same kind can be linked to the first")
+	hub.fit(&"zippy_colourhub")
+	_check(hub.unit_count() == 2 and hub.unit_slots() == 8 and hub.fitted.size() == 1, "two linked units hold eight spools")
+	_check(hub.problem(&"zippy_colourhub", a1) != "", "but no more than the unit allows")
+	hub.fit(&"zippy_colourhub")
+	_check(hub.unit_count() == 2, "and fitting past the limit does nothing")
+	_check(mods.problem(&"zippy_colourhub_lite", a1) != "", "a unit that can't be linked takes no second")
+	var hub_again := PrinterMods.new(data.upgrades)
+	hub_again.restore(_through_file(hub.save()))
+	_check(hub_again.unit_count() == 2, "linked units come back from a save")
+	hub_again.restore({"fitted": ["zippy_colourhub"]})
+	_check(hub_again.unit_count() == 1, "and a save from before linking has the one")
+	hub_again.restore({"fitted": ["auto_bed_levelling_kit"], "linked": 3})
+	_check(hub_again.unit_count() == 0 and hub_again.linked == 0, "nothing is linked without a unit")
+	for upgrade: Dictionary in data.upgrades.values():
+		if upgrade.has("multicolour"):
+			_check(int(upgrade["multicolour"]["max_linked"]) >= 1, "every unit says how many can be linked (%s)" % upgrade["id"])
+
+	var bed := {"build_volume_mm": [180, 180, 180]}
+	_check(PrintRisk.copies(bed, {"size_mm": [85, 85, 10]}) == 4, "four fit where two go each way with a gap between")
+	_check(PrintRisk.copies(bed, {"size_mm": [90, 90, 10]}) == 1, "but not without room for the gap")
+	_check(PrintRisk.copies(bed, {"size_mm": [150, 35, 50]}) == 4, "long thin things go side by side")
+	_check(PrintRisk.copies({"build_volume_mm": [200, 100, 100]}, {"size_mm": [95, 60, 10]}) == 3, "turned the other way if more fit like that")
+	_check(PrintRisk.copies(bed, {"size_mm": [200, 20, 10]}) == 0, "and none of something too big to print")
+	var batch: Dictionary = data.toggles["batch_plate"]
+	_check(float(batch["time_multiplier"]) < 1.0 and int(batch["max_copies"]) > 1, "a batch is quicker than one at a time")
+	var single := Multicolour.grams_by_colour(25.0, 2, Multicolour.purge_grams(lite, 2, [0.5, 0.5] as Array[float], rules), rules)
+	var four := Multicolour.grams_by_colour(25.0 * 4, 2, Multicolour.purge_grams(lite, 2, [0.5, 0.5] as Array[float], rules), rules)
+	_check(is_equal_approx(single[0] + single[1], 33.0) and is_equal_approx(four[0] + four[1], 108.0), "a batch of four shares one lot of colour changes: 27 g each against 33 g")
+
 	_check(Multicolour.colours_of({}) == 1 and Multicolour.colours_of(two) == 2, "a design is one colour unless it says otherwise")
 	_check(Multicolour.shares(1, rules) == ([1.0] as Array[float]), "one colour takes all the filament")
 	var three := Multicolour.shares(3, rules)

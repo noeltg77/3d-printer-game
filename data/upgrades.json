@@ -94,6 +94,7 @@
 			"wear_multiplier": 1.0,
 			"multicolour": {
 				"slots": 4,
+				"max_linked": 1,
 				"swap_seconds": 50,
 				"purge_grams_per_swap": 4.0,
 				"jam_chance_per_swap": 0.001,
@@ -106,7 +107,7 @@
 		{
 			"id": "zippy_colourhub",
 			"name": "Zippy ColourHub",
-			"description": "The classic four spool unit. Quicker swaps and less plastic thrown away on each one.",
+			"description": "The classic four spool unit. Quicker swaps and less plastic thrown away on each one. Stack a second on top for eight spools.",
 			"unlock_tier": 2,
 			"price_pence": 29899,
 			"install_minutes": 20,
@@ -118,6 +119,7 @@
 			"wear_multiplier": 1.0,
 			"multicolour": {
 				"slots": 4,
+				"max_linked": 2,
 				"swap_seconds": 40,
 				"purge_grams_per_swap": 3.5,
 				"jam_chance_per_swap": 0.0008,
@@ -142,6 +144,7 @@
 			"wear_multiplier": 1.0,
 			"multicolour": {
 				"slots": 4,
+				"max_linked": 2,
 				"swap_seconds": 35,
 				"purge_grams_per_swap": 3.0,
 				"jam_chance_per_swap": 0.0006,
@@ -166,6 +169,7 @@
 			"wear_multiplier": 1.0,
 			"multicolour": {
 				"slots": 4,
+				"max_linked": 2,
 				"swap_seconds": 65,
 				"purge_grams_per_swap": 5.0,
 				"jam_chance_per_swap": 0.0018,

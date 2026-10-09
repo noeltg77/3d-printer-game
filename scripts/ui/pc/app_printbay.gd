@@ -223,6 +223,7 @@ func _upgrades() -> Control:
 		var fitted := 0
 		var could_fit := 0
 		for station: PrinterStation in printers:
+			# A second multicolour unit can go on a printer that has one, so "fitted" and "could fit" overlap.
 			fitted += 1 if station.mods.has(StringName(upgrade_id)) else 0
 			could_fit += 1 if station.mods.problem(StringName(upgrade_id), station.spec) == "" else 0
 		var motions: PackedStringArray = []
@@ -242,7 +243,9 @@ func _upgrades() -> Control:
 		], 2)
 		if upgrade.has("multicolour"):
 			var unit: Dictionary = upgrade["multicolour"]
-			words.add_child(Ui.text("Holds %d spools · Throws away about %s g on each colour change%s" % [int(unit["slots"]),
+			var links := int(unit["max_linked"])
+			words.add_child(Ui.text("Holds %d spools%s · Throws away about %s g on each colour change%s" % [int(unit["slots"]),
+				"" if links <= 1 else ", or %d with %d linked" % [int(unit["slots"]) * links, links],
 				String.num(float(unit["purge_grams_per_swap"]), 1), " · Keeps its spools dry" if unit["keeps_dry"] else ""], 13, NAVY, 800))
 		words.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		var owned := shelf.spare_count(StringName(upgrade_id))

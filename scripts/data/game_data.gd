@@ -131,8 +131,9 @@ func _check_references() -> void:
 		for family: String in dryer.get("dries", []):
 			if not families.has(family):
 				errors.append("dryer %s: unknown filament family \"%s\"" % [dryer["id"], family])
-	if not toggles.has("multicolour"):
-		errors.append("presets.json: no \"multicolour\" toggle")
+	for toggle: String in ["multicolour", "batch_plate"]:
+		if not toggles.has(toggle):
+			errors.append("presets.json: no \"%s\" toggle" % toggle)
 	for product: Dictionary in products.values():
 		if int(product.get("colour_count", 1)) > 1 and int(product.get("colour_swaps", 0)) < 1:
 			errors.append("product %s: more than one colour but no colour_swaps" % product["id"])

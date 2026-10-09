@@ -17,6 +17,11 @@ extends Interactable
 ## upgrade with a `multicolour` block) puts the unit's model on the printer and
 ## gives it a slot per spool instead; a print then draws on one slot for each
 ## colour of the design, and wastes a little filament on every colour change.
+## A second unit of the same kind links to the first, stacked on it, for more slots.
+##
+## A print can be a batch: several copies of the design on the plate at once.
+## `item` is the first and `extras` the rest. They are shrunk to fit the plate
+## while they print, share one fate, and are collected together.
 
 enum Status { IDLE, PRINTING, DONE, FAILED }
 
@@ -26,6 +31,10 @@ const MODEL_PATH := "res://assets/models/printers/%s.glb"
 const CORE_XY_LIFT := 0.14
 ## How far the gantry drops from its parked height to put the nozzle on the plate.
 const GANTRY_DROP := 0.175
+## Width of the plate a batch is laid out on, in metres, and how much of each
+## copy's share of it the copy may fill.
+const PLATE_SIZE := 0.24
+const BATCH_FILL := 0.88
 
 ## Row from data/printers.json.
 var spec: Dictionary
@@ -42,6 +51,8 @@ var spool: Spool:
 		return null
 var job: PrintJob = null
 var item: PrintedItem = null
+## The other copies on the plate, when the print is a batch.
+var extras: Array[PrintedItem] = []
 ## What a ruined print left on the plate, while status is FAILED.
 var scrap: FailedPrint = null
 ## Preset of the print on the plate.
@@ -61,7 +72,10 @@ var _time := 0.0
 var _spool_mount: Node3D
 ## Where the spool in each entry of `spools` sits.
 var _mounts: Array[Node3D] = []
-var _unit_model: Node3D = null
+## The model of each multicolour unit fitted, the first at the bottom of the stack.
+var _unit_models: Array[Node3D] = []
+## How far the copies on the plate are shrunk so they all fit. 1 for a single print.
+var _plate_scale := 1.0
 var _plate: Node3D
 var _bed: Node3D
 var _gantry: Node3D
@@ -105,14 +119,15 @@ func _process(delta: float) -> void:
 		_time += delta
 		# The item grows from the plate while the nozzle rides just above it.
 		var ended := job.advance(delta)
-		item.scale.y = maxf(job.progress, 0.02)
+		_grow(job.progress)
+		var built := item.height * _plate_scale * job.progress
 		if spec["motion"] == "core_xy":
 			# The head stays up and darts about; the bed sinks as the print grows.
-			bed_target.y += CORE_XY_LIFT - item.height * job.progress
+			bed_target.y += CORE_XY_LIFT - built
 			toolhead_target.x += sin(_time * 5.0) * 0.09 - 0.05
 			toolhead_target.z += sin(_time * 3.7) * 0.07 + 0.03
 		else:
-			gantry_target.y += item.height * job.progress - GANTRY_DROP
+			gantry_target.y += built - GANTRY_DROP
 			toolhead_target.x += sin(_time * 5.0) * 0.09 - 0.05
 			bed_target.z += sin(_time * 3.1) * 0.05
 		if ended:
@@ -127,11 +142,11 @@ func get_actions(_agent: Agent) -> Array[Action]:
 	match status:
 		Status.PRINTING:
 			var left := GameClock.duration_label((job.duration - job.elapsed) * GameClock.MINUTES_PER_SECOND)
-			return [Action.info("Printing %s: %d%%, %s left" % [Game.product_name(item.product), roundi(job.progress * 100.0), left])]
+			return [Action.info("Printing %s: %d%%, %s left" % [_batch_title(Game.product_name(item.product)), roundi(job.progress * 100.0), left])]
 		Status.DONE:
-			if _shelf().has_space():
-				return [Action.new("Collect %s" % item.describe(), _collect)]
-			return [Action.info("Collect print (shelving is full)")]
+			if _shelf().free_slots() >= copies():
+				return [Action.new("Collect %s" % _batch_title(item.describe()), _collect)]
+			return [Action.info("Collect print (shelving is full)" if copies() == 1 else "Collect prints (the shelving needs %d free spaces)" % copies())]
 		Status.FAILED:
 			var failure := scrap.failure
 			var fix := Action.new("%s (%s)" % [failure["fix"], GameClock.duration_label(failure["clear_minutes"])], _clear)
@@ -152,6 +167,22 @@ func get_actions(_agent: Agent) -> Array[Action]:
 	actions.append(_parts_menu())
 	actions.append(_upgrades_menu())
 	return actions
+
+
+## How many copies are on the plate.
+func copies() -> int:
+	return 0 if item == null else 1 + extras.size()
+
+
+## "Coasters (x4)", or "3 x Coasters (x4)" for a batch.
+func _batch_title(title: String) -> String:
+	return title if copies() <= 1 else "%d x %s" % [copies(), title]
+
+
+## The most copies of a design this printer can print at once.
+func max_copies(product: StringName) -> int:
+	var toggle: Dictionary = Game.data.toggles["batch_plate"]
+	return clampi(PrintRisk.copies(spec, Game.data.products[product], float(toggle["gap_mm"])), 1, int(toggle["max_copies"]))
 
 
 func has_unit() -> bool:
@@ -240,13 +271,14 @@ func _parts_menu() -> Action:
 func _upgrades_menu() -> Action:
 	var lines: Array[Action] = []
 	for upgrade in mods.fitted:
-		lines.append(Action.info("Fitted: %s" % Game.data.upgrades[upgrade]["name"]))
+		var units := mods.unit_count() if Game.data.upgrades[upgrade].has("multicolour") else 1
+		lines.append(Action.info("Fitted: %s" % Game.data.upgrades[upgrade]["name"] + ("" if units == 1 else " x %d, linked" % units)))
 	for box in _shelf().spares():
 		if not Game.data.upgrades.has(box.part):
 			continue
 		var row: Dictionary = Game.data.upgrades[box.part]
 		var problem := upgrade_problem(box.part)
-		var label := "Fit %s (%s)" % [_kit_name(row), GameClock.duration_label(row["install_minutes"])]
+		var label := "%s %s (%s)" % ["Link another" if mods.has(box.part) else "Fit", _kit_name(row), GameClock.duration_label(row["install_minutes"])]
 		var action := Action.new(label if problem == "" else "%s: %s" % [row["name"], problem.to_lower()], _fit_upgrade.bind(box.part), problem == "")
 		action.task_name = "Fit the %s to the %s" % [_kit_name(row), display_name]
 		lines.append(action)
@@ -264,7 +296,8 @@ func _kit_name(row: Dictionary) -> String:
 ## Why a kit can't go on this printer right now, or "" if it can.
 func upgrade_problem(upgrade: StringName) -> String:
 	var problem := mods.problem(upgrade, spec)
-	if problem == "" and Game.data.upgrades[upgrade].has("multicolour") and spool != null:
+	# The first unit takes the place of the printer's own spool mount. One linked later only adds slots.
+	if problem == "" and Game.data.upgrades[upgrade].has("multicolour") and not has_unit() and spool != null:
 		return "Unload the filament first"
 	return problem
 
@@ -279,10 +312,11 @@ func health_label(slot: StringName) -> String:
 
 ## The task of printing a design at a preset, as set up in the print dialog.
 ## `slots` are the spools to print it from, one per colour; left empty, the
-## printer picks (default_slots).
-func print_action(product: StringName, p_preset: StringName, slots: Array[int] = []) -> Action:
-	return Action.new("Print %s" % Game.product_name(product), _start.bind(product, p_preset, slots),
-		print_problem(product, p_preset, slots) == "")
+## printer picks (default_slots). `count` is how many copies to print at once.
+func print_action(product: StringName, p_preset: StringName, slots: Array[int] = [], count := 1) -> Action:
+	var title := Game.product_name(product)
+	return Action.new("Print %s" % (title if count == 1 else "%d x %s" % [count, title]), _start.bind(product, p_preset, slots, count),
+		print_problem(product, p_preset, slots, count) == "")
 
 
 ## The slots to print a design from when the player hasn't said: a spool for
@@ -305,7 +339,11 @@ func default_slots(product: StringName) -> Array[int]:
 ## the default ones): { slots, material, swaps, purged, grams, minutes }. `grams`
 ## is what each slot gives up, `purged` the part of that wasted on colour
 ## changes. {} if any of the slots has no spool in it.
-func print_plan(product: StringName, p_preset: StringName, slots: Array[int] = []) -> Dictionary:
+##
+## `count` copies at once take that many times the filament and, past the
+## first, a little less than that many times as long. The colour changes are
+## the same however many there are, which is what makes a batch waste less.
+func print_plan(product: StringName, p_preset: StringName, slots: Array[int] = [], count := 1) -> Dictionary:
 	if slots.is_empty():
 		slots = default_slots(product)
 	if slots.is_empty() or slots.any(func(slot: int) -> bool: return slot < 0 or slot >= spools.size() or spools[slot] == null):
@@ -320,14 +358,15 @@ func print_plan(product: StringName, p_preset: StringName, slots: Array[int] = [
 	var purged := Multicolour.purge_grams(mods.unit(), changes, lightness, rules)
 	return {
 		"slots": slots, "material": material, "swaps": changes, "purged": purged,
-		"grams": Multicolour.grams_by_colour(Game.print_grams(product, p_preset), slots.size(), purged, rules),
-		"minutes": _base_minutes(product, p_preset, float(Game.data.filaments[material]["speed_multiplier"]))
+		"grams": Multicolour.grams_by_colour(Game.print_grams(product, p_preset) * count, slots.size(), purged, rules),
+		"minutes": _base_minutes(product, p_preset, float(Game.data.filaments[material]["speed_multiplier"])) * count
+			* (float(Game.data.toggles["batch_plate"]["time_multiplier"]) if count > 1 else 1.0)
 			+ Multicolour.swap_minutes(mods.unit(), changes),
 	}
 
 
 ## Why a design can't be printed here right now, or "" if it can.
-func print_problem(product: StringName, p_preset: StringName, slots: Array[int] = []) -> String:
+func print_problem(product: StringName, p_preset: StringName, slots: Array[int] = [], count := 1) -> String:
 	if spool == null:
 		return "No filament loaded"
 	if status != Status.IDLE:
@@ -337,7 +376,9 @@ func print_problem(product: StringName, p_preset: StringName, slots: Array[int] 
 	var row: Dictionary = Game.data.products[product]
 	if not PrintRisk.fits(spec, row):
 		return "Too big for this printer"
-	var plan := print_plan(product, p_preset, slots)
+	if count > max_copies(product):
+		return "Only %d fit on the plate at once" % max_copies(product)
+	var plan := print_plan(product, p_preset, slots, count)
 	if plan.is_empty():
 		return "Pick a loaded spool for each colour"
 	var used: Array[int] = plan["slots"]
@@ -361,8 +402,8 @@ func print_problem(product: StringName, p_preset: StringName, slots: Array[int] 
 
 ## Game minutes this printer takes to print a design at a preset, in the
 ## filament that is loaded (some print slower than others), colour changes included.
-func print_minutes(product: StringName, p_preset: StringName, slots: Array[int] = []) -> float:
-	var plan := print_plan(product, p_preset, slots)
+func print_minutes(product: StringName, p_preset: StringName, slots: Array[int] = [], count := 1) -> float:
+	var plan := print_plan(product, p_preset, slots, count)
 	return float(plan["minutes"]) if not plan.is_empty() else _base_minutes(product, p_preset, 1.0)
 
 
@@ -389,8 +430,8 @@ func unload_spool(slot: int) -> Spool:
 	return removed
 
 
-func start_print(product: StringName, p_preset: StringName, slots: Array[int] = []) -> void:
-	var plan := print_plan(product, p_preset, slots)
+func start_print(product: StringName, p_preset: StringName, slots: Array[int] = [], count := 1) -> void:
+	var plan := print_plan(product, p_preset, slots, count)
 	preset = p_preset
 	_slots_used.assign(plan["slots"])
 	_grams_used.assign(plan["grams"])
@@ -404,8 +445,11 @@ func start_print(product: StringName, p_preset: StringName, slots: Array[int] = 
 		moisture = maxf(moisture, loaded.moisture)
 	var material: StringName = plan["material"]
 	item = PrintedItem.create(product, colours, preset, material)
-	Interactable.attach(item, _plate)
-	item.scale.y = 0.02
+	extras.clear()
+	for copy in count - 1:
+		extras.append(PrintedItem.create(product, colours, preset, material))
+	_lay_out()
+	_grow(0.0)
 	job = PrintJob.new(GameClock.to_seconds(_minutes))
 	var fate := Game.roll_print(spec, preset, material, product, wear, mods, moisture, int(plan["swaps"]))
 	if not fate.is_empty():
@@ -417,12 +461,51 @@ func start_print(product: StringName, p_preset: StringName, slots: Array[int] = 
 	status = Status.PRINTING
 
 
-func take_item() -> PrintedItem:
-	var taken := item
+## Hands over everything on the plate, leaving the printer free.
+func take_items() -> Array[PrintedItem]:
+	var taken := _on_plate()
 	item = null
+	extras.clear()
 	job = null
 	status = Status.IDLE
 	return taken
+
+
+## Every copy on the plate, the first one first.
+func _on_plate() -> Array[PrintedItem]:
+	var found: Array[PrintedItem] = [item]
+	found.append_array(extras)
+	return found
+
+
+## Puts the copies on the plate. One sits in the middle at full size; a batch
+## goes in a grid, shrunk as far as it takes for them all to fit.
+func _lay_out() -> void:
+	var on_plate := _on_plate()
+	var count := on_plate.size()
+	var columns := 1
+	_plate_scale = 1.0
+	if count > 1:
+		var size := item.footprint.max(Vector2.ONE * 0.01)
+		var best := 0.0
+		for across in range(1, count + 1):
+			var deep := ceili(float(count) / across)
+			var fit := minf(PLATE_SIZE / across / size.x, PLATE_SIZE / deep / size.y) * BATCH_FILL
+			if fit > best:
+				best = fit
+				columns = across
+		_plate_scale = minf(best, 1.0)
+	var rows := ceili(float(count) / columns)
+	for index in count:
+		Interactable.attach(on_plate[index], _plate)
+		on_plate[index].position = Vector3(((index % columns) - (columns - 1) / 2.0) * PLATE_SIZE / columns, 0.0,
+			(floori(float(index) / columns) - (rows - 1) / 2.0) * PLATE_SIZE / rows) if count > 1 else Vector3.ZERO
+
+
+## Shows every copy at the height the print has reached (0 to 1).
+func _grow(progress: float) -> void:
+	for copy in _on_plate():
+		copy.scale = Vector3(_plate_scale, _plate_scale * maxf(progress, 0.02), _plate_scale)
 
 
 ## Hands over the ruined print, leaving the printer ready to use again.
@@ -446,7 +529,7 @@ func _breakdown(slot: StringName) -> Dictionary:
 
 
 func _end_print() -> void:
-	var title := Game.product_name(item.product)
+	var title := _batch_title(Game.product_name(item.product))
 	var minutes_run := _minutes * job.progress
 	Game.charge_electricity(spec["power_watts"], minutes_run, title)
 	wear.apply(minutes_run / 60.0, Game.data.presets[preset], Game.data.filaments[item.material])
@@ -463,13 +546,18 @@ func _end_print() -> void:
 		# Filament the print never got to is still on the spools.
 		for index in _slots_used.size():
 			spools[_slots_used[index]].grams += _grams_used[index] * (1.0 - job.progress)
+		# A batch fails as one: the mess is shown around the first copy.
+		for copy in extras:
+			copy.queue_free()
+		extras.clear()
 		scrap = FailedPrint.create(item, job.failure)
 		Interactable.attach(scrap, _plate)
 		item = null
 		status = Status.FAILED
 		Game.notify("%s: %s. %s" % [display_name, job.failure["name"], job.failure["player_text"]], &"bad")
 	elif not job.failure.is_empty():
-		item.spoil(job.failure)
+		for copy in _on_plate():
+			copy.spoil(job.failure)
 		status = Status.DONE
 		Game.notify("%s finished %s, but: %s. %s" % [
 			display_name, title, String(job.failure["name"]).to_lower(), job.failure["player_text"]], &"bad")
@@ -512,12 +600,12 @@ func _unload(agent: Agent, slot: int) -> void:
 	await agent.reach(func() -> void: rack.store(agent.release() as Spool))
 
 
-func _start(agent: Agent, product: StringName, p_preset: StringName, slots: Array[int]) -> void:
-	if print_problem(product, p_preset, slots) != "":
+func _start(agent: Agent, product: StringName, p_preset: StringName, slots: Array[int], count: int) -> void:
+	if print_problem(product, p_preset, slots, count) != "":
 		agent.say("The printer isn't ready to print that")
 		return
 	await agent.go_to(self)
-	await agent.reach(start_print.bind(product, p_preset, slots))
+	await agent.reach(start_print.bind(product, p_preset, slots, count))
 
 
 ## Not a task: opens the print set-up card, which queues the print itself.
@@ -527,13 +615,26 @@ func _open_print_dialog(_agent: Agent) -> void:
 
 func _collect(agent: Agent) -> void:
 	var shelf := _shelf()
-	if status != Status.DONE or not shelf.has_space():
-		agent.say("Nothing to collect")
+	if status != Status.DONE or shelf.free_slots() < copies():
+		agent.say("Nothing to collect" if status != Status.DONE else "Not enough room on the shelving")
 		return
 	await agent.go_to(self)
-	await agent.reach(func() -> void: agent.carry(take_item()))
+	await agent.reach(func() -> void:
+		# The rest of a batch rides along out of sight, inside the first.
+		var taken := take_items()
+		agent.carry(taken[0])
+		for copy: PrintedItem in taken.slice(1):
+			Interactable.attach(copy, taken[0])
+			copy.visible = false)
 	await agent.go_to(shelf)
-	await agent.reach(func() -> void: shelf.store(agent.release()))
+	await agent.reach(func() -> void:
+		var first := agent.release()
+		for child in first.get_children():
+			var copy := child as PrintedItem
+			if copy != null:
+				copy.visible = true
+				shelf.store(copy)
+		shelf.store(first))
 
 
 func _clear(agent: Agent) -> void:
@@ -587,21 +688,30 @@ func _fit_upgrade(agent: Agent, upgrade: StringName) -> void:
 	agent.say("Fitted the %s" % _kit_name(Game.data.upgrades[upgrade]))
 
 
-## Sets up the multicolour unit among the upgrades, if there is one and it
-## isn't up already: its model on the printer, a slot for each spool in place of
-## the printer's own mount, and its wear parts alongside the printer's.
+## Sets up the multicolour units among the upgrades that aren't up already.
+## The first goes on the printer's `unit_mount` and takes over from the
+## printer's own spool mount, which has to be empty; each one linked after it
+## stacks on the `link_mount` of the one below and adds its slots. The units'
+## wear parts go in alongside the printer's.
 func _mount_unit() -> void:
 	var unit := mods.unit()
-	if unit.is_empty() or _unit_model != null:
+	if unit.is_empty() or _unit_models.size() >= mods.unit_count():
 		return
-	_unit_model = (load(GameData.UNIT_MODEL % unit["model"]) as PackedScene).instantiate()
-	var mount: Node3D = find_child("unit_mount", true, false)
-	(mount if mount != null else _spool_mount).add_child(_unit_model)
-	_mounts.assign(_unit_model.find_children("spool_slot_*", "Node3D", true, false))
-	_mounts.sort_custom(func(a: Node3D, b: Node3D) -> bool: return String(a.name).naturalnocasecmp_to(b.name) < 0)
-	_mounts.resize(mini(int(unit["slots"]), _mounts.size()))
-	spools.clear()
-	spools.resize(_mounts.size())
+	while _unit_models.size() < mods.unit_count():
+		var model: Node3D = (load(GameData.UNIT_MODEL % unit["model"]) as PackedScene).instantiate()
+		var mount: Node3D = find_child("unit_mount", true, false) if _unit_models.is_empty() \
+			else _unit_models[-1].find_child("link_mount", true, false)
+		(mount if mount != null else _spool_mount).add_child(model)
+		var slots: Array[Node3D] = []
+		slots.assign(model.find_children("spool_slot_*", "Node3D", true, false))
+		slots.sort_custom(func(a: Node3D, b: Node3D) -> bool: return String(a.name).naturalnocasecmp_to(b.name) < 0)
+		slots.resize(mini(int(unit["slots"]), slots.size()))
+		if _unit_models.is_empty():
+			_mounts.clear()
+			spools.clear()
+		_mounts.append_array(slots)
+		spools.resize(_mounts.size())
+		_unit_models.append(model)
 	for part_id: String in unit["parts"]:
 		var slot := StringName(Game.data.parts[part_id]["slot"])
 		if not wear.fitted.has(slot):
@@ -628,6 +738,7 @@ func save() -> Dictionary:
 		state["job"] = job.save()
 	if item != null:
 		state["item"] = item.save()
+		state["copies"] = copies()
 	if scrap != null:
 		state["scrap"] = {"failure": scrap.failure, "item": scrap.item.save()}
 	return state
@@ -663,11 +774,15 @@ func restore(state: Dictionary) -> void:
 	if _minutes <= 0.0:
 		_minutes = print_minutes(on_plate.product, preset, _slots_used)
 	job = PrintJob.restored(state["job"])
-	Interactable.attach(on_plate, _plate)
-	on_plate.scale.y = maxf(job.progress, 0.02)
 	if saved_status == Status.FAILED:
+		Interactable.attach(on_plate, _plate)
+		on_plate.scale.y = maxf(job.progress, 0.02)
 		scrap = FailedPrint.create(on_plate, state["scrap"]["failure"])
 		Interactable.attach(scrap, _plate)
 	else:
 		item = on_plate
+		for copy in int(state.get("copies", 1)) - 1:
+			extras.append(PrintedItem.restored(state["item"]))
+		_lay_out()
+		_grow(job.progress)
 	status = saved_status
