@@ -1,7 +1,8 @@
 class_name Outbox
 extends Interactable
 ## The spot by the door where packed parcels wait. The courier takes everything
-## here once a day, which is when each sale is paid.
+## here once a day, which is when each sale is paid and each crate for a
+## contract counts as delivered.
 
 ## Parcels sit in a 2 x 2 grid and stack upwards.
 const GRID := 0.3
@@ -33,16 +34,25 @@ func _on_courier_arrived() -> void:
 	if _parcels.is_empty():
 		return
 	var total := 0
+	var sold := 0
 	for parcel in _parcels:
-		total += parcel.order.price
-		Game.complete_sale(parcel.order)
+		if parcel.contract > 0:
+			Game.ship_contract(parcel.contract, parcel.count)
+		else:
+			total += parcel.order.price
+			sold += 1
+			Game.complete_sale(parcel.order)
 		parcel.queue_free()
-	Game.notify("Courier collected %d parcel%s: %s in sales" % [_parcels.size(), "" if _parcels.size() == 1 else "s", Money.format(total)], &"good")
+	if sold > 0:
+		Game.notify("Courier collected %d parcel%s: %s in sales" % [sold, "" if sold == 1 else "s", Money.format(total)], &"good")
 	_parcels.clear()
 
 
 func save() -> Dictionary:
-	return {"parcels": _parcels.map(func(parcel: Parcel) -> Dictionary: return {"market": parcel.order.market, "id": parcel.order.id})}
+	return {"parcels": _parcels.map(func(parcel: Parcel) -> Dictionary:
+		if parcel.contract > 0:
+			return {"contract": parcel.contract, "count": parcel.count}
+		return {"market": parcel.order.market, "id": parcel.order.id})}
 
 
 func restore(data: Dictionary) -> void:
@@ -52,6 +62,10 @@ func restore(data: Dictionary) -> void:
 		if early != null:
 			add(Parcel.create(early))
 	for entry: Dictionary in data.get("parcels", []):
+		if entry.has("contract"):
+			if Game.contracts.by_id(int(entry["contract"])) != null:
+				add(Parcel.create_crate(int(entry["contract"]), int(entry["count"])))
+			continue
 		var shop: Marketplace = Game.markets.get(StringName(entry["market"]))
 		var order := shop.order_by_id(int(entry["id"])) if shop != null else null
 		if order != null:

@@ -14,7 +14,9 @@ const TIERS := {"Garage": 1, "Spare room": 2, "Workshop": 3, "Factory": 4}
 ## Tiers whose every product must have a model. The others come in a few at a
 ## time: a product there with no model yet is left out, and counted.
 const COMPLETE_TIERS: Array[String] = ["Garage"]
-## Contract work has no marketplace demand. These wait for the contracts phase.
+## Contract work has no marketplace demand. Such a design is never on general
+## sale: a client supplies it with a contract (data/contracts.json), and it is
+## imported, marked `contract_only`, once it has a model.
 const SKIPPED_PATTERNS: Array[String] = ["Contracts"]
 ## Rows from before the catalogue that it places in a later tier. Kept exactly as
 ## they are until that tier is imported, because tests and the starting game use them.
@@ -73,7 +75,7 @@ const OVERRIDES := {
 ## Field order in the output, and which numbers are written as whole numbers.
 const FIELDS: Array[String] = [
 	"id", "name", "category", "category_name", "description", "unlock_tier", "filament_grams", "print_minutes", "size_mm",
-	"difficulty", "needs_supports", "colour_count", "colour_swaps", "allowed_filaments", "base_price_pence", "demand_per_day", "licence",
+	"difficulty", "needs_supports", "colour_count", "colour_swaps", "allowed_filaments", "base_price_pence", "demand_per_day", "licence", "contract_only",
 ]
 const WHOLE: Array[String] = ["unlock_tier", "filament_grams", "print_minutes", "size_mm", "colour_count", "colour_swaps", "base_price_pence", "fee_pence"]
 
@@ -107,6 +109,7 @@ func _init() -> void:
 		known_filaments[filament["id"]] = true
 	var rows: Array[Dictionary] = []
 	var skipped := 0
+	var contract_only := 0
 	var waiting := 0
 	var no_material := 0
 	var missing_models: PackedStringArray = []
@@ -115,7 +118,13 @@ func _init() -> void:
 		if not TIERS.has(entry["unlock_tier"]) or LEGACY.has(entry["id"]):
 			continue
 		if SKIPPED_PATTERNS.has(entry["demand_pattern"]):
-			skipped += 1
+			if ResourceLoader.exists(MODEL_PATH % entry["id"]) and known_filaments.has(_filament(entry)):
+				var for_clients := _convert(entry)
+				for_clients.merge({"contract_only": true, "demand_per_day": 0.0, "licence": {"type": "one_off", "fee_pence": 0, "royalty_pct": 0.0}}, true)
+				rows.append(for_clients)
+				contract_only += 1
+			else:
+				skipped += 1
 			continue
 		if not ResourceLoader.exists(MODEL_PATH % entry["id"]):
 			if COMPLETE_TIERS.has(entry["unlock_tier"]):
@@ -132,7 +141,7 @@ func _init() -> void:
 		quit(1)
 		return
 
-	var imported := rows.size()
+	var imported := rows.size() - contract_only
 	var current: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(TARGET))
 	for row: Dictionary in current["products"]:
 		if LEGACY.has(row["id"]):
@@ -144,8 +153,8 @@ func _init() -> void:
 	var file := FileAccess.open(TARGET, FileAccess.WRITE)
 	file.store_string("{\n\t\"schema_version\": 1,\n\t\"products\": [\n%s\n\t]\n}\n" % ",\n".join(blocks))
 	file.close()
-	print("Imported %d products, kept %d from before the catalogue, skipped %d contract only, %d from later tiers with no model yet and %d in a material the game doesn't have yet." % [
-		imported, rows.size() - imported, skipped, waiting, no_material])
+	print("Imported %d products and %d for contracts only, kept %d from before the catalogue, skipped %d contract only, %d from later tiers with no model yet and %d in a material the game doesn't have yet." % [
+		imported, contract_only, rows.size() - imported - contract_only, skipped, waiting, no_material])
 	if not _undescribed.is_empty():
 		print("No description yet for: ", ", ".join(_undescribed))
 	quit(0)
@@ -168,8 +177,8 @@ func _convert(entry: Dictionary) -> Dictionary:
 		"colour_count": entry["colours"],
 		"allowed_filaments": [_filament(entry)],
 		"base_price_pence": price,
-		"demand_per_day": snappedf(DEMAND_PER_DAY[entry["size"]]
-			* pow(_band_floor[entry["size"]] / float(entry["base_price_gbp"]), DEMAND_PRICE_POWER), 0.05),
+		"demand_per_day": snappedf(DEMAND_PER_DAY.get(entry["size"], 1.0)
+			* pow(_band_floor.get(entry["size"], float(entry["base_price_gbp"])) / float(entry["base_price_gbp"]), DEMAND_PRICE_POWER), 0.05),
 		"licence": {"type": "one_off", "fee_pence": roundi(price * LICENCE_FEE_MULTIPLE / 100.0) * 100 - 1, "royalty_pct": 0.0},
 	}
 	# Only designs in more than one colour carry the field, so the rest of the table is unchanged.

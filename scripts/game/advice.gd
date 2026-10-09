@@ -102,6 +102,17 @@ static func items(tree: SceneTree) -> Array[Dictionary]:
 		var row: Dictionary = Game.data.premises[place]
 		if int(row["tier"]) == Game.tier + 1 and bench != null and bench.free_spots() == 0 and Game.bank.can_afford(int(row["move_cost_pence"])):
 			_add(found, "You can afford a bigger space", "The bench is full. Click the computer and open Roomier to move, for more printers, shelving and new things to sell.")
+	if not Game.contracts.offers().is_empty():
+		_add(found, "Read the enquiry in your inbox", "A business wants a batch made. Click the computer and open Inbox to see what, by when and for how much. It won't wait for ever.")
+	for contract in Game.contracts.active():
+		if Game.contract_ready(contract) > 0:
+			_add(found, "Send %d to %s" % [Game.contract_ready(contract), Game.client_name(contract)],
+				"Click the workbench and choose Send to a client. The courier takes the crate, and the last one gets you paid.")
+		elif Game.contracts.remaining(contract) > 0:
+			_add(found, "Print %d x %s for %s" % [Game.contracts.remaining(contract), Game.product_name(contract.product), Game.client_name(contract)],
+				"A contract has a deadline and a spec. Open Inbox on the computer to see what filament, colour and strength they want.")
+	if Game.stock_unlocked() and Game.stock.rules.is_empty():
+		_add(found, "Let the stockroom do the ordering", "With this many printers something is always running out. Click the computer, open Stockroom and switch on a rule for the filament, spares and boxes you use most.")
 	if Game.packaging <= LOW_PACKAGING:
 		_add(found, "Mailer boxes are nearly out", "Every order goes out in one. Buy a pack at %s, under Packaging." % shops["hardware_shop"])
 	return found

@@ -29,6 +29,8 @@ func refresh() -> void:
 	for entry in PcScreen.APPS:
 		if entry.has("market") and _badges.has(entry["id"]):
 			_set_badge(entry["id"], Game.markets[StringName(entry["market"])].open_orders().size())
+	if _badges.has("inbox"):
+		_set_badge("inbox", Game.contracts.offers().size())
 
 
 func _build() -> void:

@@ -71,6 +71,18 @@ func take(product: StringName) -> PrintedItem:
 	return found
 
 
+## The finished prints the client of a contract would take.
+func items_for(contract: Contracts.Contract) -> Array[PrintedItem]:
+	return _items().filter(func(item: PrintedItem) -> bool: return Game.contracts.wants(contract, item.facts()))
+
+
+## Takes a particular print off the shelf.
+func take_item(item: PrintedItem) -> PrintedItem:
+	item.get_parent().remove_child(item)
+	Game.changed.emit()
+	return item
+
+
 ## Every box of spare parts on the shelf.
 func spares() -> Array[SparePart]:
 	var found: Array[SparePart] = []

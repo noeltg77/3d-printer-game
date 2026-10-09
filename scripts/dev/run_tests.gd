@@ -15,6 +15,10 @@ func _init() -> void:
 	_test_moisture()
 	_test_design_studio()
 	_test_markets_and_trends()
+	_test_premises()
+	_test_stockroom()
+	_test_contracts()
+	_test_staff()
 	_test_clock()
 	_test_bank()
 	_test_money()
@@ -545,6 +549,235 @@ func _test_markets_and_trends() -> void:
 	later.restore(_through_file(trends.save()))
 	_check(later.hot == trends.hot and later.cool == trends.cool and is_equal_approx(later.until, trends.until), "trends come back from a save")
 	_check(trends.category_name("home_organisation") == "Home organisation", "a category has a name for the player")
+
+
+func _test_premises() -> void:
+	var data := GameData.load_all()
+	var before := {}
+	for place: Dictionary in data.premises.values():
+		_check(ResourceLoader.exists(place["scene"]), "every premises has its scene (%s)" % place["id"])
+		if not before.is_empty():
+			_check(int(place["tier"]) == int(before["tier"]) + 1, "premises go up a tier at a time (%s)" % place["id"])
+			_check(int(place["move_cost_pence"]) > int(before["move_cost_pence"]) and int(place["rent_pence_per_day"]) > int(before["rent_pence_per_day"]), "a bigger place costs more to move to and to rent (%s)" % place["id"])
+			# Everything has to fit when the business moves.
+			for room: String in ["printer_spots", "shelf_slots", "rack_slots"]:
+				_check(int(place[room]) >= int(before[room]), "a bigger place has at least as much room as the one before (%s %s)" % [place["id"], room])
+		before = place
+	_check(int(before["tier"]) <= data.settings["tier_names"].size(), "every tier a place can be has a name")
+
+
+func _test_stockroom() -> void:
+	var data := GameData.load_all()
+	var stock := Stockroom.new(data)
+	var red := Stockroom.spool_key("pla", "red")
+	var nozzle := Stockroom.part_key("brass_nozzle_0_4mm")
+	_check(red == "spool:pla:red" and Stockroom.is_spool(red) and not Stockroom.is_spool(nozzle), "stock is named by kind and id")
+	_check(not stock.rule(red)["on"] and not stock.any_on() and stock.due({}).is_empty(), "nothing reorders itself until a rule is switched on")
+	stock.set_rule(red, true, 1, 2)
+	stock.set_rule(nozzle, false, 2, 1)
+	stock.set_rule(Stockroom.PACKAGING, true, 5, 1)
+	_check(stock.any_on(), "a rule can be switched on")
+	var plenty := {red: {"have": 3, "coming": 0}, nozzle: {"have": 0, "coming": 0}, Stockroom.PACKAGING: {"have": 12, "coming": 0}}
+	_check(stock.due(plenty).is_empty(), "nothing is due while there is more than the reorder point, or the rule is off")
+	var low := {red: {"have": 1, "coming": 0}, Stockroom.PACKAGING: {"have": 6, "coming": 0}}
+	_check(stock.due(low) == ({red: 2} as Dictionary[String, int]), "stock at its reorder point is due, in the amount set")
+	_check(stock.due({red: {"have": 0, "coming": 2}}).has(Stockroom.PACKAGING) and not stock.due({red: {"have": 0, "coming": 2}}).has(red), "what is already on its way counts, so nothing is ordered twice")
+	_check(stock.due({}).size() == 2, "a stock there is none of at all is due")
+	stock.set_rule(red, true, -3, 0)
+	_check(int(stock.rule(red)["point"]) == 0 and int(stock.rule(red)["quantity"]) == 1, "a rule can't go below zero stock or order nothing")
+
+	var basket := Stockroom.add_to_basket({}, red, 2)
+	basket = Stockroom.add_to_basket(basket, red, 1)
+	basket = Stockroom.add_to_basket(basket, nozzle, 1)
+	basket = Stockroom.add_to_basket(basket, Stockroom.PACKAGING, 2)
+	_check(basket == {"spools": {"pla:red": 3}, "parts": {"brass_nozzle_0_4mm": 1}, "packaging": 2}, "what is due becomes a supplier basket")
+	var supplier := Supplier.new(data)
+	_check(supplier.price_of(basket) == supplier.spool_price("pla") * 3 + int(data.parts["brass_nozzle_0_4mm"]["price_pence"]) + int(data.settings["supplier"]["packaging_pack_pence"]) * 2, "which the supplier prices like any other")
+	_check(Stockroom.shop_part(basket, true) == {"spools": {"pla:red": 3}} and not Stockroom.shop_part(basket, false).has("spools"), "filament and hardware go to their own shops")
+
+	stock.set_rule(red, true, 1, 2)
+	var saved := _through_file(stock.save())
+	saved["rules"]["spool:pla:no_such_colour"] = {"on": true, "point": 1, "quantity": 1}
+	saved["rules"]["part:gone_part"] = {"on": true, "point": 1, "quantity": 1}
+	var again := Stockroom.new(data)
+	again.restore(saved)
+	_check(again.rules.size() == 3 and again.rule(red) == stock.rule(red) and typeof(again.rule(red)["point"]) == TYPE_INT, "rules come back from a save, without those for things the game no longer has")
+	_check(int(data.settings["stock"]["unlock_tier"]) <= data.settings["tier_names"].size(), "reordering unlocks at a tier that exists")
+
+
+func _test_contracts() -> void:
+	var data := GameData.load_all()
+	var rules: Dictionary = data.settings["contracts"]
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 8
+	var book := Contracts.new(data)
+	var none: Array[StringName] = []
+	var owned: Array[StringName] = [&"cable_management_clips_x12", &"desk_organiser"]
+	_check(book.offer(0.0, rng, owned, 1) == null, "no client writes to a business that is too small")
+	for client: Dictionary in data.clients.values():
+		for category: String in client["categories"]:
+			_check(data.products.values().any(func(row: Dictionary) -> bool: return row["category"] == category), "every category a client asks for has designs in it (%s %s)" % [client["id"], category])
+	var museum: Dictionary = data.clients["wexcombe_museum"]
+	_check(book.wanted_by(museum, none, 3).has(&"museum_replica_artefact"), "a client can bring a design of its own")
+	_check(book.wanted_by(data.clients["brindle_and_daw"], owned, 3).has(&"desk_organiser") and not book.wanted_by(data.clients["brindle_and_daw"], owned, 3).has(&"museum_replica_artefact"), "and otherwise asks for designs the business owns, in its line of work")
+	for client: Dictionary in data.clients.values():
+		for supplied: String in client.get("supplies", []):
+			if int(data.products[supplied]["unlock_tier"]) > 3:
+				_check(not book.wanted_by(client, none, 3).has(StringName(supplied)), "a client holds back a design made for a bigger business (%s)" % supplied)
+
+	var seen := {}
+	for attempt in 60:
+		var enquiry := book.offer(100.0, rng, owned, 3)
+		_check(enquiry != null, "at the right tier there is always a client with something to ask for")
+		var client: Dictionary = data.clients[enquiry.client]
+		seen[enquiry.client] = true
+		_check(enquiry.quantity >= int(client["quantity"][0]) and enquiry.quantity <= int(client["quantity"][1]), "an enquiry is for a quantity in the client's range")
+		_check(enquiry.unit_price > 0 and enquiry.allowed_minutes >= GameClock.DAY and enquiry.text != "", "with a price, at least a day to do it in, and a message")
+		_check(enquiry.colour == &"" or data.filaments[enquiry.material]["colours"].has(String(enquiry.colour)), "and a colour the filament comes in, or none")
+	_check(seen.size() >= 3, "different clients write (%d did)" % seen.size())
+
+	book = Contracts.new(data)
+	var counted := 0
+	for step in 4000:
+		counted += 1 if book.tick(step, step + 1.0, rng, owned, 3) != null else 0
+		for waiting in book.offers():
+			book.decline(waiting)
+	_check(counted >= 1 and counted <= 9, "enquiries come about once a day (%d in under three days)" % counted)
+	book = Contracts.new(data)
+	for step in 20000:
+		book.tick(step, step + 1.0, rng, owned, 3)
+	_check(book.offers().size() == int(rules["max_offers"]), "and stop while the inbox is full")
+
+	book = Contracts.new(data)
+	var job := book.offer(0.0, rng, owned, 3)
+	job.quantity = 10
+	job.unit_price = 500
+	job.material = &"pla"
+	job.colour = &"red"
+	job.min_quality = 3
+	job.min_durability = 1
+	job.late_pct_per_day = 0.1
+	job.allowed_minutes = 2000.0
+	var item := {"product": job.product, "material": "pla", "colour": "red", "quality": 3, "durability": 3, "flawed": false, "plain": false}
+	_check(book.accept(job, 100.0, 1020.0) and job.status == Contracts.Status.ACTIVE, "an enquiry can be accepted")
+	_check(is_equal_approx(job.due_at, 1440.0 + 1020.0), "the deadline is the first courier collection after the time allowed")
+	_check(not book.accept(job, 100.0, 1020.0), "but only once")
+	_check(book.needs(job.product) and book.value(job) == 5000, "a contract in progress wants its design, and is worth price times quantity")
+	_check(book.wants(job, item), "the client takes an item that meets the spec")
+	for change: Array in [["colour", "blue"], ["quality", 2], ["flawed", true], ["plain", true], ["material", "petg"], ["product", "phone_stand"]]:
+		var wrong := item.duplicate()
+		wrong[change[0]] = change[1]
+		_check(not book.wants(job, wrong), "and refuses one with the wrong %s" % change[0])
+	var silk := item.duplicate()
+	silk["material"] = "pla_silk"
+	silk["colour"] = "red"
+	_check(book.wants(job, silk), "a variety of the filament asked for will do")
+	job.min_durability = 5
+	_check(not book.wants(job, item), "a client who needs strength refuses a standard print")
+	job.min_durability = 1
+	job.colour = &""
+	var blue := item.duplicate()
+	blue["colour"] = "blue"
+	_check(book.wants(job, blue), "with no colour asked for, any will do")
+
+	book.pack(job, 4)
+	_check(book.remaining(job) == 6, "items crated up are no longer owed")
+	_check(book.deliver(job, 4, 500.0).is_empty() and job.delivered == 4 and job.packed == 0 and job.status == Contracts.Status.ACTIVE, "a part delivery pays nothing yet")
+	_check(book.days_late(job, job.due_at) == 0 and book.days_late(job, job.due_at + 1.0) == 1 and book.days_late(job, job.due_at + 1441.0) == 2, "any part of a day late counts as a day")
+	_check(book.penalty(job, job.due_at + 1441.0) == 1000 and book.penalty(job, job.due_at + 1440.0 * 30) == 5000, "each day late takes its share off, down to nothing")
+	var on_time := book.deliver(job, 6, job.due_at)
+	_check(on_time == {"payment": 5000, "penalty": 0} and job.status == Contracts.Status.DONE and job.paid == 5000, "the last delivery, on time, is paid in full")
+	_check(book.deliver(job, 1, job.due_at).is_empty() and not book.needs(job.product), "and a finished contract takes no more")
+
+	var slow := book.offer(0.0, rng, owned, 3)
+	slow.quantity = 10
+	slow.unit_price = 500
+	slow.late_pct_per_day = 0.1
+	book.accept(slow, 0.0, 1020.0)
+	var late := book.deliver(slow, 10, slow.due_at + 1500.0)
+	_check(late == {"payment": 4000, "penalty": 1000}, "a contract finished two days late pays 20% less")
+
+	var doomed := book.offer(0.0, rng, owned, 3)
+	doomed.quantity = 10
+	doomed.unit_price = 500
+	book.accept(doomed, 0.0, 1020.0)
+	book.deliver(doomed, 4, 10.0)
+	_check(book.fail_overdue(doomed.due_at + 1440.0 * int(rules["max_late_days"])).is_empty(), "a late contract is still alive up to the limit")
+	var lost := book.fail_overdue(doomed.due_at + 1440.0 * int(rules["max_late_days"]) + 1.0)
+	_check(lost.size() == 1 and lost[0]["payment"] == roundi(4 * 500 * float(rules["failed_pay_multiplier"])) and doomed.status == Contracts.Status.FAILED, "past it the client cancels, paying a cut rate for what arrived")
+	_check(book.finished().size() == 3 and book.finished()[0] == doomed, "finished contracts are kept, newest first")
+
+	var stale := book.offer(1000.0, rng, owned, 3)
+	_check(book.expire(1000.0 + float(rules["offer_minutes"])).is_empty() and book.expire(1001.0 + float(rules["offer_minutes"])) == ([stale] as Array[Contracts.Contract]), "an enquiry nobody answers lapses")
+	for filler in int(rules["max_active"]) + 1:
+		var extra := book.offer(0.0, rng, owned, 3)
+		if filler < int(rules["max_active"]):
+			_check(book.accept(extra, 0.0, 1020.0), "contracts can be taken on up to the limit")
+		else:
+			_check(not book.accept(extra, 0.0, 1020.0) and book.accept_problem(extra) != "", "and no further")
+
+	var saved := _through_file(book.save())
+	saved["all"].append({"id": 99, "client": "gone_client", "product": "phone_stand", "material": "pla"})
+	var again := Contracts.new(data)
+	again.restore(saved)
+	_check(again.all.size() == book.all.size() and again.active().size() == book.active().size(), "contracts come back from a save, without those of clients the game no longer has")
+	var doomed_again := again.by_id(doomed.id)
+	_check(doomed_again.status == Contracts.Status.FAILED and doomed_again.delivered == 4 and doomed_again.paid == doomed.paid and typeof(doomed_again.paid) == TYPE_INT, "each as it was, in whole pence")
+	_check(again.offer(0.0, rng, owned, 3).id == book.offer(0.0, rng, owned, 3).id, "and new enquiries carry on numbering")
+
+
+func _test_staff() -> void:
+	var data := GameData.load_all()
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 4
+	var staff := Staff.new(data)
+	_check(staff.team.is_empty() and staff.wages_per_day() == 0 and not staff.has_duty("collect"), "a business starts with nobody on the payroll")
+	staff.refresh_applicants(rng, 1)
+	_check(staff.applicants.is_empty(), "nobody applies to a business too small for any role")
+	staff.refresh_applicants(rng, 3)
+	_check(staff.applicants.size() == int(data.staff_config["applicants"]), "applicants turn up once there are roles to fill")
+	var applied := {}
+	var named := {}
+	for applicant in staff.applicants:
+		applied[applicant["role"]] = true
+		named[applicant["name"]] = true
+		_check(data.staff_config["looks"].has(applicant["look"]), "each applicant has a look the game has a model for")
+	_check(applied.size() == data.roles.size() and named.size() == staff.applicants.size(), "there is someone for every role, and no two share a name")
+	_check(staff.hire_problem(0, 0) != "" and staff.hire(0, 100.0, 0).is_empty(), "nobody can be taken on where there is no room for staff")
+	var first := staff.hire(0, 100.0, 2)
+	_check(not first.is_empty() and staff.team.size() == 1 and staff.applicants.size() == int(data.staff_config["applicants"]) - 1, "an applicant taken on joins the team and leaves the list")
+	_check(staff.wages_per_day() == int(data.roles[first["role"]]["wage_pence_per_day"]), "and is paid their role's wage each day")
+	var second := staff.hire(0, 100.0, 2)
+	_check(second["id"] != first["id"] and staff.hire_problem(0, 2) != "", "the team can grow to the room there is and no further")
+	_check(staff.wages_per_day() == int(data.roles[first["role"]]["wage_pence_per_day"]) + int(data.roles[second["role"]]["wage_pence_per_day"]), "wages add up across the team")
+	_check(staff.duties(first) == data.roles[first["role"]]["duties"] and staff.has_duty(staff.duties(first)[0]), "a member of staff does their role's duties")
+
+	var day: Dictionary = data.shifts["day"]
+	_check(first["shift"] == "day" and staff.on_shift(first, float(day["start_minute"])) and staff.on_shift(first, float(day["end_minute"]) - 1.0), "a new hire works days, from the start of the shift")
+	_check(not staff.on_shift(first, float(day["start_minute"]) - 1.0) and not staff.on_shift(first, float(day["end_minute"])), "and not before it or after it")
+	staff.set_shift(int(first["id"]), "late")
+	staff.set_shift(int(first["id"]), "no_such_shift")
+	_check(staff.member(int(first["id"]))["shift"] == "late" and staff.on_shift(first, float(data.shifts["late"]["end_minute"]) - 1.0), "their shift can be changed to another the game has")
+	staff.refresh_applicants(rng, 3)
+	for applicant in staff.applicants:
+		_check(applicant["name"] != first["name"] and applicant["name"] != second["name"], "nobody applies with the name of someone already on the team")
+
+	var saved := _through_file(staff.save())
+	saved["team"].append({"id": 9, "name": "Nobody", "role": "gone_role", "shift": "day", "look": "character_02", "hired_at": 0.0})
+	var again := Staff.new(data)
+	again.restore(saved)
+	_check(again.team.size() == 2 and again.member(int(first["id"]))["shift"] == "late" and typeof(again.team[0]["id"]) == TYPE_INT, "the team comes back from a save, without anyone in a role the game no longer has")
+	_check(again.applicants.size() == staff.applicants.size() and again.hire(0, 0.0, 3)["id"] == staff.hire(0, 0.0, 3)["id"], "applicants come back too, and hires carry on numbering")
+	staff.fire(int(first["id"]))
+	_check(staff.member(int(first["id"])).is_empty() and staff.team.size() == 2, "someone let go is off the team")
+	for role: Dictionary in data.roles.values():
+		_check(not role["duties"].is_empty() and int(role["wage_pence_per_day"]) > 0, "every role has duties and a wage (%s)" % role["id"])
+	for shift: Dictionary in data.shifts.values():
+		_check(float(shift["start_minute"]) < float(shift["end_minute"]) and float(shift["end_minute"]) <= GameClock.DAY, "every shift starts before it ends, inside one day (%s)" % shift["id"])
+	var room := 0
+	for place: Dictionary in data.premises.values():
+		_check(int(place["staff"]) >= room, "a bigger place has room for at least as many staff (%s)" % place["id"])
+		room = int(place["staff"])
 
 
 func _test_clock() -> void:

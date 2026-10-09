@@ -7,7 +7,10 @@ extends Node
 ## jobs ends, every so often while standing idle, and when the game is closed.
 ##
 ## Saving only between tasks means nothing is ever half carried in a save. The
-## price is that jobs still waiting in the queue are not kept.
+## price is that jobs still waiting in the queue are not kept. With staff on
+## the floor everybody has to be between tasks at once, so while a save is
+## owed nobody starts a new one (wants_quiet) and it happens as the last of
+## them finishes.
 
 ## Real seconds between saves when one isn't asked for.
 const AUTOSAVE_GAP := 20.0
@@ -41,8 +44,30 @@ func _ready() -> void:
 
 
 func _notification(what: int) -> void:
-	if what == NOTIFICATION_WM_CLOSE_REQUEST and _agent() != null and _agent().is_between_tasks():
+	if what == NOTIFICATION_WM_CLOSE_REQUEST and _agent() != null and _everyone_between_tasks():
 		Game.save_game(capture())
+
+
+func _process(_delta: float) -> void:
+	if _owed and _everyone_between_tasks():
+		save_now()
+
+
+## True while a save is waiting for everybody to finish what they are doing.
+## Staff don't start anything new until it has happened.
+func wants_quiet() -> bool:
+	return _owed
+
+
+## True when neither the player's character nor any member of staff is part
+## way through a task.
+func _everyone_between_tasks() -> bool:
+	if not _agent().is_between_tasks():
+		return false
+	for worker: Agent in get_tree().get_nodes_in_group(&"staff"):
+		if not worker.is_between_tasks():
+			return false
+	return true
 
 
 ## The state of everything in the scene that a save needs.
@@ -58,7 +83,7 @@ func capture() -> Dictionary:
 ## Saves now if the character is between tasks, or as soon as they are.
 ## Returns true if it was saved straight away.
 func save_now() -> bool:
-	if not _agent().is_between_tasks():
+	if not _everyone_between_tasks():
 		_owed = true
 		return false
 	_owed = false
@@ -100,7 +125,7 @@ func _load() -> void:
 
 func _autosave() -> void:
 	var due := Time.get_ticks_msec() - _last_save_msec >= AUTOSAVE_GAP * 1000.0
-	if (due or _owed) and _agent().is_between_tasks():
+	if due or _owed:
 		save_now()
 
 

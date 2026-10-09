@@ -3,6 +3,9 @@ extends Node3D
 ## The character as a worker: takes queued Actions and carries them out one at
 ## a time, walking, reaching, carrying and sitting as each task asks.
 ## Task code drives it with `await`: go_to(), reach(), carry(), release(), sit().
+##
+## The player's character is one of these, with tasks queued from menus. So is
+## each member of staff, with a Worker choosing its tasks instead.
 
 ## The current task or the queue changed.
 signal status_changed
@@ -18,6 +21,8 @@ const SEAT_TIME := 0.3
 signal _arrived
 signal _released
 
+## False for a member of staff, who is found in the `staff` group instead of `player`.
+var is_player := true
 var current_label := ""
 var carried: Node3D = null
 var seated := false
@@ -40,7 +45,7 @@ var _seat_return := Vector3.ZERO
 
 
 func _ready() -> void:
-	add_to_group(&"player")
+	add_to_group(&"player" if is_player else &"staff")
 
 
 func _process(delta: float) -> void:

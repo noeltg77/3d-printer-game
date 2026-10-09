@@ -22,6 +22,9 @@ extends Interactable
 ## A print can be a batch: several copies of the design on the plate at once.
 ## `item` is the first and `extras` the rest. They are shrunk to fit the plate
 ## while they print, share one fate, and are collected together.
+##
+## The printer remembers its last job, so it can be set going again in one
+## click. With `repeat` on, a print operator on the staff does that unasked.
 
 enum Status { IDLE, PRINTING, DONE, FAILED }
 
@@ -53,6 +56,8 @@ var job: PrintJob = null
 var item: PrintedItem = null
 ## The other copies on the plate, when the print is a batch.
 var extras: Array[PrintedItem] = []
+## True if staff should start the last job again whenever the printer is free.
+var repeat := false
 ## What a ruined print left on the plate, while status is FAILED.
 var scrap: FailedPrint = null
 ## Preset of the print on the plate.
@@ -62,6 +67,8 @@ var wear: PrinterWear
 ## The upgrades fitted to it.
 var mods: PrinterMods
 
+## The last job started: { product, preset, slots, copies }. Empty before the first.
+var _last := {}
 ## The slots the current print draws on, one per colour, and the grams it was
 ## set to take from each (its share of the print and of the purged filament).
 var _slots_used: Array[int] = []
@@ -145,11 +152,11 @@ func get_actions(_agent: Agent) -> Array[Action]:
 			return [Action.info("Printing %s: %d%%, %s left" % [_batch_title(Game.product_name(item.product)), roundi(job.progress * 100.0), left])]
 		Status.DONE:
 			if _shelf().free_slots() >= copies():
-				return [Action.new("Collect %s" % _batch_title(item.describe()), _collect)]
+				return [Action.new("Collect %s" % _batch_title(item.describe()), _collect).for_duty(&"collect")]
 			return [Action.info("Collect print (shelving is full)" if copies() == 1 else "Collect prints (the shelving needs %d free spaces)" % copies())]
 		Status.FAILED:
 			var failure := scrap.failure
-			var fix := Action.new("%s (%s)" % [failure["fix"], GameClock.duration_label(failure["clear_minutes"])], _clear)
+			var fix := Action.new("%s (%s)" % [failure["fix"], GameClock.duration_label(failure["clear_minutes"])], _clear).for_duty(&"clear")
 			fix.task_name = "Sort out the %s" % display_name
 			return [Action.info("%s: %s" % [failure["name"], Game.product_name(scrap.product)]), fix]
 	var actions: Array[Action] = []
@@ -163,6 +170,7 @@ func get_actions(_agent: Agent) -> Array[Action]:
 		actions.append(_load_menu())
 	if spool != null:
 		actions.append(_print_menu())
+		actions.append_array(_again_actions())
 		actions.append(_unload_menu())
 	actions.append(_parts_menu())
 	actions.append(_upgrades_menu())
@@ -224,6 +232,31 @@ func _load_menu() -> Action:
 	return Action.submenu("Load filament", kinds)
 
 
+## Starting the last job again, and, with a print operator on the staff, the
+## switch that has them do it whenever the printer is free.
+func _again_actions() -> Array[Action]:
+	var actions: Array[Action] = []
+	if _last.is_empty() or not Game.printable_designs().has(_last["product"]):
+		return actions
+	var count: int = _last["copies"]
+	var title := Game.product_name(_last["product"])
+	var label := "Print %s again" % (title if count == 1 else "%d x %s" % [count, title])
+	var problem := print_problem(_last["product"], _last["preset"], _last["slots"], count)
+	var again := Action.new(label if problem == "" else "%s: %s" % [label, problem.to_lower()],
+		_start.bind(_last["product"], _last["preset"], _last["slots"], count), problem == "")
+	again.task_name = "Print %s on the %s" % [title, display_name]
+	if repeat:
+		again.for_duty(&"reprint")
+	actions.append(again)
+	if Game.staff.has_duty("reprint"):
+		var switch := Action.new("Staff keep this job going: %s" % ("on" if repeat else "off"), func(_agent: Agent) -> void:
+			repeat = not repeat
+			Game.changed.emit())
+		switch.immediate = true
+		actions.append(switch)
+	return actions
+
+
 func _unload_menu() -> Action:
 	if not has_unit():
 		return Action.new("Unload filament", _unload.bind(spools.find(spool)))
@@ -237,7 +270,7 @@ func _unload_menu() -> Action:
 
 
 func _print_menu() -> Action:
-	if Game.owned_designs.is_empty():
+	if Game.printable_designs().is_empty():
 		return Action.info("Print (no designs owned: buy one at the PC)")
 	var action := Action.new("Print...", _open_print_dialog)
 	action.immediate = true
@@ -433,6 +466,7 @@ func unload_spool(slot: int) -> Spool:
 func start_print(product: StringName, p_preset: StringName, slots: Array[int] = [], count := 1) -> void:
 	var plan := print_plan(product, p_preset, slots, count)
 	preset = p_preset
+	_last = {"product": product, "preset": p_preset, "slots": (plan["slots"] as Array[int]).duplicate(), "copies": count}
 	_slots_used.assign(plan["slots"])
 	_grams_used.assign(plan["grams"])
 	_minutes = plan["minutes"]
@@ -731,7 +765,7 @@ func _shelf() -> StorageShelf:
 
 func save() -> Dictionary:
 	var state := {"id": spec["id"], "status": status, "preset": preset, "grams": _grams_used, "slots": _slots_used,
-		"minutes": _minutes, "wear": wear.save(), "mods": mods.save()}
+		"minutes": _minutes, "wear": wear.save(), "mods": mods.save(), "repeat": repeat, "last": _last}
 	# One entry per slot, null where it is empty.
 	state["spools"] = spools.map(func(loaded: Spool) -> Variant: return loaded.save() if loaded != null else null)
 	if job != null:
@@ -758,6 +792,13 @@ func restore(state: Dictionary) -> void:
 		if saved_spools[slot] is Dictionary:
 			load_spool(Spool.restored(saved_spools[slot]), slot)
 	preset = StringName(state["preset"]) if Game.data.presets.has(state["preset"]) else preset
+	repeat = bool(state.get("repeat", false))
+	var last: Dictionary = state.get("last", {})
+	if Game.data.products.has(last.get("product", "")) and Game.data.presets.has(last.get("preset", "")):
+		var last_slots: Array[int] = []
+		for slot: Variant in last["slots"]:
+			last_slots.append(int(slot))
+		_last = {"product": StringName(last["product"]), "preset": StringName(last["preset"]), "slots": last_slots, "copies": int(last["copies"])}
 	_slots_used.clear()
 	_grams_used.clear()
 	for slot: Variant in state.get("slots", [0]):

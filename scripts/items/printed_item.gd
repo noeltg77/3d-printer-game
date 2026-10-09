@@ -86,6 +86,12 @@ func describe() -> String:
 	return title if notes.is_empty() else "%s (%s)" % [title, ", ".join(notes)]
 
 
+## What a client checks an item against (Contracts.wants).
+func facts() -> Dictionary:
+	return {"product": product, "material": material, "colour": colour, "quality": quality, "durability": durability,
+		"flawed": is_flawed(), "plain": is_plain()}
+
+
 func save() -> Dictionary:
 	return {"product": product, "colours": colours, "material": material, "preset": preset, "durability": durability,
 		"quality": quality, "flaw": flaw}

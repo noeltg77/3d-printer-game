@@ -14,6 +14,9 @@ const TABLES := {
 	"upgrades": "res://data/upgrades.json",
 	"premises": "res://data/premises.json",
 	"dryers": "res://data/dryers.json",
+	"clients": "res://data/contracts.json",
+	"roles": "res://data/staff.json",
+	"shifts": "res://data/staff.json",
 }
 const FAILURE_HAPPENS: PackedStringArray = ["start", "mid", "end"]
 const FAILURE_OUTCOMES: PackedStringArray = ["scrap", "stop", "degraded"]
@@ -37,6 +40,12 @@ var upgrades: Dictionary = {}
 var premises: Dictionary = {}
 ## Filament dryers, by id.
 var dryers: Dictionary = {}
+## Clients who send contract enquiries, by id (data/contracts.json).
+var clients: Dictionary = {}
+## Staff roles and the shifts they can work, by id, and the whole of data/staff.json.
+var roles: Dictionary = {}
+var shifts: Dictionary = {}
+var staff_config: Dictionary = {}
 ## Print toggles such as multicolour, by id (the `toggles` list in data/presets.json).
 var toggles: Dictionary = {}
 ## What each durability score (1 to 5) means, keyed by the score as text.
@@ -58,6 +67,9 @@ static func load_all() -> GameData:
 		data.settings = settings
 	else:
 		data.errors.append("%s: expected an object" % SETTINGS)
+	var staff_file: Variant = JSON.parse_string(FileAccess.get_file_as_string(TABLES["roles"]))
+	if staff_file is Dictionary:
+		data.staff_config = staff_file
 	var presets_file: Variant = JSON.parse_string(FileAccess.get_file_as_string(TABLES["presets"]))
 	if presets_file is Dictionary:
 		data.durability_labels = presets_file.get("durability_labels", {})
@@ -135,11 +147,32 @@ func _check_references() -> void:
 		if not toggles.has(toggle):
 			errors.append("presets.json: no \"%s\" toggle" % toggle)
 	for product: Dictionary in products.values():
+		if product.get("contract_only", false) and not clients.values().any(func(client: Dictionary) -> bool: return client.get("supplies", []).has(product["id"])):
+			errors.append("product %s: contract only, but no client supplies it" % product["id"])
 		if int(product.get("colour_count", 1)) > 1 and int(product.get("colour_swaps", 0)) < 1:
 			errors.append("product %s: more than one colour but no colour_swaps" % product["id"])
 		for filament_id: String in product.get("allowed_filaments", []):
 			if not filaments.has(filament_id) and not families.has(filament_id):
 				errors.append("product %s: unknown filament \"%s\"" % [product["id"], filament_id])
+	if shifts.is_empty():
+		errors.append("staff.json: no shifts")
+	if staff_config.get("names", []).size() < int(staff_config.get("applicants", 0)) or staff_config.get("looks", []).is_empty():
+		errors.append("staff.json: needs a name for every applicant and at least one look")
+	for look: String in staff_config.get("looks", []):
+		if not ResourceLoader.exists("res://assets/models/characters/%s.glb" % look):
+			errors.append("staff.json: no character model \"%s\"" % look)
+	for client: Dictionary in clients.values():
+		for supplied: String in client.get("supplies", []):
+			if not products.has(supplied):
+				errors.append("client %s: unknown design \"%s\"" % [client["id"], supplied])
+			elif not products[supplied].get("contract_only", false):
+				errors.append("client %s: \"%s\" is on general sale, so it isn't the client's to supply" % [client["id"], supplied])
+		for range_field: String in ["quantity", "price_multiplier", "slack"]:
+			var span: Array = client.get(range_field, [])
+			if span.size() != 2 or float(span[0]) > float(span[1]):
+				errors.append("client %s: %s must be [lowest, highest]" % [client["id"], range_field])
+		if client.get("asks", []).is_empty():
+			errors.append("client %s: nothing to say in asks" % client["id"])
 	for product_id: String in settings.get("start", {}).get("designs", []):
 		if not products.has(product_id):
 			errors.append("game.json: unknown starting design \"%s\"" % product_id)
