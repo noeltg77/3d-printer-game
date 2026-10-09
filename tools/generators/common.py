@@ -108,7 +108,7 @@ class MeshBuilder:
         return faces
 
     def shell(self, radius, height, wall, colour, segments=6, centre=(0.0, 0.0, 0.0), floor=None,
-              radius_top=None, chamfer=0.0, turn=0.0):
+              radius_top=None, chamfer=0.0, turn=0.0, open_base=False):
         """Open-topped hollow container as one clean piece: pots, cups, bins, tubs.
 
         A prism with `segments` sides (6 hexagonal, 4 square, 12 or more round),
@@ -119,7 +119,8 @@ class MeshBuilder:
         rim if the sides should flare or narrow. `wall` is the wall thickness and
         `floor` the base thickness (defaults to `wall`). `chamfer` cuts the outer
         top and bottom edges. `turn` rotates it about Z, in radians; at 0 a corner
-        points along +X.
+        points along +X. `open_base` leaves out the floor, for a bare wall open at
+        both ends: cutters, rings, sleeves.
         """
         floor = wall if floor is None else floor
         top = radius if radius_top is None else radius_top
@@ -136,6 +137,8 @@ class MeshBuilder:
         ]
         if chamfer <= 0.0:
             rings = [rings[0], rings[3], rings[4], rings[5]]
+        if open_base:
+            rings[-1] = (radius - corner_inset, 0.0)
         origin = Vector(centre)
         loops = []
         for ring_radius, z in rings:
@@ -146,7 +149,75 @@ class MeshBuilder:
                     z)))
                 for index in range(segments)
             ])
-        faces = [self.bm.faces.new(list(reversed(loops[0]))), self.bm.faces.new(loops[-1])]
+        return self._skin(loops, colour, closed=open_base)
+
+    def tray(self, size, wall, colour, centre=(0.0, 0.0, 0.0), floor=None, taper=0.0, chamfer=0.0, rim=None):
+        """Open-topped rectangular container as one clean piece: bins, trays, drawers, boxes.
+
+        `size` is the outside (x, y, z) at the top of the walls, standing on `centre`.
+        `wall` is the wall thickness and `floor` the base thickness (defaults to
+        `wall`). `taper` brings each side of the base in by that much, so the walls
+        lean outwards. `chamfer` cuts the outer top and bottom edges. `rim` is an
+        (overhang, depth) pair for a band standing proud around the top.
+        """
+        width, depth, height = size
+        floor = wall if floor is None else floor
+        # Profile from the outside bottom, up and over the top, down to the inside floor.
+        # Each point is (distance out from the base outline, z).
+        profile = [(-chamfer, 0.0), (0.0, chamfer)] if chamfer > 0.0 else [(0.0, 0.0)]
+        outer = taper
+        if rim is not None:
+            overhang, rim_depth = rim
+            under = height - rim_depth
+            profile += [(taper * under / height, under), (taper + overhang, under)]
+            outer = taper + overhang
+        profile += [(outer, height - chamfer), (outer - chamfer, height)] if chamfer > 0.0 else [(outer, height)]
+        profile += [(taper - wall, height), (taper * floor / height - wall, floor)]
+        origin = Vector(centre)
+        half_x, half_y = width / 2 - taper, depth / 2 - taper
+        loops = [
+            [
+                self.bm.verts.new(origin + Vector((sign_x * (half_x + out), sign_y * (half_y + out), z)))
+                for sign_x, sign_y in ((1, 1), (-1, 1), (-1, -1), (1, -1))
+            ]
+            for out, z in profile
+        ]
+        return self._skin(loops, colour)
+
+    def plate(self, points, thickness, colour, centre=(0.0, 0.0, 0.0)):
+        """Flat solid cut to a 2D outline: silhouettes, templates, tags.
+
+        `points` are (x, y) pairs in order, anticlockwise seen from above.
+        """
+        origin = Vector(centre)
+        loops = [[self.bm.verts.new(origin + Vector((x, y, z))) for x, y in points] for z in (0.0, thickness)]
+        return self._skin(loops, colour)
+
+    def outline(self, points, height, wall, colour, centre=(0.0, 0.0, 0.0)):
+        """Thin wall following a 2D outline, open top and bottom: cookie cutters of any shape.
+
+        `points` are (x, y) pairs in order, anticlockwise seen from above. The
+        wall goes inwards from them.
+        """
+        origin = Vector(centre)
+        inner = _inset(points, wall)
+        loops = [
+            [self.bm.verts.new(origin + Vector((x, y, z))) for x, y in ring]
+            for ring, z in ((points, 0.0), (points, height), (inner, height), (inner, 0.0))
+        ]
+        return self._skin(loops, colour, closed=True)
+
+    def _skin(self, loops, colour, closed=False):
+        """Faces joining a stack of matching point loops, capped at the first and last.
+
+        With `closed` the last loop joins back to the first instead, leaving no caps.
+        """
+        segments = len(loops[0])
+        if closed:
+            faces = []
+            loops = loops + [loops[0]]
+        else:
+            faces = [self.bm.faces.new(list(reversed(loops[0]))), self.bm.faces.new(loops[-1])]
         for lower, upper in zip(loops, loops[1:]):
             for index in range(segments):
                 following = (index + 1) % segments
@@ -167,6 +238,17 @@ class MeshBuilder:
             depth=depth,
         )["verts"]
         matrix = _transform(centre, AXIS_ROTATIONS[axis] if rotation is None else rotation)
+        bmesh.ops.transform(self.bm, matrix=matrix, verts=verts)
+        return self._paint_new(before, colour)
+
+    def ball(self, radius, centre, colour, subdivisions=2, scale=(1.0, 1.0, 1.0), rotation=(0.0, 0.0, 0.0)):
+        """Faceted ball (an icosphere) for heads, globes and knobs. `scale` squashes or stretches it.
+
+        `subdivisions` 1 gives 20 triangles, 2 gives 80.
+        """
+        before = set(self.bm.faces)
+        verts = bmesh.ops.create_icosphere(self.bm, subdivisions=subdivisions, radius=radius)["verts"]
+        matrix = _transform(centre, rotation) @ Matrix.Diagonal((*scale, 1.0))
         bmesh.ops.transform(self.bm, matrix=matrix, verts=verts)
         return self._paint_new(before, colour)
 
@@ -208,6 +290,20 @@ def _link(obj, pivot, parent):
     obj.location = Vector(pivot) - Vector(_pivots[parent.name] if parent else (0.0, 0.0, 0.0))
     _pivots[obj.name] = tuple(pivot)
     return obj
+
+
+def _inset(points, distance):
+    """The outline moved inwards by `distance`, with mitred corners. Points run anticlockwise."""
+    moved = []
+    for index, point in enumerate(points):
+        here = Vector(point)
+        before = (here - Vector(points[index - 1])).normalized()
+        after = (Vector(points[(index + 1) % len(points)]) - here).normalized()
+        normal_before, normal_after = Vector((-before.y, before.x)), Vector((-after.y, after.x))
+        # Clamped so a very sharp corner does not shoot off into a long spike.
+        mitre = (normal_before + normal_after) / max(1.0 + normal_before.dot(normal_after), 0.3)
+        moved.append(tuple(here + mitre * distance))
+    return moved
 
 
 def _transform(centre, rotation):
@@ -263,12 +359,13 @@ def export_glb(path):
     print(f"Exported {path}")
 
 
-def render_preview(path, resolution=512, direction=None):
+def render_preview(path, resolution=512, direction=None, margin=1.15):
     """Renders the scene's meshes to a PNG.
 
     From the game's isometric angle by default, or looking back along
     `direction` (a vector from the subject towards the camera). Can be called
-    more than once on the same scene for several views.
+    more than once on the same scene for several views. `margin` is the frame
+    width as a multiple of the subject, for subjects much wider than tall.
     """
     scene = bpy.context.scene
     for leftover in [obj for obj in scene.objects if obj.name.startswith("preview_")]:
@@ -288,7 +385,7 @@ def render_preview(path, resolution=512, direction=None):
     camera = bpy.data.objects.new("preview_camera", bpy.data.cameras.new("preview_camera"))
     scene.collection.objects.link(camera)
     camera.data.type = "ORTHO"
-    camera.data.ortho_scale = extent * 1.15
+    camera.data.ortho_scale = extent * margin
     # True isometric: 45 degrees round, ~35.26 degrees down.
     isometric = (1.0, -1.0, math.sqrt(2.0) * math.tan(math.radians(35.264)))
     offset = Vector(direction or isometric).normalized() * extent * 10
