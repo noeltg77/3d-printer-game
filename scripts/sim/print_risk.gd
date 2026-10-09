@@ -20,6 +20,9 @@ const LARGE_PART_SHARE := 0.6
 const TALL_THIN_RATIO := 2.0
 ## A bed slinger shakes prints taller than this (mm).
 const BEDSLINGER_TALL_MM := 150.0
+## Condition flag for a print on a resin printer. With it only failures whose
+## `process` is "resin" can happen; without it, only the rest.
+const RESIN_FLAG := &"resin_printer"
 ## Where in the print each `happens` value strikes, as a range of progress.
 const WHEN := {"start": [0.01, 0.05], "mid": [0.1, 0.9], "end": [1.0, 1.0]}
 
@@ -85,6 +88,8 @@ static func conditions(printer: Dictionary, preset: Dictionary, product: Diction
 		flags.append(&"tall_thin_part")
 	if printer["motion"] == "bed_slinger" and float(size[2]) >= BEDSLINGER_TALL_MM:
 		flags.append(&"bedslinger_tall_part")
+	if printer.get("kind", FilamentRules.DEFAULT_PROCESS) == "resin":
+		flags.append(RESIN_FLAG)
 	return flags
 
 
@@ -94,6 +99,8 @@ static func conditions(printer: Dictionary, preset: Dictionary, product: Diction
 ## A failure that `requires` a condition counts for nothing without it.
 static func weight_of(failure: Dictionary, flags: Array[StringName], filament: Dictionary, multipliers := {}) -> float:
 	if failure.has("requires") and not flags.has(StringName(failure["requires"])):
+		return 0.0
+	if (failure.get("process", FilamentRules.DEFAULT_PROCESS) == "resin") != flags.has(RESIN_FLAG):
 		return 0.0
 	var weight := float(failure["weight"])
 	for cause: String in failure["causes"]:

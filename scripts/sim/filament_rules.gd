@@ -6,11 +6,17 @@ extends RefCounted
 ## printers.json, products.json and parts.json.
 
 const DEFAULT_MATERIAL := "pla"
+## How a printer makes things, and so what it can be fed: a printer's `kind`
+## and a filament's `process`. Either is filament printing unless it says otherwise.
+const DEFAULT_PROCESS := "fdm"
 
 
 ## Why a printer can't print a filament, or "" if it can. `printer` is its row
 ## with any upgrades already applied (PrinterMods.apply).
 static func problem(printer: Dictionary, filament: Dictionary) -> String:
+	var process: String = filament.get("process", DEFAULT_PROCESS)
+	if printer.get("kind", DEFAULT_PROCESS) != process:
+		return "%s needs a resin printer" % filament["name"] if process == "resin" else "A resin printer takes resin, not filament"
 	if float(printer["max_nozzle_temp_c"]) < float(filament["nozzle_temp_c"]):
 		return "It can't get hot enough for %s" % filament["name"]
 	if filament["requires"]["enclosure"] and not printer["enclosed"]:

@@ -5,7 +5,7 @@ extends RefCounted
 ## slower wear. A multicolour unit is an upgrade too: its row carries a
 ## `multicolour` block (see Multicolour). Works on rows from data/upgrades.json.
 
-const MOTION_NAMES := {"bed_slinger": "bed slinger", "core_xy": "core XY"}
+const MOTION_NAMES := {"bed_slinger": "bed slinger", "core_xy": "core XY", "resin_lift": "resin"}
 
 ## Upgrades table by id.
 var upgrades: Dictionary
@@ -36,6 +36,9 @@ func problem(upgrade: StringName, printer: Dictionary) -> String:
 		return "" if unit_count() < int(row["multicolour"].get("max_linked", 1)) else "No more of these can be linked"
 	var motions: Array = row["fits_motion"]
 	if not motions.is_empty() and not motions.has(printer["motion"]):
+		return "Doesn't fit a %s printer" % MOTION_NAMES.get(printer["motion"], printer["motion"])
+	var kinds: Array = row.get("fits_kind", [])
+	if not kinds.is_empty() and not kinds.has(printer.get("kind", FilamentRules.DEFAULT_PROCESS)):
 		return "Doesn't fit a %s printer" % MOTION_NAMES.get(printer["motion"], printer["motion"])
 	var models: Array = row.get("fits_printers", [])
 	if not models.is_empty() and not models.has(printer["id"]):

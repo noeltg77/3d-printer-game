@@ -15,7 +15,7 @@ Stored exactly as supplied on 2026-10-09. Don't edit them to match the game; cha
 | `filaments.json` | 25 materials, 8 brands, 197 colour and material combinations | Garage PLA colours can come in any time; other materials in Phase 6 |
 | `accessories.json` | Multicolour units, dryers and dry boxes, moisture rules | Dryers in Phase 6, multicolour units in Phase 7 (the four slot Spare room ones so far, as rows in `data/upgrades.json`) |
 | `printers.json` | 12 form factors, 10 brands, 38 printers | Garage printers any time; others as tiers unlock (Phases 6, 8, 9) |
-| `products.json` | 660 products: 160 Garage, 474 Spare room, 19 Workshop, 7 Factory | Garage, Spare room and Workshop imported, less the contract only ones, which are marked `contract_only` and come with a client's contract once they have a model and a client to supply them. The Factory products are resin, which the game has no material for yet |
+| `products.json` | 660 products: 160 Garage, 474 Spare room, 19 Workshop, 7 Factory | Garage, Spare room and Workshop imported, less the contract only ones, which are marked `contract_only` and come with a client's contract once they have a model and a client to supply them. The Factory products are resin and are in too |
 
 ## Differences from the live game to resolve on import
 

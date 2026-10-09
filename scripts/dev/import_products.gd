@@ -23,7 +23,7 @@ const SKIPPED_PATTERNS: Array[String] = ["Contracts"]
 const LEGACY: Array[String] = ["desk_organiser", "flexi_dragon"]
 
 ## Catalogue materials whose filament id in data/filaments.json is not just the name in lower case.
-const FILAMENTS := {"Silk": "pla_silk", "Glow": "pla_glow", "Wood": "pla_wood", "Carbon PLA": "pla_cf"}
+const FILAMENTS := {"Silk": "pla_silk", "Glow": "pla_glow", "Wood": "pla_wood", "Carbon PLA": "pla_cf", "Resin": "resin"}
 
 ## Orders per game day at the typical price for the cheapest design in each catalogue
 ## size band. Small, cheap things sell fastest.

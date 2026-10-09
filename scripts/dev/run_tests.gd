@@ -11,6 +11,7 @@ func _init() -> void:
 	_test_printer_wear()
 	_test_printer_mods()
 	_test_multicolour()
+	_test_resin()
 	_test_filaments()
 	_test_moisture()
 	_test_design_studio()
@@ -114,7 +115,7 @@ func _test_print_risk() -> void:
 		if fate["at"] < span[0] or fate["at"] > span[1]:
 			_check(false, "%s struck at %.2f, outside when it happens" % [failure["id"], fate["at"]])
 			break
-	var rollable := data.failures.values().filter(func(row: Dictionary) -> bool: return float(row["weight"]) > 0.0 and not row.has("requires")).size()
+	var rollable := data.failures.values().filter(func(row: Dictionary) -> bool: return float(row["weight"]) > 0.0 and not row.has("requires") and not row.has("process")).size()
 	_check(counts.size() == rollable and not counts.has("breakdown"), "every failure with a weight can happen, and only those")
 	_check(not counts.has("filament_jam_feeder"), "a failure that requires a condition never happens without it")
 	_check(counts["first_layer"] > counts["tangled_spool"] * 2, "heavier failures happen more often")
@@ -354,6 +355,53 @@ func _test_multicolour() -> void:
 	for product: Dictionary in data.products.values():
 		if Multicolour.colours_of(product) > 1:
 			_check(Multicolour.swaps(product, Multicolour.colours_of(product)) > 0, "every multicolour design changes colour (%s)" % product["id"])
+
+
+func _test_resin() -> void:
+	var data := GameData.load_all()
+	var resin: Dictionary = data.filaments["resin"]
+	var pla: Dictionary = data.filaments["pla"]
+	var mars: Dictionary = data.printers["lumina_mars_mini"]
+	var plodder: Dictionary = data.printers["plodder_mini"]
+	var standard: Dictionary = data.presets["standard"]
+	_check(FilamentRules.problem(mars, resin) == "" and FilamentRules.problem(plodder, pla) == "", "a resin printer takes resin and a filament printer filament")
+	_check(FilamentRules.problem(plodder, resin) != "" and FilamentRules.problem(mars, pla) != "", "and neither takes the other's")
+	for filament: Dictionary in data.filaments.values():
+		if filament.get("process", "fdm") == "resin":
+			_check(filament["family"] == "resin" and float(filament["post_minutes"]) > 0.0 and is_zero_approx(float(filament["moisture_sensitivity"])), "every resin is washed and cured, and keeps dry in its bottle (%s)" % filament["id"])
+	_check(float(data.filaments["resin_ww"]["post_minutes"]) < float(resin["post_minutes"]), "water washable resin is quicker to clean up")
+	var minis: Dictionary = data.products["fantasy_miniatures_squad_of_5"]
+	_check(FilamentRules.suits(minis, resin) and FilamentRules.suits(minis, data.filaments["resin_tough"]) and not FilamentRules.suits(minis, pla), "a resin design prints in any resin and no filament")
+	for product: Dictionary in data.products.values():
+		if product["allowed_filaments"].has("resin"):
+			_check(data.printers.values().any(func(printer: Dictionary) -> bool: return printer["kind"] == "resin" and PrintRisk.fits(printer, product)), "every resin design fits some resin printer (%s)" % product["id"])
+
+	var on_resin := PrintRisk.conditions(mars, standard, minis)
+	var on_filament := PrintRisk.conditions(plodder, standard, data.products["cable_management_clips_x12"])
+	_check(on_resin.has(PrintRisk.RESIN_FLAG) and not on_filament.has(PrintRisk.RESIN_FLAG), "a print on a resin printer is flagged as one")
+	for failure: Dictionary in data.failures.values():
+		if float(failure["weight"]) <= 0.0 or failure.has("requires"):
+			continue
+		var is_resin: bool = failure.get("process", "fdm") == "resin"
+		_check((PrintRisk.weight_of(failure, on_resin, resin) > 0.0) == is_resin, "%s %s on a resin printer" % [failure["id"], "can happen" if is_resin else "can't happen"])
+		_check((PrintRisk.weight_of(failure, on_filament, pla) > 0.0) != is_resin, "%s %s on a filament printer" % [failure["id"], "can't happen" if is_resin else "can happen"])
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 6
+	var seen := {}
+	for attempt in 600:
+		seen[PrintRisk.pick(data.failures, on_resin, resin, rng)["id"]] = true
+	_check(seen.size() == 3 and seen.has("resin_peel_fail"), "a resin print fails in resin's own ways (%s)" % ", ".join(seen.keys()))
+	var wear := PrinterWear.new(data.parts, mars, 1.0)
+	_check(wear.slots().size() == 3 and wear.fitted.has(&"fep") and not wear.fitted.has(&"nozzle"), "a resin printer has a film, a screen and a vat, and no nozzle")
+	wear.damage(&"fep", 0.9)
+	_check(wear.flags().has(&"worn_fep") and PrintRisk.weight_of(data.failures["resin_peel_fail"], on_resin + wear.flags(), resin) > float(data.failures["resin_peel_fail"]["weight"]) * 2.0, "a worn film makes prints stick in the vat")
+
+	var mods := PrinterMods.new(data.upgrades)
+	_check(mods.problem(&"auto_eject_plate", mars) != "" and mods.problem(&"auto_eject_plate", plodder) == "", "an auto-eject plate is for filament printers: resin has to be washed by hand")
+	var belt: Dictionary = data.printers["conveyo_beltbot_pro"]
+	_check(belt["auto_eject"] and int(belt["auto_eject_tray"]) > 0 and mods.problem(&"auto_eject_plate", belt) != "", "a belt printer clears its own plate, so takes no auto-eject plate")
+	_check(PrintRisk.copies(belt, data.products["cable_management_clips_x12"]) > 20, "and its endless belt holds as many copies as you like")
+	_check(PrintRisk.fits(data.printers["colossus_titan_1000"], {"size_mm": [900, 900, 900]}) and not PrintRisk.fits(data.printers["zippy_x1"], {"size_mm": [900, 900, 900]}), "the biggest machine takes what nothing else will")
 
 
 func _test_filaments() -> void:

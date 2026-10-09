@@ -1,8 +1,9 @@
-"""Printer generator: open frame bed slinger, enclosed core XY, multicolour unit.
+"""Printer generator: open frame bed slinger, enclosed core XY, resin, multicolour unit.
 
 Moving parts are separate objects so the game can animate them:
   open_frame: frame > bed (slides Y), frame > gantry (lifts Z) > toolhead (slides X)
   enclosed:   frame > bed (drops Z), frame > gantry (slides Y) > toolhead (slides X)
+  resin:      frame > bed (the vat, still), frame > gantry (the lift arm, rises Z) > toolhead (the build plate)
 Markers: `plate` (where prints grow), `spool_mount`, `unit_mount`, and on the
 multicolour unit `spool_slot_1..4` and `link_mount` (where the next unit stacks).
 
@@ -115,6 +116,43 @@ def _enclosed(args):
     _toolhead(gantry_obj, (0.04, -0.03, 0.39), accent, size=(0.06, 0.05, 0.07))
 
 
+def _resin(args):
+    """Resin printer: a base with a vat on it, a column at the back and an arm that lifts the print out.
+
+    The names match the other printers so the game drives them all the same
+    way: the vat is `bed`, the lift arm `gantry` and the build plate `toolhead`.
+    The print is drawn standing in the vat while the arm rises above it.
+    `spool_mount` is where the resin bottle stands, on the back of the base.
+    """
+    accent, body = args.colour, args.body
+    frame = MeshBuilder()
+    frame.box((0.34, 0.34, 0.12), (0, 0, 0.066), body, bevel=0.01)
+    _feet(frame, 0.13, 0.13)
+    frame.box((0.2, 0.004, 0.02), (-0.03, -0.172, 0.05), accent)
+    frame.box((0.07, 0.004, 0.05), (0.11, -0.172, 0.075), "sky")
+    # Column up the back, with an amber screen behind the vat to keep the light in.
+    frame.box((0.07, 0.05, 0.42), (0.08, 0.135, 0.336), "charcoal", bevel=0.006)
+    frame.box((0.3, 0.012, 0.3), (0, 0.1, 0.276), "orange")
+    frame_obj = frame.finish("frame")
+    marker("spool_mount", (-0.12, 0.13, 0.126), frame_obj)
+    marker("unit_mount", (0, 0, 0.55), frame_obj)
+
+    vat = MeshBuilder()
+    vat.tray((0.24, 0.17, 0.045), 0.012, "ink", centre=(0, -0.03, 0.126))
+    vat_obj = vat.finish("bed", pivot=(0, -0.03, 0.126), parent=frame_obj)
+    marker("plate", (0, -0.03, 0.14), vat_obj)
+
+    rest = 0.2
+    arm = MeshBuilder()
+    arm.box((0.05, 0.19, 0.035), (0.08, 0.04, rest + 0.04), "metal_dark")
+    arm.box((0.2, 0.03, 0.03), (0, -0.03, rest + 0.04), "metal_dark")
+    arm_obj = arm.finish("gantry", pivot=(0, 0, rest), parent=frame_obj)
+    plate = MeshBuilder()
+    plate.box((0.2, 0.13, 0.02), (0, -0.03, rest + 0.012), "metal_light", bevel=0.003)
+    plate.box((0.04, 0.04, 0.02), (0, -0.03, rest + 0.03), accent)
+    plate.finish("toolhead", pivot=(0, -0.03, rest + 0.012), parent=arm_obj)
+
+
 def _multicolour_unit(args):
     accent = args.colour
     width, depth = 0.38, 0.27
@@ -133,7 +171,7 @@ def _multicolour_unit(args):
     marker("link_mount", (0, 0, 0.24), unit_obj)
 
 
-VARIANTS = {"open_frame": _open_frame, "enclosed": _enclosed, "multicolour_unit": _multicolour_unit}
+VARIANTS = {"open_frame": _open_frame, "enclosed": _enclosed, "resin": _resin, "multicolour_unit": _multicolour_unit}
 
 if __name__ == "__main__":
     common.run(sys.modules[__name__])

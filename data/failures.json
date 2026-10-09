@@ -165,6 +165,46 @@
 			"visual": "stalled",
 			"fix": "Clear the jam in the multicolour unit",
 			"player_text": "The colour unit has jammed and is flashing at you like it's your fault."
+		},
+		{
+			"id": "resin_peel_fail",
+			"name": "Print stuck in the vat",
+			"process": "resin",
+			"happens": "mid",
+			"outcome": "scrap",
+			"weight": 8,
+			"causes": { "worn_fep": 3.0 },
+			"damages": { "fep": 0.3 },
+			"clear_minutes": 10,
+			"visual": "stalled",
+			"fix": "Fish the cured blob out of the vat",
+			"player_text": "The print stayed in the vat instead of coming up with the plate. Fishing time."
+		},
+		{
+			"id": "resin_dead_pixels",
+			"name": "Dead screen pixels",
+			"process": "resin",
+			"happens": "end",
+			"outcome": "degraded",
+			"weight": 3,
+			"causes": { "worn_lcd": 5.0 },
+			"quality_loss": 1,
+			"fix": "Replace the LCD screen",
+			"player_text": "Same tiny hole in every print. The screen is dying."
+		},
+		{
+			"id": "resin_leak",
+			"name": "Resin leak",
+			"process": "resin",
+			"happens": "mid",
+			"outcome": "stop",
+			"weight": 2,
+			"causes": { "worn_fep": 4.0, "worn_vat": 2.0 },
+			"damages": { "lcd": 0.4 },
+			"clear_minutes": 20,
+			"visual": "stalled",
+			"fix": "Mop up and check the screen",
+			"player_text": "There is resin where resin should never be."
 		}
 	]
 }

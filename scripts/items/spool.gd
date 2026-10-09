@@ -1,9 +1,11 @@
 class_name Spool
 extends Node3D
 ## A spool of filament as a physical item that can sit in a rack slot, be
-## carried, or be mounted on a printer.
+## carried, or be mounted on a printer. Resin is one too: a filament whose
+## `container` is "bottle" comes in a bottle, and is otherwise handled the same.
 
 const MODEL_PATH := "res://assets/models/filament/spool_%s.glb"
+const BOTTLE_PATH := "res://assets/models/filament/bottle_%s.glb"
 ## Below this a spool counts as empty and gets binned rather than racked.
 const EMPTY_GRAMS := 1.0
 
@@ -24,7 +26,8 @@ static func create(p_colour: StringName, p_grams := 1000.0, p_material: StringNa
 	spool.material = p_material
 	spool.grams = p_grams
 	spool.name = "Spool_%s" % p_colour
-	spool.add_child((load(MODEL_PATH % p_colour) as PackedScene).instantiate())
+	var bottled: bool = Game.data.filaments[p_material].get("container", "spool") == "bottle"
+	spool.add_child((load((BOTTLE_PATH if bottled else MODEL_PATH) % p_colour) as PackedScene).instantiate())
 	return spool
 
 

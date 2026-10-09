@@ -133,6 +133,7 @@ func _ready() -> void:
 	_bed_rest = _bed.position
 	_gantry_rest = _gantry.position
 	_toolhead_rest = _toolhead.position
+	_mount_tray()
 
 
 func _process(delta: float) -> void:
@@ -150,7 +151,10 @@ func _process(delta: float) -> void:
 		var ended := job.advance(delta)
 		_grow(job.progress)
 		var built := item.height * _plate_scale * job.progress
-		if spec["motion"] == "core_xy":
+		if spec["motion"] == "resin_lift":
+			# The arm lifts the build plate clear as the print grows in the vat.
+			gantry_target.y += built
+		elif spec["motion"] == "core_xy":
 			# The head stays up and darts about; the bed sinks as the print grows.
 			bed_target.y += CORE_XY_LIFT - built
 			toolhead_target.x += sin(_time * 5.0) * 0.09 - 0.05
@@ -196,7 +200,13 @@ func _status_actions() -> Array[Action]:
 			return [Action.info("Printing %s: %d%%, %s left" % [_batch_title(Game.product_name(item.product)), roundi(job.progress * 100.0), left])]
 		Status.DONE:
 			if _shelf().free_slots() >= copies():
-				return [Action.new("Collect %s" % _batch_title(item.describe()), _collect).for_duty(&"collect")]
+				var wash := post_minutes()
+				var label := "Collect %s" % _batch_title(item.describe())
+				if wash > 0.0:
+					label = "Wash, cure and collect %s (%s)" % [_batch_title(item.describe()), GameClock.duration_label(wash)]
+				var collect := Action.new(label, _collect).for_duty(&"collect")
+				collect.task_name = "Collect %s" % _batch_title(item.describe())
+				return [collect]
 			return [Action.info("Collect print (shelving is full)" if copies() == 1 else "Collect prints (the shelving needs %d free spaces)" % copies())]
 		Status.FAILED:
 			var failure := scrap.failure
@@ -237,14 +247,21 @@ func max_copies(product: StringName) -> int:
 	return clampi(PrintRisk.copies(spec, Game.data.products[product], float(toggle["gap_mm"])), 1, int(toggle["max_copies"]))
 
 
-## True if an auto-eject plate is fitted.
+## True if the printer clears its own plate: an auto-eject plate is fitted, or
+## it is built that way (a belt printer).
 func has_auto_eject() -> bool:
 	return _tray_floor != null
 
 
 ## How many prints the auto-eject tray holds.
 func tray_capacity() -> int:
-	return int(mods.block("auto_eject").get("tray", 0))
+	return int(mods.block("auto_eject").get("tray", spec.get("auto_eject_tray", 0)))
+
+
+## Game minutes of finishing the print on the plate needs before it is fit to
+## shelve: washing and curing, for resin. Nothing for filament.
+func post_minutes() -> float:
+	return float(Game.data.filaments[item.material].get("post_minutes", 0)) if item != null else 0.0
 
 
 func has_unit() -> bool:
@@ -756,6 +773,8 @@ func _collect(agent: Agent) -> void:
 		agent.say("Nothing to collect" if status != Status.DONE else "Not enough room on the shelving")
 		return
 	await agent.go_to(self)
+	if post_minutes() > 0.0:
+		await agent.work(post_minutes())
 	await agent.reach(func() -> void: _pick_up(agent, take_items()))
 	await _shelve(agent, shelf)
 
@@ -861,7 +880,7 @@ func _fit_upgrade(agent: Agent, upgrade: StringName) -> void:
 ## Puts the auto-eject tray beside the printer, if the upgrades include the
 ## plate and it isn't there already.
 func _mount_tray() -> void:
-	if _tray_floor != null or mods.block("auto_eject").is_empty():
+	if _tray_floor != null or (mods.block("auto_eject").is_empty() and not spec.get("auto_eject", false)):
 		return
 	var model: Node3D = (load(GameData.TRAY_MODEL) as PackedScene).instantiate()
 	add_child(model)

@@ -116,7 +116,7 @@
 			"about": "A small town museum that lets children handle the exhibits, or copies of them.",
 			"unlock_tier": 3,
 			"categories": ["education_and_stem", "home_decor"],
-			"supplies": ["museum_replica_artefact", "medical_training_model"],
+			"supplies": ["museum_replica_artefact", "medical_training_model", "dental_model_batch"],
 			"quantity": [3, 8],
 			"price_multiplier": [0.95, 1.15],
 			"slack": [2.5, 3.5],

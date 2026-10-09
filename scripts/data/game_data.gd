@@ -141,8 +141,21 @@ func _check_references() -> void:
 			else:
 				fitted[parts[part_id]["slot"]] = true
 	var families := {}
+	var kinds := {}
+	for printer: Dictionary in printers.values():
+		kinds[printer.get("kind", "fdm")] = true
+		if printer.get("auto_eject", false) and int(printer.get("auto_eject_tray", 0)) < 1:
+			errors.append("printer %s: ejects its own prints but has no auto_eject_tray" % printer["id"])
 	for filament: Dictionary in filaments.values():
 		families[filament.get("family", "")] = true
+		if not kinds.has(filament.get("process", "fdm")):
+			errors.append("filament %s: no printer of kind \"%s\" to print it" % [filament["id"], filament.get("process", "fdm")])
+		if not filaments.has(filament.get("family", "")):
+			errors.append("filament %s: its family \"%s\" isn't the id of a filament" % [filament["id"], filament.get("family", "")])
+		if filament.get("container", "spool") == "bottle":
+			for colour: String in filament["colours"]:
+				if not ResourceLoader.exists("res://assets/models/filament/bottle_%s.glb" % colour):
+					errors.append("filament %s: no bottle model for \"%s\"" % [filament["id"], colour])
 	for dryer: Dictionary in dryers.values():
 		for family: String in dryer.get("dries", []):
 			if not families.has(family):

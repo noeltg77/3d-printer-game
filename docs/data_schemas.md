@@ -40,8 +40,9 @@ Display currencies, keyed by code. Not a table of rows with ids.
 | Field | Meaning |
 | --- | --- |
 | `name`, `brand`, `description` | Display text. Parody brands only |
-| `kind` | `fdm` for now. Later: `resin`, `sls`, `industrial` |
-| `motion` | `bed_slinger` or `core_xy` |
+| `kind` | `fdm` or `resin`: how it makes things, and so what it takes (a filament's `process`), how it fails (a failure's `process`) and which kits fit (`fits_kind`). SLS is not in |
+| `motion` | `bed_slinger`, `core_xy` or `resin_lift`. Picks the print animation |
+| `auto_eject`, `auto_eject_tray` | Optional. A printer built to clear its own plate (a belt printer), and how many prints its tray holds. It behaves as if an auto-eject plate were fitted |
 | `price_pence` | Supplier shop price |
 | `speed_multiplier` | Divides a product's `print_minutes` |
 | `build_volume_mm` | `[x, y, z]`. A product must fit, either way round on the bed, to be printable (`PrintRisk.fits`) |
@@ -58,7 +59,10 @@ Display currencies, keyed by code. Not a table of rows with ids.
 
 | Field | Meaning |
 | --- | --- |
-| `family` | The plain filament this is a variety of. A design that allows a family allows every filament in it |
+| `family` | The plain filament this is a variety of, by its id. A design that allows a family allows every filament in it |
+| `process` | Optional. `resin` for a resin: only a printer of that `kind` takes it. Filament printing if absent |
+| `container` | Optional. `bottle` if it comes in a bottle, not on a spool. It needs a `bottle_<colour>.glb` for each of its colours |
+| `post_minutes` | Optional. Character time to finish each plate before it is shelved: washing and curing, for resin |
 | `price_pence_per_kg`, `spool_grams` | Spool cost is derived from these |
 | `nozzle_temp_c` | Minimum nozzle temperature needed |
 | `speed_multiplier` | Below 1.0 prints slower (TPU) |
@@ -71,7 +75,7 @@ Display currencies, keyed by code. Not a table of rows with ids.
 | `failure_modifiers` | Multipliers on the weight of a failure from `failures.json`, by its id, e.g. `{ "warping": 1.6 }` |
 | `colours` | Colours this filament is sold in |
 
-Imported from `docs/design_data/filaments.json` (`materials`): PLA, three special PLAs, carbon PLA, PETG, TPU, ABS and ASA. `failure_modifiers` come from the design's 1 to 5 scores: stringing is `1 + (score - 2) x 0.25`, warping `1 + (score - 1) x 0.2`. The shop only sells a filament once the business has reached its tier and some design in the game can be printed in it.
+Imported from `docs/design_data/filaments.json` (`materials`): PLA, three special PLAs, carbon PLA, PETG, TPU, ABS, ASA and the three resins. Nylon and polycarbonate are not in, and the design has no powder for an SLS machine. `failure_modifiers` come from the design's 1 to 5 scores: stringing is `1 + (score - 2) x 0.25`, warping `1 + (score - 1) x 0.2`. The shop only sells a filament once the business has reached its tier and some design in the game can be printed in it.
 
 ## products.json
 
@@ -160,6 +164,7 @@ The chance that a print fails at all is `(1 - printer reliability) x preset fail
 | `weight` | How often it is the failure picked, relative to the others |
 | `causes` | Condition flag to multiplier on `weight`. Flags so far: `draft_preset`, `no_auto_level`, `large_part`, `tall_thin_part`, `bedslinger_tall_part` (`PrintRisk.conditions`), `worn_<slot>` for each part below 30% health (`PrinterWear.flags`), `wet_filament`, and from a multicolour unit `multicolour_unit`, `tpu_in_multicolour` and `many_colour_swaps` (`Multicolour.flags`) |
 | `requires` | Optional. A condition flag the failure can't happen without: `multicolour_unit` for the unit's own jam |
+| `process` | Optional. `resin` for a failure of resin printers, which then never happens on a filament printer. Every other failure never happens on a resin one |
 | `damages` | Part slot to health (0 to 1) the failure knocks off that part |
 | `clear_minutes` | Scrap and stop only. Character time to put the printer right |
 | `visual` | Scrap and stop only. What is left on the plate: `noodles`, `toppled`, `spaghetti` or `stalled` |
@@ -180,6 +185,7 @@ Kits fitted to a printer for good. Imported from `docs/design_data/parts.json` (
 | `price_pence`, `install_minutes` | Shop price, and character time to fit it |
 | `fits_motion` | Printer `motion` values it fits. Empty for any printer |
 | `fits_printers` | Optional. Printer ids it fits, for a kit made for particular machines |
+| `fits_kind` | Optional. Printer `kind` values it fits. Any kind if absent |
 | `multicolour` | Optional. Makes the kit a multicolour unit; see below |
 | `auto_eject` | Optional, with `grants: ["auto_eject"]`. Makes the kit an auto-eject plate: `tray` is how many prints the tray beside the printer holds. A good or flawed print is thrown off the plate as it finishes, onto the conveyor if the building has one and the shelving has room, or else into the tray. A failed print still has to be cleared by hand. A printer with one, told to keep its job going, restarts itself |
 | `fixture` | Optional. The kit goes on the building, not a printer, and no printer will take it. `conveyor` is the one so far: fitted from the `Conveyor` controls in a scene that has them (the factory), it carries prints from auto-eject plates to the shelving |

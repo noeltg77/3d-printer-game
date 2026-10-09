@@ -150,6 +150,51 @@
 			"price_pence": 999,
 			"pack_size": 1,
 			"break_text": "The nozzle wiper has worn down to a stub and is now just waving at the nozzle."
+		},
+		{
+			"id": "fep_film_pack_of_3",
+			"name": "FEP film",
+			"slot": "fep",
+			"slot_name": "FEP film",
+			"description": "The clear film on the bottom of a resin vat. It clouds and dents, and then prints stick to it instead of the plate.",
+			"unlock_tier": 4,
+			"lifespan_print_hours": 150,
+			"abrasive_wear_multiplier": 1.0,
+			"max_extra_fail": 0.15,
+			"replace_minutes": 20,
+			"price_pence": 1999,
+			"pack_size": 3,
+			"break_text": "The film in the vat has clouded over. Nothing is going to peel off that."
+		},
+		{
+			"id": "lcd_screen",
+			"name": "LCD screen",
+			"slot": "lcd",
+			"slot_name": "LCD screen",
+			"description": "The screen that shines the picture of each layer into the resin. The light slowly kills it.",
+			"unlock_tier": 4,
+			"lifespan_print_hours": 2000,
+			"abrasive_wear_multiplier": 1.0,
+			"max_extra_fail": 0.2,
+			"replace_minutes": 40,
+			"price_pence": 6899,
+			"pack_size": 1,
+			"break_text": "The screen under the vat has gone dark. No light, no layers."
+		},
+		{
+			"id": "resin_vat",
+			"name": "Resin vat",
+			"slot": "vat",
+			"slot_name": "Resin vat",
+			"description": "The tray the resin sits in. A cracked one leaks.",
+			"unlock_tier": 4,
+			"lifespan_print_hours": 4000,
+			"abrasive_wear_multiplier": 1.0,
+			"max_extra_fail": 0.06,
+			"replace_minutes": 10,
+			"price_pence": 3499,
+			"pack_size": 1,
+			"break_text": "The vat has cracked. It is holding resin the way a sieve would."
 		}
 	]
 }

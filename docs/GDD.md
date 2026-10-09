@@ -301,7 +301,7 @@ Build small and prove each step before moving on: assets and garage first, then 
 ### Phase 9: Tier 4 factory
 
 - [x] Industrial unit, larger farms, automation (auto-eject, conveyors)
-- [ ] Resin, SLS and industrial machines
+- [ ] Resin, SLS and industrial machines. Resin is in (three printers, three resins, their parts and failures, the resin products), with a large format machine, a production machine and a belt printer. SLS still to do: the design data has machines for it but no powder and no products
 - [ ] Large contracts, events, milestones
 - [ ] Optional injection moulding endgame
 

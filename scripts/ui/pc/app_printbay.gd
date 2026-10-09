@@ -14,7 +14,7 @@ const SHADOW := Color("DCE2EE")
 const LOCK_TEXT := Color("5A4A1C")
 const LOCK_BG := Color("F4EBCF")
 const TABS := {"printers": "Printers", "packaging": "Packaging", "upgrades": "Upgrades", "parts": "Spare parts", "dryers": "Dryers"}
-const MOTIONS := {"bed_slinger": "Bed slinger", "core_xy": "Core XY"}
+const MOTIONS := {"bed_slinger": "Bed slinger", "core_xy": "Core XY", "resin_lift": "Resin"}
 ## Speed multiplier and build volume (litres) that fill a stat bar completely.
 const FULL_SPEED := 3.0
 const FULL_VOLUME := 40.0
@@ -119,8 +119,10 @@ func _printer_card(printer_id: String, spec: Dictionary) -> Control:
 		extras.append("levels its own bed")
 	if spec["direct_drive"]:
 		extras.append("direct drive")
-	if spec["enclosed"]:
+	if spec["enclosed"] and spec.get("kind", "fdm") == "fdm":
 		extras.append("enclosed")
+	if spec.get("auto_eject", false):
+		extras.append("clears its own plate")
 	if not extras.is_empty():
 		column.add_child(Ui.wrap(Ui.text("Built in: %s" % ", ".join(extras), 13, Ui.GREEN_DARK, 800)))
 	if too_big > 0:
