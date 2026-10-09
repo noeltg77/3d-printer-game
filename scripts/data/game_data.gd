@@ -15,6 +15,8 @@ const TABLES := {
 	"premises": "res://data/premises.json",
 	"dryers": "res://data/dryers.json",
 	"clients": "res://data/contracts.json",
+	"roles": "res://data/staff.json",
+	"shifts": "res://data/staff.json",
 }
 const FAILURE_HAPPENS: PackedStringArray = ["start", "mid", "end"]
 const FAILURE_OUTCOMES: PackedStringArray = ["scrap", "stop", "degraded"]
@@ -40,6 +42,10 @@ var premises: Dictionary = {}
 var dryers: Dictionary = {}
 ## Clients who send contract enquiries, by id (data/contracts.json).
 var clients: Dictionary = {}
+## Staff roles and the shifts they can work, by id, and the whole of data/staff.json.
+var roles: Dictionary = {}
+var shifts: Dictionary = {}
+var staff_config: Dictionary = {}
 ## Print toggles such as multicolour, by id (the `toggles` list in data/presets.json).
 var toggles: Dictionary = {}
 ## What each durability score (1 to 5) means, keyed by the score as text.
@@ -61,6 +67,9 @@ static func load_all() -> GameData:
 		data.settings = settings
 	else:
 		data.errors.append("%s: expected an object" % SETTINGS)
+	var staff_file: Variant = JSON.parse_string(FileAccess.get_file_as_string(TABLES["roles"]))
+	if staff_file is Dictionary:
+		data.staff_config = staff_file
 	var presets_file: Variant = JSON.parse_string(FileAccess.get_file_as_string(TABLES["presets"]))
 	if presets_file is Dictionary:
 		data.durability_labels = presets_file.get("durability_labels", {})
@@ -145,6 +154,13 @@ func _check_references() -> void:
 		for filament_id: String in product.get("allowed_filaments", []):
 			if not filaments.has(filament_id) and not families.has(filament_id):
 				errors.append("product %s: unknown filament \"%s\"" % [product["id"], filament_id])
+	if shifts.is_empty():
+		errors.append("staff.json: no shifts")
+	if staff_config.get("names", []).size() < int(staff_config.get("applicants", 0)) or staff_config.get("looks", []).is_empty():
+		errors.append("staff.json: needs a name for every applicant and at least one look")
+	for look: String in staff_config.get("looks", []):
+		if not ResourceLoader.exists("res://assets/models/characters/%s.glb" % look):
+			errors.append("staff.json: no character model \"%s\"" % look)
 	for client: Dictionary in clients.values():
 		for supplied: String in client.get("supplies", []):
 			if not products.has(supplied):

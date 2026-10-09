@@ -241,6 +241,7 @@ The places the business can run from, smallest first.
 | `scene` | The scene for the place. It needs the same parts as the garage scene (see `WorldSave.PARTS`), each with at least as many slots as the place before, so everything fits when the business moves |
 | `move_cost_pence` | Paid once to move in |
 | `rent_pence_per_day` | Charged at midnight every game day |
+| `staff` | How many staff the place has room for. Staff also need a `StaffRoom` node in the scene, where they come in |
 | `printer_spots`, `shelf_slots`, `rack_slots` | Shown on the place's card. They describe the scene; they don't set it. A scene with several benches still has one `Workbench`, whose `printer_spots` reach onto the others |
 
 ## contracts.json
@@ -258,6 +259,22 @@ The places the business can run from, smallest first.
 | `min_quality`, `min_durability` | The lowest finish and strength (1 to 5) it takes. `min_durability` is optional. It never takes a flawed item, or a multicolour design printed in one colour |
 | `late_pct_per_day` | Share of the whole price knocked off for each day, or part of one, past the deadline |
 | `asks` | Things it writes, one picked at random for each enquiry |
+
+## staff.json
+
+Written for the game; the design data has no staff. Every number is a placeholder.
+
+`roles`: the jobs staff can be taken on to do.
+
+| Field | Meaning |
+| --- | --- |
+| `name`, `description` | Shown in the Rota app |
+| `wage_pence_per_day` | Charged at midnight for every day the person is on the team, shift worked or not |
+| `duties` | The kinds of task they look for, most pressing first. Each matches the `duty` of an `Action` in the code: `clear` (a failed print), `collect` (a finished one), `reprint` (start a printer's last job again, if the printer is set to keep going), `pack` (an order), `send` (a contract crate) |
+
+`shifts`: the hours staff can work, by `id`, with a `name` and a `start_minute` and `end_minute` of the day. A new hire starts on the first.
+
+Beside the tables: `applicants` is how many people apply each day (the first few cover every role), `looks` the character models they can have, and `names` what they can be called.
 
 ## game.json
 

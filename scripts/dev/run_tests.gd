@@ -18,6 +18,7 @@ func _init() -> void:
 	_test_premises()
 	_test_stockroom()
 	_test_contracts()
+	_test_staff()
 	_test_clock()
 	_test_bank()
 	_test_money()
@@ -719,6 +720,60 @@ func _test_contracts() -> void:
 	var doomed_again := again.by_id(doomed.id)
 	_check(doomed_again.status == Contracts.Status.FAILED and doomed_again.delivered == 4 and doomed_again.paid == doomed.paid and typeof(doomed_again.paid) == TYPE_INT, "each as it was, in whole pence")
 	_check(again.offer(0.0, rng, owned, 3).id == book.offer(0.0, rng, owned, 3).id, "and new enquiries carry on numbering")
+
+
+func _test_staff() -> void:
+	var data := GameData.load_all()
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 4
+	var staff := Staff.new(data)
+	_check(staff.team.is_empty() and staff.wages_per_day() == 0 and not staff.has_duty("collect"), "a business starts with nobody on the payroll")
+	staff.refresh_applicants(rng, 1)
+	_check(staff.applicants.is_empty(), "nobody applies to a business too small for any role")
+	staff.refresh_applicants(rng, 3)
+	_check(staff.applicants.size() == int(data.staff_config["applicants"]), "applicants turn up once there are roles to fill")
+	var applied := {}
+	var named := {}
+	for applicant in staff.applicants:
+		applied[applicant["role"]] = true
+		named[applicant["name"]] = true
+		_check(data.staff_config["looks"].has(applicant["look"]), "each applicant has a look the game has a model for")
+	_check(applied.size() == data.roles.size() and named.size() == staff.applicants.size(), "there is someone for every role, and no two share a name")
+	_check(staff.hire_problem(0, 0) != "" and staff.hire(0, 100.0, 0).is_empty(), "nobody can be taken on where there is no room for staff")
+	var first := staff.hire(0, 100.0, 2)
+	_check(not first.is_empty() and staff.team.size() == 1 and staff.applicants.size() == int(data.staff_config["applicants"]) - 1, "an applicant taken on joins the team and leaves the list")
+	_check(staff.wages_per_day() == int(data.roles[first["role"]]["wage_pence_per_day"]), "and is paid their role's wage each day")
+	var second := staff.hire(0, 100.0, 2)
+	_check(second["id"] != first["id"] and staff.hire_problem(0, 2) != "", "the team can grow to the room there is and no further")
+	_check(staff.wages_per_day() == int(data.roles[first["role"]]["wage_pence_per_day"]) + int(data.roles[second["role"]]["wage_pence_per_day"]), "wages add up across the team")
+	_check(staff.duties(first) == data.roles[first["role"]]["duties"] and staff.has_duty(staff.duties(first)[0]), "a member of staff does their role's duties")
+
+	var day: Dictionary = data.shifts["day"]
+	_check(first["shift"] == "day" and staff.on_shift(first, float(day["start_minute"])) and staff.on_shift(first, float(day["end_minute"]) - 1.0), "a new hire works days, from the start of the shift")
+	_check(not staff.on_shift(first, float(day["start_minute"]) - 1.0) and not staff.on_shift(first, float(day["end_minute"])), "and not before it or after it")
+	staff.set_shift(int(first["id"]), "late")
+	staff.set_shift(int(first["id"]), "no_such_shift")
+	_check(staff.member(int(first["id"]))["shift"] == "late" and staff.on_shift(first, float(data.shifts["late"]["end_minute"]) - 1.0), "their shift can be changed to another the game has")
+	staff.refresh_applicants(rng, 3)
+	for applicant in staff.applicants:
+		_check(applicant["name"] != first["name"] and applicant["name"] != second["name"], "nobody applies with the name of someone already on the team")
+
+	var saved := _through_file(staff.save())
+	saved["team"].append({"id": 9, "name": "Nobody", "role": "gone_role", "shift": "day", "look": "character_02", "hired_at": 0.0})
+	var again := Staff.new(data)
+	again.restore(saved)
+	_check(again.team.size() == 2 and again.member(int(first["id"]))["shift"] == "late" and typeof(again.team[0]["id"]) == TYPE_INT, "the team comes back from a save, without anyone in a role the game no longer has")
+	_check(again.applicants.size() == staff.applicants.size() and again.hire(0, 0.0, 3)["id"] == staff.hire(0, 0.0, 3)["id"], "applicants come back too, and hires carry on numbering")
+	staff.fire(int(first["id"]))
+	_check(staff.member(int(first["id"])).is_empty() and staff.team.size() == 2, "someone let go is off the team")
+	for role: Dictionary in data.roles.values():
+		_check(not role["duties"].is_empty() and int(role["wage_pence_per_day"]) > 0, "every role has duties and a wage (%s)" % role["id"])
+	for shift: Dictionary in data.shifts.values():
+		_check(float(shift["start_minute"]) < float(shift["end_minute"]) and float(shift["end_minute"]) <= GameClock.DAY, "every shift starts before it ends, inside one day (%s)" % shift["id"])
+	var room := 0
+	for place: Dictionary in data.premises.values():
+		_check(int(place["staff"]) >= room, "a bigger place has room for at least as many staff (%s)" % place["id"])
+		room = int(place["staff"])
 
 
 func _test_clock() -> void:

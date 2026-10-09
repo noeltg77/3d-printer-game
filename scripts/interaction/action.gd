@@ -15,6 +15,9 @@ var enabled := true
 var immediate := false
 ## If not empty this entry opens a submenu instead of running.
 var children: Array[Action] = []
+## The kind of job this is, if staff may pick it up for themselves: one of the
+## duties in data/staff.json. Empty for something only the player decides.
+var duty: StringName = &""
 
 
 func _init(p_label: String, p_run := Callable(), p_enabled := true) -> void:
@@ -25,6 +28,12 @@ func _init(p_label: String, p_run := Callable(), p_enabled := true) -> void:
 
 func get_task_name() -> String:
 	return label if task_name.is_empty() else task_name
+
+
+## Marks the action as a job staff with that duty may pick up. Returns it.
+func for_duty(p_duty: StringName) -> Action:
+	duty = p_duty
+	return self
 
 
 ## A greyed-out line that just tells the player something.

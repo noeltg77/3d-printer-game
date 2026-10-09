@@ -32,6 +32,8 @@ var studio: DesignStudio
 var stock: Stockroom
 ## Enquiries from business clients and the contracts taken on (the Inbox app).
 var contracts: Contracts
+## The team, and who has applied to join it (the Rota app).
+var staff: Staff
 var owned_designs: Array[StringName] = []
 ## Mailer boxes in stock, one used per packed order.
 var packaging := 0
@@ -106,6 +108,14 @@ func _process(delta: float) -> void:
 		bank.charge(rent, "Rent: %s" % premises_row()["name"], clock.minutes)
 		notify("Rent paid on the %s: %s" % [String(premises_row()["name"]).to_lower(), Money.format(rent)])
 		changed.emit()
+	if staff_capacity() > 0 and (clock.crossed(before, 0.0) or (staff.applicants.is_empty() and staff.team.size() < staff_capacity())):
+		staff.refresh_applicants(rng, tier)
+		changed.emit()
+	var wages := staff.wages_per_day()
+	if wages > 0 and clock.crossed(before, 0.0):
+		bank.charge(wages, "Wages", clock.minutes)
+		notify("Wages paid: %s" % Money.format(wages))
+		changed.emit()
 	if contracts_unlocked():
 		_run_contracts(before)
 	var stock_check := float(data.settings["stock"]["check_minutes"])
@@ -131,6 +141,7 @@ func new_game() -> void:
 	studio = DesignStudio.new(data.products, data.settings["design"])
 	stock = Stockroom.new(data)
 	contracts = Contracts.new(data)
+	staff = Staff.new(data)
 	_stock_blocked.clear()
 	owned_designs.assign(start["designs"])
 	packaging = int(start["packaging"])
@@ -193,6 +204,7 @@ func save() -> Dictionary:
 		"studio": studio.save(),
 		"stock": stock.save(),
 		"contracts": contracts.save(),
+		"staff": staff.save(),
 		"owned_designs": owned_designs, "packaging": packaging, "tier": tier, "premises": premises,
 	}
 
@@ -217,6 +229,8 @@ func restore(state: Dictionary) -> void:
 		stock.restore(state["stock"])
 	if state.has("contracts"):
 		contracts.restore(state["contracts"])
+	if state.has("staff"):
+		staff.restore(state["staff"])
 	_share_own_designs()
 	owned_designs.clear()
 	for product: String in state["owned_designs"]:
@@ -277,6 +291,11 @@ func move_problem(place: StringName) -> String:
 	for printer: PrinterStation in get_tree().get_nodes_in_group(&"printer"):
 		if printer.status == PrinterStation.Status.PRINTING:
 			return "Wait for your prints to finish first"
+	for worker: Agent in get_tree().get_nodes_in_group(&"staff"):
+		if not worker.is_between_tasks():
+			return "Wait for your staff to finish what they are doing"
+	if staff.team.size() > int(row.get("staff", 0)):
+		return "There is no room for your staff there"
 	return ""
 
 
@@ -539,6 +558,35 @@ func place_supplier_order(basket: Dictionary, shop := "", quiet := false) -> boo
 		notify("Order placed with %s" % shop)
 	changed.emit()
 	return true
+
+
+## How many staff the premises have room for. None until there is a workshop.
+func staff_capacity() -> int:
+	return int(premises_row().get("staff", 0))
+
+
+## Takes on one of today's applicants. False if it can't be done.
+func hire_staff(index: int) -> bool:
+	var member := staff.hire(index, clock.minutes, staff_capacity())
+	if member.is_empty():
+		return false
+	notify("%s has joined as your %s" % [member["name"], String(data.roles[member["role"]]["name"]).to_lower()], &"good")
+	changed.emit()
+	return true
+
+
+func fire_staff(id: int) -> void:
+	var member := staff.member(id)
+	if member.is_empty():
+		return
+	notify("%s has left the business" % member["name"])
+	staff.fire(id)
+	changed.emit()
+
+
+func set_staff_shift(id: int, shift: String) -> void:
+	staff.set_shift(id, shift)
+	changed.emit()
 
 
 ## True once the business is big enough for clients to come to it.

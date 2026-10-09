@@ -47,6 +47,7 @@ func _card(place: StringName) -> Control:
 			_fact("Printers", str(int(row["printer_spots"]))),
 			_fact("Shelf spaces", str(int(row["shelf_slots"]))),
 			_fact("Filament rack", "%d spools" % int(row["rack_slots"])),
+			_fact("Staff", str(int(row["staff"])) if int(row["staff"]) > 0 else "Just you"),
 			_fact("Rent", "%s a day" % Money.format(rent) if rent > 0 else "None"),
 		], 6),
 		null,

@@ -1,0 +1,31 @@
+{
+	"schema_version": 1,
+	"roles": [
+		{
+			"id": "operator",
+			"name": "Print operator",
+			"description": "Collects finished prints, clears up failed ones, and sets the same job going again on any printer you have told to keep printing.",
+			"unlock_tier": 3,
+			"wage_pence_per_day": 4499,
+			"duties": ["clear", "collect", "reprint"]
+		},
+		{
+			"id": "packer",
+			"name": "Packer",
+			"description": "Packs each order as soon as the print for it is on the shelf, and crates up contract work for the courier.",
+			"unlock_tier": 3,
+			"wage_pence_per_day": 3999,
+			"duties": ["pack", "send"]
+		}
+	],
+	"shifts": [
+		{ "id": "day", "name": "Days", "start_minute": 480, "end_minute": 1020 },
+		{ "id": "late", "name": "Lates", "start_minute": 840, "end_minute": 1380 }
+	],
+	"applicants": 3,
+	"looks": ["character_02", "character_03", "character_04"],
+	"names": [
+		"Priya", "Tomasz", "Bronwen", "Dev", "Maisie", "Olu", "Fergus", "Anika", "Callum", "Rosa",
+		"Idris", "Hattie", "Kwame", "Nell", "Stefan", "Wren", "Jago", "Leila", "Bartek", "Edie"
+	]
+}

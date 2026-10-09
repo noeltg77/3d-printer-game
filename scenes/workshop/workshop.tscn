@@ -35,6 +35,7 @@
 [ext_resource type="Script" path="res://scripts/game/world_save.gd" id="36_world_save"]
 [ext_resource type="Script" path="res://scripts/world/day_night.gd" id="37_day_night"]
 [ext_resource type="Script" path="res://scripts/world/dryer_spot.gd" id="38_dryer_spot"]
+[ext_resource type="Script" path="res://scripts/world/staff_room.gd" id="39_staff_room"]
 
 [sub_resource type="Environment" id="Environment_garage"]
 background_mode = 1
@@ -166,6 +167,10 @@ script = ExtResource("38_dryer_spot")
 [node name="DeliveryZone" type="Node3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.45, 0, -1.0)
 script = ExtResource("31_delivery_zone")
+
+[node name="StaffRoom" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.2, 0, 1.9)
+script = ExtResource("39_staff_room")
 
 [node name="Outbox" parent="." instance=ExtResource("33_outbox_mat")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.45, 0, 0.75)

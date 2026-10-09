@@ -294,7 +294,7 @@ Build small and prove each step before moving on: assets and garage first, then 
 ### Phase 8: Tier 3 workshop
 
 - [x] Rented unit, print farm layout
-- [ ] Staff: hiring, wages, roles, simple scheduling
+- [x] Staff: hiring, wages, roles, simple scheduling
 - [x] Stock management, reorder points, supplier lead times
 - [x] B2B contract inbox, specs, deadlines, penalties
 

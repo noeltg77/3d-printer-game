@@ -43,7 +43,7 @@ func send_action(contract: Contracts.Contract) -> Action:
 	var problem := send_problem(contract)
 	if problem != "":
 		label = "%s: %s (%s)" % [Game.client_name(contract), Game.product_name(contract.product), problem]
-	var action := Action.new(label, _send.bind(contract.id), problem == "")
+	var action := Action.new(label, _send.bind(contract.id), problem == "").for_duty(&"send")
 	action.task_name = "Crate up %d for %s" % [ready, Game.client_name(contract)]
 	return action
 
@@ -97,7 +97,7 @@ func _send(agent: Agent, contract_id: int) -> void:
 func pack_action(order: Marketplace.Order) -> Action:
 	var label := "%s %s, %s" % [Game.market_of(order).order_label(order), Game.product_name(order.product), Money.format(order.price)]
 	var problem := pack_problem(order)
-	var action := Action.new(label if problem == "" else "%s: %s" % [label, problem], _pack.bind(order), problem == "")
+	var action := Action.new(label if problem == "" else "%s: %s" % [label, problem], _pack.bind(order), problem == "").for_duty(&"pack")
 	action.task_name = pack_task_name(order)
 	return action
 

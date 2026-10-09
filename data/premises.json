@@ -11,7 +11,8 @@
 			"rent_pence_per_day": 0,
 			"printer_spots": 2,
 			"shelf_slots": 12,
-			"rack_slots": 24
+			"rack_slots": 24,
+			"staff": 0
 		},
 		{
 			"id": "small_unit",
@@ -23,7 +24,8 @@
 			"rent_pence_per_day": 999,
 			"printer_spots": 4,
 			"shelf_slots": 24,
-			"rack_slots": 70
+			"rack_slots": 70,
+			"staff": 0
 		},
 		{
 			"id": "workshop",
@@ -35,7 +37,8 @@
 			"rent_pence_per_day": 2999,
 			"printer_spots": 12,
 			"shelf_slots": 48,
-			"rack_slots": 140
+			"rack_slots": 140,
+			"staff": 2
 		}
 	]
 }
