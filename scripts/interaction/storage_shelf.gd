@@ -10,6 +10,12 @@ extends Interactable
 ##
 ## A printed storage bin (StorageBin) takes one space and holds several
 ## prints, so what is "on the shelf" is what is in the spaces and in the bins.
+## A print goes in a bin that already holds its design, failing that any bin
+## with room, failing that an empty space. A print of a bin design never goes
+## inside another bin.
+##
+## Clicking the shelving opens the ShelfDialog, where it is all laid out and
+## can be tidied by dragging.
 
 const EASY_REACH_HEIGHT := 0.9
 const FITTING_KIND := "shelf"
@@ -61,6 +67,98 @@ func get_actions(_agent: Agent) -> Array[Action]:
 	if not storage.is_empty():
 		actions.append(Action.submenu("Storage bins", storage))
 	return actions
+
+
+## Shows what is on the shelving, to be tidied. Clicking any of it does this
+## in place of the usual menu.
+func wants_panel() -> bool:
+	return true
+
+
+func open_panel() -> void:
+	ShelfDialog.show_for(self)
+
+
+## A unit's spaces as they are laid out on it: top shelf first, left to right.
+func unit_slots(unit: Interactable) -> Array[Node3D]:
+	var found := _slots.filter(func(slot: Node3D) -> bool: return slot.get_meta(&"unit") == unit)
+	found.sort_custom(func(a: Node3D, b: Node3D) -> bool:
+		return a.position.x < b.position.x if is_equal_approx(a.position.y, b.position.y) else a.position.y > b.position.y)
+	return found
+
+
+func slot_count() -> int:
+	return _slots.size()
+
+
+## Moves something to an empty space: a print (off another space or out of a
+## bin), a bin with all that is in it, or a box of spares. False if the space
+## is taken.
+func move_to_slot(thing: Node3D, slot: Node3D) -> bool:
+	if slot.get_child_count() > 0 or not _slots.has(slot):
+		return false
+	if thing is PrintedItem and thing.get_parent() is StorageBin:
+		(thing.get_parent() as StorageBin).remove(thing)
+	else:
+		thing.get_parent().remove_child(thing)
+	Interactable.attach(thing, slot)
+	Game.changed.emit()
+	return true
+
+
+## Moves prints into a storage bin, as many as it has room for. Returns how many went in.
+func move_into_bin(items: Array[PrintedItem], bin: StorageBin) -> int:
+	var moved := 0
+	# A copy, since taking a print out of its bin changes that bin's own list.
+	for item: PrintedItem in items.duplicate():
+		if item.get_parent() == bin or bin.room_for(item.product) <= 0:
+			continue
+		take_item(item)
+		bin.add(item)
+		moved += 1
+	if moved > 0:
+		Game.changed.emit()
+	return moved
+
+
+## Puts a print of a bin design to use where it sits (or, if it is inside a
+## bin, in the first empty space). False if it can't be.
+func make_bin(item: PrintedItem) -> bool:
+	if not Game.storage.is_bin(item.product):
+		return false
+	if item.get_parent() is StorageBin:
+		var space := _empty_slot()
+		if space == null:
+			return false
+		move_to_slot(item, space)
+	var slot := item.get_parent() as Node3D
+	Interactable.attach(StorageBin.create(item), slot)
+	Game.changed.emit()
+	return true
+
+
+## Puts a print of a bin design straight on the shelving as a storage bin.
+## False if there is no empty space for it.
+func store_as_bin(item: PrintedItem) -> bool:
+	var slot := _empty_slot()
+	if slot == null or not Game.storage.is_bin(item.product):
+		return false
+	Interactable.attach(StorageBin.create(item), slot)
+	Game.changed.emit()
+	return true
+
+
+## Takes an empty storage bin out of use, leaving the print it is in its space.
+func unmake_bin(bin: StorageBin) -> bool:
+	if not bin.items.is_empty():
+		return false
+	var slot := bin.get_parent() as Node3D
+	var shell := bin.empty_shell()
+	slot.remove_child(bin)
+	bin.queue_free()
+	Interactable.attach(shell, slot)
+	Game.changed.emit()
+	return true
 
 
 ## This node and each shelving unit that adds to it.
@@ -275,8 +373,7 @@ func _use_as_bin(agent: Agent, product: StringName) -> void:
 	await agent.go_to(slot.get_meta(&"unit"))
 	await agent.reach(func() -> void:
 		if shell.get_parent() == slot:
-			Interactable.attach(StorageBin.create(shell), slot)
-			Game.changed.emit())
+			make_bin(shell))
 	agent.say("That's somewhere to keep %s" % Game.storage.bin_summary(product))
 
 
@@ -288,12 +385,8 @@ func _stop_using(agent: Agent, bin: StorageBin) -> void:
 	var slot := bin.get_parent() as Node3D
 	await agent.go_to(slot.get_meta(&"unit"))
 	await agent.reach(func() -> void:
-		if is_instance_valid(bin) and bin.items.is_empty():
-			var shell := bin.empty_shell()
-			slot.remove_child(bin)
-			bin.queue_free()
-			Interactable.attach(shell, slot)
-			Game.changed.emit())
+		if is_instance_valid(bin):
+			unmake_bin(bin))
 
 
 ## How far down the queue to be sold an item is: 0 for one as it should be.
@@ -310,13 +403,26 @@ func _best(product: StringName) -> PrintedItem:
 	return found
 
 
-## The space something would be put away in: for a print, one holding a bin
-## with room for it, else an empty one. Null if there is nowhere.
+## The space something would be put away in. For a print: one holding a bin
+## that already has its design in and room for another, else any bin with
+## room, else an empty one. Null if there is nowhere.
 func _home_for(item: Node3D) -> Node3D:
 	if item is PrintedItem:
-		for slot in _slots:
-			if slot.get_child_count() > 0 and slot.get_child(0) is StorageBin and (slot.get_child(0) as StorageBin).room_for((item as PrintedItem).product) > 0:
-				return slot
+		var product := (item as PrintedItem).product
+		var roomy: Node3D = null
+		for bin in bins():
+			if bin.room_for(product) <= 0:
+				continue
+			if bin.items.any(func(inside: PrintedItem) -> bool: return inside.product == product):
+				return bin.get_parent()
+			if roomy == null:
+				roomy = bin.get_parent()
+		if roomy != null:
+			return roomy
+	return _empty_slot()
+
+
+func _empty_slot() -> Node3D:
 	for slot in _slots:
 		if slot.get_child_count() == 0:
 			return slot

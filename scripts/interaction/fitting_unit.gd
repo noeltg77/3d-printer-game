@@ -41,8 +41,23 @@ func get_actions(agent: Agent) -> Array[Action]:
 	return actions
 
 
-func _choose_spot(_agent: Agent) -> void:
+## A shelving unit opens the shelving's panel when clicked, as the shelving
+## itself does. A rack has the usual menu.
+func wants_panel() -> bool:
+	return host is StorageShelf
+
+
+func open_panel() -> void:
+	(host as StorageShelf).open_panel()
+
+
+## Lets the player pick somewhere else for it to stand.
+func choose_spot() -> void:
 	Placer.begin(self, fitting, _queue_move, self)
+
+
+func _choose_spot(_agent: Agent) -> void:
+	choose_spot()
 
 
 func _queue_move(to: Transform3D) -> void:

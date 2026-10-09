@@ -36,9 +36,10 @@ func free_units() -> int:
 	return units() - used
 
 
-## How many more prints of a design it has room for.
+## How many more prints of a design it has room for. None of a bin design:
+## a bin put inside a bin could never be put to use.
 func room_for(product: StringName) -> int:
-	return Game.storage.fits(product, free_units())
+	return 0 if Game.storage.is_bin(product) else Game.storage.fits(product, free_units())
 
 
 ## Puts a print in. False if there is no room for it.

@@ -31,7 +31,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		_set_hovered(_pick(event.position))
 	elif event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		var target := _pick(event.position)
-		if target != null:
+		if target != null and target.has_method(&"wants_panel") and target.call(&"wants_panel"):
+			target.call(&"open_panel")
+		elif target != null:
 			_open_menu(target, event.position)
 		else:
 			_walk_to_click(event.position)

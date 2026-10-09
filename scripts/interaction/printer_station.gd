@@ -214,7 +214,15 @@ func _status_actions() -> Array[Action]:
 					label = "Wash, cure and collect %s (%s)" % [_batch_title(item.describe()), GameClock.duration_label(wash)]
 				var collect := Action.new(label, _collect).for_duty(&"collect")
 				collect.task_name = "Collect %s" % _batch_title(item.describe())
-				return [collect]
+				if not Game.storage.is_bin(item.product):
+					return [collect]
+				# Something the workshop can use itself: to sell, or to put straight to work.
+				collect.label = "%s to sell" % label
+				if _shelf().free_slots() < copies():
+					return [collect, Action.info("Collect for the workshop (needs %d empty space%s)" % [copies(), "" if copies() == 1 else "s"])]
+				var keep := Action.new("%s for the workshop, as storage" % label, _collect.bind(true))
+				keep.task_name = "Collect %s as storage" % _batch_title(item.describe())
+				return [collect, keep]
 			return [Action.info("Collect print (shelving is full)" if copies() == 1 else "Collect prints (the shelving needs %d free spaces)" % copies())]
 		Status.FAILED:
 			var failure := scrap.failure
@@ -781,16 +789,17 @@ func _open_print_dialog(_agent: Agent) -> void:
 	(get_tree().get_first_node_in_group(&"print_dialog") as PrintDialog).open(self)
 
 
-func _collect(agent: Agent) -> void:
+## `as_storage` puts a print of a bin design straight to use on the shelving.
+func _collect(agent: Agent, as_storage := false) -> void:
 	var shelf := _shelf()
-	if status != Status.DONE or shelf.room_for(item.product) < copies():
+	if status != Status.DONE or shelf.room_for(item.product) < copies() or (as_storage and shelf.free_slots() < copies()):
 		agent.say("Nothing to collect" if status != Status.DONE else "Not enough room on the shelving")
 		return
 	await agent.go_to(self)
 	if post_minutes() > 0.0:
 		await agent.work(post_minutes())
 	await agent.reach(func() -> void: _pick_up(agent, take_items()))
-	await _shelve(agent, shelf)
+	await _shelve(agent, shelf, as_storage)
 
 
 func _empty_tray(agent: Agent) -> void:
@@ -825,18 +834,24 @@ func _pick_up(agent: Agent, items: Array[PrintedItem]) -> void:
 
 
 ## Takes what _pick_up handed over to the shelving and puts each print away.
-func _shelve(agent: Agent, shelf: StorageShelf) -> void:
+func _shelve(agent: Agent, shelf: StorageShelf, as_storage := false) -> void:
 	if agent.carried == null:
 		return
-	await agent.go_to(shelf.spot(agent.carried))
+	await agent.go_to(shelf.spot(null if as_storage else agent.carried))
 	await agent.reach(func() -> void:
-		var first := agent.release()
+		var copies_carried: Array[PrintedItem] = []
+		var first := agent.release() as PrintedItem
 		for child in first.get_children():
-			var copy := child as PrintedItem
-			if copy != null:
-				copy.visible = true
-				shelf.store(copy)
-		shelf.store(first))
+			if child is PrintedItem:
+				copies_carried.append(child)
+		copies_carried.append(first)
+		for copy in copies_carried:
+			copy.visible = true
+			# A bin has to be lifted out of the print carrying it before it is one.
+			if copy != first:
+				first.remove_child(copy)
+			if not (as_storage and shelf.store_as_bin(copy)):
+				shelf.store(copy))
 
 
 func _clear(agent: Agent) -> void:
