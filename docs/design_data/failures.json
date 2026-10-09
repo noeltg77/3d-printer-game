@@ -1,0 +1,530 @@
+{
+ "version": 1,
+ "notes": "failures.causes keys are condition flags the sim checks; values multiply the failure's weight. worn_part_slots match parts.json slots. damages_parts = slot:health lost.",
+ "outcomes": {
+  "scrap": "Print is binned. Filament up to the failure point is wasted. Printer is free after clearing (2 to 10 minutes of character time).",
+  "stop": "Printer stops and needs the fix before it can print again. Partial print is binned unless the printer has power loss or pause recovery.",
+  "degraded": "Print finishes but quality drops 1 to 2 stars. Sells for less, more returns and worse reviews. Player can choose to bin or sell it.",
+  "shipping": "Happens after sale. Triggers refund or replacement, review hit, and seller rating drop."
+ },
+ "roll_rules": {
+  "per_print_fail_chance": "printer base_fail_chance_pct x preset fail_mult x material ease (6 - ease_of_printing) / 3 x product difficulty (0.6 + 0.2 x difficulty) + worn part extra fail % + wet filament bonus. Capped at 85%.",
+  "which_failure": "If a failure is rolled, pick one weighted by base_weight x product of all active cause multipliers. Only failures valid for the printer type (resin, SLS, belt) are in the pool.",
+  "when": "start = first 5% of print time, mid = random point 10% to 90%, end = shown on completion, post = after shipping or client inspection.",
+  "followups": "Some failures raise the chance of others on the next print until fixed (e.g. bed_adhesion makes spaghetti and blob_of_doom more likely).",
+  "shipping_damage_chance": "Per order: (5 - durability) x 2% x packaging multiplier x courier multiplier x size factor. Durability comes from the preset."
+ },
+ "failures": [
+  {
+   "id": "first_layer",
+   "name": "First layer failed",
+   "category": "Bed",
+   "happens": "start",
+   "outcome": "scrap",
+   "base_weight": 14,
+   "filament_wasted_fraction": 0.03,
+   "causes": {
+    "no_auto_level": 2.0,
+    "dirty_plate": 1.5,
+    "cool_plate_with_petg": 2.0,
+    "draft_preset": 1.2
+   },
+   "worn_part_slots": "build_plate",
+   "damages_parts": "",
+   "reduced_by_upgrades": "auto_bed_levelling_kit",
+   "fix": "Clean the plate and restart",
+   "scene_visual": "Squiggly half stuck lines on the bed",
+   "sound": "printer stops with a sad beep",
+   "player_text": "The first layer looks like a plate of noodles. Nothing else is going to stick to that."
+  },
+  {
+   "id": "bed_adhesion",
+   "name": "Print came loose",
+   "category": "Bed",
+   "happens": "mid",
+   "outcome": "scrap",
+   "base_weight": 12,
+   "filament_wasted_fraction": 0.4,
+   "causes": {
+    "dirty_plate": 1.8,
+    "tall_thin_part": 1.6,
+    "large_part": 1.3,
+    "no_brim": 1.3,
+    "cool_plate_with_petg": 2.0
+   },
+   "worn_part_slots": "build_plate",
+   "damages_parts": "",
+   "reduced_by_upgrades": "spring_steel_magnetic_bed,auto_bed_levelling_kit",
+   "fix": "Clean with IPA, add a brim",
+   "scene_visual": "Part knocked over and dragged around the bed",
+   "sound": "clatter then grinding",
+   "player_text": "The print let go halfway and is now being pushed around like a hockey puck."
+  },
+  {
+   "id": "spaghetti",
+   "name": "Spaghetti monster",
+   "category": "General",
+   "happens": "mid",
+   "outcome": "scrap",
+   "base_weight": 10,
+   "filament_wasted_fraction": 0.5,
+   "causes": {
+    "bed_adhesion_followup": 3.0,
+    "overhang_without_supports": 2.5,
+    "layer_shift_followup": 1.5
+   },
+   "worn_part_slots": "",
+   "damages_parts": "",
+   "reduced_by_upgrades": "ai_spaghetti_camera",
+   "fix": "Clear the mess, find the cause",
+   "scene_visual": "Big nest of tangled filament where the print should be",
+   "sound": "none, which is the scary bit",
+   "player_text": "The printer has spent four hours knitting a bird's nest. Silently. Lovingly."
+  },
+  {
+   "id": "warping",
+   "name": "Corners warped",
+   "category": "Material",
+   "happens": "mid",
+   "outcome": "degraded",
+   "base_weight": 10,
+   "filament_wasted_fraction": 0.0,
+   "causes": {
+    "abs_asa_no_enclosure": 4.0,
+    "large_part": 1.6,
+    "cold_room": 1.5,
+    "no_brim": 1.3,
+    "pc_nylon_no_heated_chamber": 3.0
+   },
+   "worn_part_slots": "build_plate",
+   "damages_parts": "",
+   "reduced_by_upgrades": "snap_on_enclosure,enclosure_heater",
+   "fix": "Use an enclosure or a brim",
+   "scene_visual": "Corners lifted off the bed like a crisp",
+   "sound": "faint ticking",
+   "player_text": "The corners have curled up. It still sort of works, if your customer doesn't own a ruler."
+  },
+  {
+   "id": "layer_shift",
+   "name": "Layer shift",
+   "category": "Motion",
+   "happens": "mid",
+   "outcome": "degraded",
+   "base_weight": 6,
+   "filament_wasted_fraction": 0.0,
+   "causes": {
+    "worn_belts": 2.5,
+    "high_speed": 1.4,
+    "nozzle_collision": 2.0,
+    "bedslinger_tall_part": 1.3
+   },
+   "worn_part_slots": "belts,rails,bearings",
+   "damages_parts": "",
+   "reduced_by_upgrades": "linear_rail_conversion,input_shaping_accelerometer",
+   "fix": "Tension or replace belts",
+   "scene_visual": "Print suddenly steps sideways halfway up",
+   "sound": "loud clunk",
+   "player_text": "Halfway up, the whole print decided to move one centimetre to the left. Bold choice."
+  },
+  {
+   "id": "clog",
+   "name": "Nozzle clog",
+   "category": "Hotend",
+   "happens": "mid",
+   "outcome": "stop",
+   "base_weight": 9,
+   "filament_wasted_fraction": 0.3,
+   "causes": {
+    "worn_nozzle": 3.0,
+    "abrasive_on_brass": 4.0,
+    "wet_filament": 1.5,
+    "cheap_filament": 1.3,
+    "heat_creep_followup": 2.0
+   },
+   "worn_part_slots": "nozzle,ptfe,hotend",
+   "damages_parts": "nozzle:20",
+   "reduced_by_upgrades": "clog_detection_sensor,all_metal_hotend",
+   "fix": "Cold pull or replace the nozzle",
+   "scene_visual": "Printer moving but nothing coming out, air printing",
+   "sound": "clicking extruder",
+   "player_text": "The printer is very confidently printing nothing at all."
+  },
+  {
+   "id": "under_extrusion",
+   "name": "Under extrusion",
+   "category": "Hotend",
+   "happens": "mid",
+   "outcome": "degraded",
+   "base_weight": 9,
+   "filament_wasted_fraction": 0.0,
+   "causes": {
+    "worn_nozzle": 2.0,
+    "worn_ptfe": 2.0,
+    "worn_extruder_gears": 2.0,
+    "high_speed": 1.4,
+    "wet_filament": 1.5
+   },
+   "worn_part_slots": "nozzle,ptfe,extruder_gears",
+   "damages_parts": "",
+   "reduced_by_upgrades": "dual_gear_extruder,high_flow_hotend",
+   "fix": "Replace worn parts or slow down",
+   "scene_visual": "Gappy, see-through walls",
+   "sound": "occasional click",
+   "player_text": "Looks like it was printed by someone who was rationing plastic."
+  },
+  {
+   "id": "stringing",
+   "name": "Stringy mess",
+   "category": "Material",
+   "happens": "end",
+   "outcome": "degraded",
+   "base_weight": 12,
+   "filament_wasted_fraction": 0.0,
+   "causes": {
+    "petg": 2.0,
+    "tpu": 2.0,
+    "wet_filament": 2.5,
+    "silk": 1.3,
+    "weak_part_fan": 1.5
+   },
+   "worn_part_slots": "part_fan",
+   "damages_parts": "",
+   "reduced_by_upgrades": "dual_gear_extruder",
+   "fix": "Dry the filament",
+   "scene_visual": "Fine cobweb strings between parts",
+   "sound": "none",
+   "player_text": "It's covered in fine little hairs. Seasonal for Halloween. Less so for a phone stand."
+  },
+  {
+   "id": "poor_surface",
+   "name": "Rough surface finish",
+   "category": "Quality",
+   "happens": "end",
+   "outcome": "degraded",
+   "base_weight": 12,
+   "filament_wasted_fraction": 0.0,
+   "causes": {
+    "worn_bearings": 1.5,
+    "worn_z_nut": 1.5,
+    "draft_preset": 1.8,
+    "high_speed": 1.3,
+    "wet_filament": 1.3
+   },
+   "worn_part_slots": "bearings,z_nut,sock,wiper",
+   "damages_parts": "",
+   "reduced_by_upgrades": "input_shaping_accelerometer,anti_vibration_feet",
+   "fix": "Service the printer or use a finer preset",
+   "scene_visual": "Visible ripples and banding",
+   "sound": "none",
+   "player_text": "It works, but it has the texture of a cheese grater."
+  },
+  {
+   "id": "heat_creep",
+   "name": "Heat creep jam",
+   "category": "Hotend",
+   "happens": "mid",
+   "outcome": "stop",
+   "base_weight": 5,
+   "filament_wasted_fraction": 0.3,
+   "causes": {
+    "dead_hotend_fan": 6.0,
+    "hot_enclosure_with_pla": 2.0,
+    "slow_print_with_pla": 1.3
+   },
+   "worn_part_slots": "hotend_fan,hotend",
+   "damages_parts": "hotend:15",
+   "reduced_by_upgrades": "all_metal_hotend",
+   "fix": "Replace the hotend fan, clear the jam",
+   "scene_visual": "Filament mushroomed above the nozzle",
+   "sound": "grinding then silence",
+   "player_text": "The plastic melted in the wrong place and set like concrete."
+  },
+  {
+   "id": "thermal_runaway_stop",
+   "name": "Safety shutdown",
+   "category": "Electronics",
+   "happens": "mid",
+   "outcome": "stop",
+   "base_weight": 2,
+   "filament_wasted_fraction": 0.3,
+   "causes": {
+    "worn_thermistor": 5.0,
+    "worn_heater": 5.0,
+    "loose_wiring": 2.0
+   },
+   "worn_part_slots": "thermistor,heater",
+   "damages_parts": "",
+   "reduced_by_upgrades": "cable_chain_kit",
+   "fix": "Replace thermistor or heater cartridge",
+   "scene_visual": "Screen flashing a red warning, heaters off",
+   "sound": "alarm beep",
+   "player_text": "The printer noticed something was wrong with its own temperature and wisely stopped."
+  },
+  {
+   "id": "filament_runout",
+   "name": "Ran out of filament",
+   "category": "Material",
+   "happens": "mid",
+   "outcome": "stop",
+   "base_weight": 6,
+   "filament_wasted_fraction": 0.0,
+   "causes": {
+    "spool_low": 10.0,
+    "no_runout_sensor_scrap": 1.0
+   },
+   "worn_part_slots": "",
+   "damages_parts": "",
+   "reduced_by_upgrades": "filament_runout_sensor",
+   "fix": "Load a new spool and resume",
+   "scene_visual": "Empty spool spinning, print paused or abandoned",
+   "sound": "spool rattle",
+   "player_text": "Someone forgot to check the spool. Someone is you."
+  },
+  {
+   "id": "filament_jam_feeder",
+   "name": "Multicolour jam",
+   "category": "Multicolour",
+   "happens": "mid",
+   "outcome": "stop",
+   "base_weight": 6,
+   "filament_wasted_fraction": 0.1,
+   "causes": {
+    "tpu_in_multicolour": 5.0,
+    "worn_mc_rollers": 3.0,
+    "cardboard_spool": 1.5,
+    "tangled_spool": 3.0,
+    "many_colour_swaps": 1.5
+   },
+   "worn_part_slots": "mc_rollers,extruder_gears",
+   "damages_parts": "",
+   "reduced_by_upgrades": "",
+   "fix": "Clear the jam in the multicolour unit",
+   "scene_visual": "Flashing light on the multicolour unit, filament stuck",
+   "sound": "beeping from the unit",
+   "player_text": "The colour unit has jammed and is flashing at you like it's your fault."
+  },
+  {
+   "id": "tangled_spool",
+   "name": "Tangled spool",
+   "category": "Material",
+   "happens": "mid",
+   "outcome": "stop",
+   "base_weight": 3,
+   "filament_wasted_fraction": 0.1,
+   "causes": {
+    "cheap_filament": 2.0,
+    "spool_rewound": 3.0
+   },
+   "worn_part_slots": "",
+   "damages_parts": "",
+   "reduced_by_upgrades": "",
+   "fix": "Untangle or bin the spool",
+   "scene_visual": "Filament snapped tight with a knot on the spool",
+   "sound": "twang",
+   "player_text": "A knot formed somewhere deep in the spool. Nobody knows how. Nobody ever knows how."
+  },
+  {
+   "id": "support_failure",
+   "name": "Supports collapsed",
+   "category": "Design",
+   "happens": "mid",
+   "outcome": "scrap",
+   "base_weight": 6,
+   "filament_wasted_fraction": 0.4,
+   "causes": {
+    "supports_off_with_overhangs": 4.0,
+    "tree_supports": 0.7,
+    "tall_thin_part": 1.5
+   },
+   "worn_part_slots": "",
+   "damages_parts": "",
+   "reduced_by_upgrades": "",
+   "fix": "Turn supports on, or choose tree supports",
+   "scene_visual": "Overhangs drooping into strands",
+   "sound": "none",
+   "player_text": "The overhang had nothing to stand on and gave up."
+  },
+  {
+   "id": "blob_of_doom",
+   "name": "Blob of doom",
+   "category": "Hotend",
+   "happens": "mid",
+   "outcome": "stop",
+   "base_weight": 1.5,
+   "filament_wasted_fraction": 0.5,
+   "causes": {
+    "bed_adhesion_followup": 4.0,
+    "worn_sock": 2.0,
+    "unattended_long_print": 1.5
+   },
+   "worn_part_slots": "",
+   "damages_parts": "hotend:80,sock:100,thermistor:50",
+   "reduced_by_upgrades": "ai_spaghetti_camera",
+   "fix": "Heat it up and carefully pick it apart, or replace the hotend",
+   "scene_visual": "Huge lump of plastic encasing the hotend",
+   "sound": "none",
+   "player_text": "The hotend is now inside a plastic boulder. This is the expensive one."
+  },
+  {
+   "id": "belt_print_slip",
+   "name": "Belt print slipped",
+   "category": "Bed",
+   "happens": "mid",
+   "outcome": "scrap",
+   "base_weight": 5,
+   "filament_wasted_fraction": 0.3,
+   "causes": {
+    "worn_belt_bed": 3.0
+   },
+   "worn_part_slots": "belt_bed",
+   "damages_parts": "",
+   "reduced_by_upgrades": "",
+   "fix": "Replace the conveyor or clean it",
+   "scene_visual": "Parts tumbling off the end of the belt early",
+   "sound": "clatter",
+   "player_text": "The belt printer launched your parts into the bin a bit early."
+  },
+  {
+   "id": "resin_peel_fail",
+   "name": "Resin print stuck to FEP",
+   "category": "Resin",
+   "happens": "mid",
+   "outcome": "scrap",
+   "base_weight": 8,
+   "filament_wasted_fraction": 0.6,
+   "causes": {
+    "worn_fep": 3.0,
+    "cold_resin": 2.0,
+    "no_supports_resin": 3.0
+   },
+   "worn_part_slots": "fep",
+   "damages_parts": "fep:30",
+   "reduced_by_upgrades": "resin_heater",
+   "fix": "Fish out the cured blob, replace FEP if punctured",
+   "scene_visual": "Half cured print stuck in the vat, empty build plate",
+   "sound": "none",
+   "player_text": "The print stayed in the vat instead of coming up with the plate. Fishing time."
+  },
+  {
+   "id": "resin_dead_pixels",
+   "name": "Dead screen pixels",
+   "category": "Resin",
+   "happens": "end",
+   "outcome": "degraded",
+   "base_weight": 3,
+   "filament_wasted_fraction": 0.0,
+   "causes": {
+    "worn_lcd": 5.0
+   },
+   "worn_part_slots": "lcd",
+   "damages_parts": "",
+   "reduced_by_upgrades": "",
+   "fix": "Replace the LCD screen",
+   "scene_visual": "Holes or streaks in the same spot on every print",
+   "sound": "none",
+   "player_text": "Same tiny hole in every print. The screen is dying."
+  },
+  {
+   "id": "resin_leak",
+   "name": "Resin leak",
+   "category": "Resin",
+   "happens": "mid",
+   "outcome": "stop",
+   "base_weight": 2,
+   "filament_wasted_fraction": 0.3,
+   "causes": {
+    "worn_fep": 4.0,
+    "worn_vat": 2.0
+   },
+   "worn_part_slots": "fep,vat",
+   "damages_parts": "lcd:40",
+   "reduced_by_upgrades": "",
+   "fix": "Clean up, replace the FEP, check the screen",
+   "scene_visual": "Resin pooled under the vat",
+   "sound": "drip",
+   "player_text": "There is resin where resin should never be."
+  },
+  {
+   "id": "sls_powder_short",
+   "name": "Short powder feed",
+   "category": "SLS",
+   "happens": "mid",
+   "outcome": "scrap",
+   "base_weight": 3,
+   "filament_wasted_fraction": 0.4,
+   "causes": {
+    "worn_recoater": 3.0,
+    "worn_sls_filter": 2.0,
+    "low_powder": 5.0
+   },
+   "worn_part_slots": "recoater,sls_filter,laser",
+   "damages_parts": "",
+   "reduced_by_upgrades": "sls_powder_recovery_station",
+   "fix": "Top up and sieve the powder",
+   "scene_visual": "Streaky, incomplete layers in the cake",
+   "sound": "alarm",
+   "player_text": "The machine ran short of powder. The parts inside are now a sad crumbly mystery."
+  },
+  {
+   "id": "power_cut",
+   "name": "Power cut",
+   "category": "Event",
+   "happens": "mid",
+   "outcome": "stop",
+   "base_weight": 0,
+   "filament_wasted_fraction": 0.5,
+   "causes": {
+    "storm_event": 1.0
+   },
+   "worn_part_slots": "",
+   "damages_parts": "",
+   "reduced_by_upgrades": "ups_power_backup",
+   "fix": "Most printers can resume. Cheap ones can't.",
+   "scene_visual": "Lights out, printers dark",
+   "sound": "everything goes quiet",
+   "player_text": "The lights went out. Printers with power loss recovery can try to resume."
+  },
+  {
+   "id": "crushed_in_post",
+   "name": "Crushed in the post",
+   "category": "Shipping",
+   "happens": "post",
+   "outcome": "shipping",
+   "base_weight": 0,
+   "filament_wasted_fraction": 0.0,
+   "causes": {
+    "low_durability": 3.0,
+    "cheap_packaging": 2.0,
+    "tall_thin_part": 1.5,
+    "courier_budget": 1.5
+   },
+   "worn_part_slots": "",
+   "damages_parts": "",
+   "reduced_by_upgrades": "",
+   "fix": "Refund, replace, and use stronger prints or packaging",
+   "scene_visual": "Customer photo of a snapped item in a review",
+   "sound": "sad notification ping",
+   "player_text": "It left your garage in one piece. It did not arrive in one piece."
+  },
+  {
+   "id": "failed_quality_check",
+   "name": "Failed client inspection",
+   "category": "B2B",
+   "happens": "post",
+   "outcome": "shipping",
+   "base_weight": 0,
+   "filament_wasted_fraction": 0.0,
+   "causes": {
+    "degraded_quality": 3.0,
+    "tight_tolerance_contract": 2.0
+   },
+   "worn_part_slots": "",
+   "damages_parts": "",
+   "reduced_by_upgrades": "",
+   "fix": "Reprint the rejected units before the deadline",
+   "scene_visual": "Rejected box returned with a red sticker",
+   "sound": "phone buzz",
+   "player_text": "The client measured everything. Some of it didn't measure up."
+  }
+ ]
+}

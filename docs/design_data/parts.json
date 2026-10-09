@@ -1,0 +1,1022 @@
+{
+ "version": 1,
+ "currency": "GBP",
+ "notes": "Part prices are base prices: multiply by the printer's parts_cost_multiplier from printers.json. oem_only_on_closed_brands means Zippy and Sinterforge printers need their own branded part (game can show it as e.g. 'Zippy Textured PEI plate'). Part health drops by print hours x wear modifiers. Extra fail chance scales linearly from 0 at 30% health to max_extra_fail_pct at 0%. At 0% the part breaks and the printer stops. Upgrade effects ending in _mult multiply the printer stat; plain values replace or add. fits uses form factor ids, printer ids, or 'all'.",
+ "failure_ids": [
+  "clog",
+  "under_extrusion",
+  "stringing",
+  "spaghetti",
+  "bed_adhesion",
+  "first_layer",
+  "warping",
+  "layer_shift",
+  "heat_creep",
+  "thermal_runaway_stop",
+  "poor_surface",
+  "belt_print_slip",
+  "resin_peel_fail",
+  "resin_dead_pixels",
+  "resin_leak",
+  "sls_powder_short",
+  "filament_jam_feeder"
+ ],
+ "wear_modifiers": {
+  "abrasive_filament": {
+   "applies_to": "brass nozzles",
+   "wear_multiplier": 10,
+   "note": "Materials with abrasive=true in filaments.json"
+  },
+  "tpu": {
+   "applies_to": "extruder gears",
+   "wear_multiplier": 1.5
+  },
+  "high_temp_material": {
+   "applies_to": "PTFE tube, heater cartridge, silicone sock",
+   "wear_multiplier": 2.0,
+   "note": "ABS, ASA, PC, Nylon"
+  },
+  "multicolour_swaps": {
+   "applies_to": "wiper and feeder rollers",
+   "wear_per_swap_hours": 0.05
+  },
+  "printer_brand": {
+   "applies_to": "all parts",
+   "wear_multiplier": "printers.json wear_multiplier"
+  },
+  "maintenance": {
+   "note": "Cleaning or greasing (5 to 15 minutes of character time) restores 10% health to plates, rails and bearings. Max once per 50 print hours."
+  }
+ },
+ "wear_parts": [
+  {
+   "id": "brass_nozzle_0_4mm",
+   "name": "Brass nozzle 0.4mm",
+   "category": "Hotend",
+   "slot": "nozzle",
+   "fits_form_factors": "bedslinger_u_frame,bedslinger_cantilever,corexy_open,corexy_enclosed,enclosed_box,idex,toolchanger,large_format,delta,belt",
+   "lifespan_print_hours": 400,
+   "failures_when_worn": "clog,under_extrusion,poor_surface",
+   "max_extra_fail_pct_when_worn": 8,
+   "replace_minutes": 10,
+   "base_price_gbp": 6.99,
+   "pack_size": 3,
+   "unlock_tier": "Garage",
+   "oem_only_on_closed_brands": true,
+   "notes": "Abrasive filaments wear it 10x faster."
+  },
+  {
+   "id": "brass_nozzle_0_6mm",
+   "name": "Brass nozzle 0.6mm",
+   "category": "Hotend",
+   "slot": "nozzle",
+   "fits_form_factors": "bedslinger_u_frame,bedslinger_cantilever,corexy_open,corexy_enclosed,enclosed_box,idex,toolchanger,large_format,delta,belt",
+   "lifespan_print_hours": 450,
+   "failures_when_worn": "clog,under_extrusion",
+   "max_extra_fail_pct_when_worn": 7,
+   "replace_minutes": 10,
+   "base_price_gbp": 7.49,
+   "pack_size": 3,
+   "unlock_tier": "Spare room",
+   "oem_only_on_closed_brands": true,
+   "notes": "Faster prints, less detail. Abrasives wear it 8x faster."
+  },
+  {
+   "id": "brass_nozzle_0_2mm",
+   "name": "Brass nozzle 0.2mm",
+   "category": "Hotend",
+   "slot": "nozzle",
+   "fits_form_factors": "bedslinger_u_frame,bedslinger_cantilever,corexy_open,corexy_enclosed,enclosed_box,idex,toolchanger,large_format,delta,belt",
+   "lifespan_print_hours": 250,
+   "failures_when_worn": "clog,under_extrusion,poor_surface",
+   "max_extra_fail_pct_when_worn": 12,
+   "replace_minutes": 10,
+   "base_price_gbp": 7.99,
+   "pack_size": 3,
+   "unlock_tier": "Spare room",
+   "oem_only_on_closed_brands": true,
+   "notes": "Fine detail for minis. Clogs easily, slow."
+  },
+  {
+   "id": "hardened_steel_nozzle_0_4mm",
+   "name": "Hardened steel nozzle 0.4mm",
+   "category": "Hotend",
+   "slot": "nozzle",
+   "fits_form_factors": "bedslinger_u_frame,bedslinger_cantilever,corexy_open,corexy_enclosed,enclosed_box,idex,toolchanger,large_format,delta,belt",
+   "lifespan_print_hours": 3000,
+   "failures_when_worn": "clog,under_extrusion",
+   "max_extra_fail_pct_when_worn": 6,
+   "replace_minutes": 10,
+   "base_price_gbp": 24.99,
+   "pack_size": 1,
+   "unlock_tier": "Spare room",
+   "oem_only_on_closed_brands": true,
+   "notes": "Needed for glow, wood and carbon filaments."
+  },
+  {
+   "id": "ruby_tip_nozzle_0_4mm",
+   "name": "Ruby tip nozzle 0.4mm",
+   "category": "Hotend",
+   "slot": "nozzle",
+   "fits_form_factors": "bedslinger_u_frame,bedslinger_cantilever,corexy_open,corexy_enclosed,enclosed_box,idex,toolchanger,large_format,delta,belt",
+   "lifespan_print_hours": 8000,
+   "failures_when_worn": "clog",
+   "max_extra_fail_pct_when_worn": 5,
+   "replace_minutes": 10,
+   "base_price_gbp": 79.0,
+   "pack_size": 1,
+   "unlock_tier": "Workshop",
+   "oem_only_on_closed_brands": false,
+   "notes": "Near indestructible. Premium."
+  },
+  {
+   "id": "hotend_assembly",
+   "name": "Hotend assembly",
+   "category": "Hotend",
+   "slot": "hotend",
+   "fits_form_factors": "bedslinger_u_frame,bedslinger_cantilever,corexy_open,corexy_enclosed,enclosed_box,idex,toolchanger,large_format,delta,belt",
+   "lifespan_print_hours": 2500,
+   "failures_when_worn": "heat_creep,clog,thermal_runaway_stop",
+   "max_extra_fail_pct_when_worn": 10,
+   "replace_minutes": 30,
+   "base_price_gbp": 39.0,
+   "pack_size": 1,
+   "unlock_tier": "Garage",
+   "oem_only_on_closed_brands": true,
+   "notes": "Whole hot end. Fixes stubborn clogs."
+  },
+  {
+   "id": "heater_cartridge",
+   "name": "Heater cartridge",
+   "category": "Hotend",
+   "slot": "heater",
+   "fits_form_factors": "bedslinger_u_frame,bedslinger_cantilever,corexy_open,corexy_enclosed,enclosed_box,idex,toolchanger,large_format,delta,belt",
+   "lifespan_print_hours": 3000,
+   "failures_when_worn": "thermal_runaway_stop,under_extrusion",
+   "max_extra_fail_pct_when_worn": 8,
+   "replace_minutes": 20,
+   "base_price_gbp": 9.99,
+   "pack_size": 1,
+   "unlock_tier": "Garage",
+   "oem_only_on_closed_brands": false,
+   "notes": "When it fails the print stops mid job."
+  },
+  {
+   "id": "thermistor",
+   "name": "Thermistor",
+   "category": "Hotend",
+   "slot": "thermistor",
+   "fits_form_factors": "bedslinger_u_frame,bedslinger_cantilever,corexy_open,corexy_enclosed,enclosed_box,idex,toolchanger,large_format,delta,belt",
+   "lifespan_print_hours": 3000,
+   "failures_when_worn": "thermal_runaway_stop",
+   "max_extra_fail_pct_when_worn": 8,
+   "replace_minutes": 20,
+   "base_price_gbp": 4.99,
+   "pack_size": 2,
+   "unlock_tier": "Garage",
+   "oem_only_on_closed_brands": false,
+   "notes": "Reads hotend temperature. Faulty ones stop prints."
+  },
+  {
+   "id": "silicone_sock",
+   "name": "Silicone sock",
+   "category": "Hotend",
+   "slot": "sock",
+   "fits_form_factors": "bedslinger_u_frame,bedslinger_cantilever,corexy_open,corexy_enclosed,enclosed_box,idex,toolchanger,large_format,delta,belt",
+   "lifespan_print_hours": 600,
+   "failures_when_worn": "poor_surface,heat_creep",
+   "max_extra_fail_pct_when_worn": 3,
+   "replace_minutes": 5,
+   "base_price_gbp": 3.99,
+   "pack_size": 3,
+   "unlock_tier": "Garage",
+   "oem_only_on_closed_brands": true,
+   "notes": "Keeps the hotend warm and clean."
+  },
+  {
+   "id": "ptfe_tube",
+   "name": "PTFE tube",
+   "category": "Extrusion",
+   "slot": "ptfe",
+   "fits_form_factors": "bedslinger_u_frame,bedslinger_cantilever,corexy_open,corexy_enclosed,enclosed_box,idex,toolchanger,large_format,delta,belt",
+   "lifespan_print_hours": 800,
+   "failures_when_worn": "clog,under_extrusion,filament_jam_feeder",
+   "max_extra_fail_pct_when_worn": 6,
+   "replace_minutes": 15,
+   "base_price_gbp": 4.5,
+   "pack_size": 1,
+   "unlock_tier": "Garage",
+   "oem_only_on_closed_brands": false,
+   "notes": "Degrades with heat. Worn tube means gaps and clogs."
+  },
+  {
+   "id": "extruder_gears",
+   "name": "Extruder gears",
+   "category": "Extrusion",
+   "slot": "extruder_gears",
+   "fits_form_factors": "bedslinger_u_frame,bedslinger_cantilever,corexy_open,corexy_enclosed,enclosed_box,idex,toolchanger,large_format,delta,belt",
+   "lifespan_print_hours": 2000,
+   "failures_when_worn": "under_extrusion,filament_jam_feeder",
+   "max_extra_fail_pct_when_worn": 8,
+   "replace_minutes": 25,
+   "base_price_gbp": 12.99,
+   "pack_size": 1,
+   "unlock_tier": "Garage",
+   "oem_only_on_closed_brands": true,
+   "notes": "Grip filament. Worn teeth slip, especially on TPU."
+  },
+  {
+   "id": "hotend_cooling_fan",
+   "name": "Hotend cooling fan",
+   "category": "Cooling",
+   "slot": "hotend_fan",
+   "fits_form_factors": "bedslinger_u_frame,bedslinger_cantilever,corexy_open,corexy_enclosed,enclosed_box,idex,toolchanger,large_format,delta,belt",
+   "lifespan_print_hours": 3000,
+   "failures_when_worn": "heat_creep,clog",
+   "max_extra_fail_pct_when_worn": 12,
+   "replace_minutes": 15,
+   "base_price_gbp": 5.5,
+   "pack_size": 1,
+   "unlock_tier": "Garage",
+   "oem_only_on_closed_brands": false,
+   "notes": "Dead fan means heat creep jams within minutes."
+  },
+  {
+   "id": "part_cooling_fan",
+   "name": "Part cooling fan",
+   "category": "Cooling",
+   "slot": "part_fan",
+   "fits_form_factors": "bedslinger_u_frame,bedslinger_cantilever,corexy_open,corexy_enclosed,enclosed_box,idex,toolchanger,large_format,delta,belt",
+   "lifespan_print_hours": 3000,
+   "failures_when_worn": "poor_surface,stringing",
+   "max_extra_fail_pct_when_worn": 6,
+   "replace_minutes": 15,
+   "base_price_gbp": 6.99,
+   "pack_size": 1,
+   "unlock_tier": "Garage",
+   "oem_only_on_closed_brands": false,
+   "notes": "Overhangs and bridges sag when it is weak."
+  },
+  {
+   "id": "textured_pei_plate",
+   "name": "Textured PEI plate",
+   "category": "Bed",
+   "slot": "build_plate",
+   "fits_form_factors": "bedslinger_u_frame,bedslinger_cantilever,corexy_open,corexy_enclosed,enclosed_box,idex,toolchanger,large_format,delta",
+   "lifespan_print_hours": 1500,
+   "failures_when_worn": "bed_adhesion,first_layer",
+   "max_extra_fail_pct_when_worn": 10,
+   "replace_minutes": 2,
+   "base_price_gbp": 22.0,
+   "pack_size": 1,
+   "unlock_tier": "Garage",
+   "oem_only_on_closed_brands": true,
+   "notes": "Scratches and grease lower adhesion. Clean with IPA to restore 10%."
+  },
+  {
+   "id": "smooth_pei_plate",
+   "name": "Smooth PEI plate",
+   "category": "Bed",
+   "slot": "build_plate",
+   "fits_form_factors": "bedslinger_u_frame,bedslinger_cantilever,corexy_open,corexy_enclosed,enclosed_box,idex,toolchanger,large_format,delta",
+   "lifespan_print_hours": 1200,
+   "failures_when_worn": "bed_adhesion,first_layer",
+   "max_extra_fail_pct_when_worn": 10,
+   "replace_minutes": 2,
+   "base_price_gbp": 24.0,
+   "pack_size": 1,
+   "unlock_tier": "Spare room",
+   "oem_only_on_closed_brands": true,
+   "notes": "Glossy undersides. Wears faster than textured."
+  },
+  {
+   "id": "cool_plate",
+   "name": "Cool plate",
+   "category": "Bed",
+   "slot": "build_plate",
+   "fits_form_factors": "bedslinger_u_frame,bedslinger_cantilever,corexy_open,corexy_enclosed,enclosed_box,idex,toolchanger,large_format,delta",
+   "lifespan_print_hours": 1000,
+   "failures_when_worn": "bed_adhesion",
+   "max_extra_fail_pct_when_worn": 8,
+   "replace_minutes": 2,
+   "base_price_gbp": 19.0,
+   "pack_size": 1,
+   "unlock_tier": "Spare room",
+   "oem_only_on_closed_brands": true,
+   "notes": "For PLA at low bed temps. Bad for PETG."
+  },
+  {
+   "id": "engineering_plate",
+   "name": "Engineering plate",
+   "category": "Bed",
+   "slot": "build_plate",
+   "fits_form_factors": "bedslinger_u_frame,bedslinger_cantilever,corexy_open,corexy_enclosed,enclosed_box,idex,toolchanger,large_format,delta",
+   "lifespan_print_hours": 2000,
+   "failures_when_worn": "bed_adhesion,warping",
+   "max_extra_fail_pct_when_worn": 8,
+   "replace_minutes": 2,
+   "base_price_gbp": 32.0,
+   "pack_size": 1,
+   "unlock_tier": "Workshop",
+   "oem_only_on_closed_brands": true,
+   "notes": "Grips ABS, ASA, nylon and PC."
+  },
+  {
+   "id": "belt_printer_conveyor",
+   "name": "Belt printer conveyor",
+   "category": "Bed",
+   "slot": "belt_bed",
+   "fits_form_factors": "belt",
+   "lifespan_print_hours": 1500,
+   "failures_when_worn": "bed_adhesion,belt_print_slip",
+   "max_extra_fail_pct_when_worn": 12,
+   "replace_minutes": 40,
+   "base_price_gbp": 59.0,
+   "pack_size": 1,
+   "unlock_tier": "Workshop",
+   "oem_only_on_closed_brands": true,
+   "notes": "The conveyor bed itself. Stretches and loses grip."
+  },
+  {
+   "id": "gt2_timing_belt",
+   "name": "GT2 timing belt",
+   "category": "Motion",
+   "slot": "belts",
+   "fits_form_factors": "bedslinger_u_frame,bedslinger_cantilever,corexy_open,corexy_enclosed,enclosed_box,idex,toolchanger,large_format,belt",
+   "lifespan_print_hours": 2500,
+   "failures_when_worn": "layer_shift,poor_surface",
+   "max_extra_fail_pct_when_worn": 8,
+   "replace_minutes": 30,
+   "base_price_gbp": 8.0,
+   "pack_size": 1,
+   "unlock_tier": "Garage",
+   "oem_only_on_closed_brands": false,
+   "notes": "Loose belts cause layer shifts and ripples."
+  },
+  {
+   "id": "linear_bearings",
+   "name": "Linear bearings",
+   "category": "Motion",
+   "slot": "bearings",
+   "fits_form_factors": "bedslinger_u_frame,bedslinger_cantilever,delta,large_format",
+   "lifespan_print_hours": 4000,
+   "failures_when_worn": "layer_shift,poor_surface",
+   "max_extra_fail_pct_when_worn": 5,
+   "replace_minutes": 45,
+   "base_price_gbp": 14.99,
+   "pack_size": 4,
+   "unlock_tier": "Garage",
+   "oem_only_on_closed_brands": false,
+   "notes": "Rattly bearings mean wobbly walls."
+  },
+  {
+   "id": "linear_rail_carriage",
+   "name": "Linear rail carriage",
+   "category": "Motion",
+   "slot": "rails",
+   "fits_form_factors": "corexy_open,corexy_enclosed,enclosed_box,idex,toolchanger",
+   "lifespan_print_hours": 6000,
+   "failures_when_worn": "layer_shift",
+   "max_extra_fail_pct_when_worn": 5,
+   "replace_minutes": 60,
+   "base_price_gbp": 24.99,
+   "pack_size": 1,
+   "unlock_tier": "Spare room",
+   "oem_only_on_closed_brands": false,
+   "notes": "Smooth fast motion. Needs grease."
+  },
+  {
+   "id": "z_lead_screw_nut",
+   "name": "Z lead screw nut",
+   "category": "Motion",
+   "slot": "z_nut",
+   "fits_form_factors": "bedslinger_u_frame,bedslinger_cantilever,corexy_open,corexy_enclosed,enclosed_box,idex,toolchanger,large_format,delta,belt",
+   "lifespan_print_hours": 6000,
+   "failures_when_worn": "poor_surface",
+   "max_extra_fail_pct_when_worn": 4,
+   "replace_minutes": 30,
+   "base_price_gbp": 7.99,
+   "pack_size": 1,
+   "unlock_tier": "Garage",
+   "oem_only_on_closed_brands": false,
+   "notes": "Worn nuts give banding on tall prints."
+  },
+  {
+   "id": "wiper_and_purge_kit",
+   "name": "Wiper and purge kit",
+   "category": "Multicolour",
+   "slot": "wiper",
+   "fits_form_factors": "bedslinger_u_frame,bedslinger_cantilever,corexy_open,corexy_enclosed,enclosed_box,idex,toolchanger,large_format,delta,belt",
+   "lifespan_print_hours": 800,
+   "failures_when_worn": "poor_surface,first_layer",
+   "max_extra_fail_pct_when_worn": 3,
+   "replace_minutes": 10,
+   "base_price_gbp": 9.99,
+   "pack_size": 1,
+   "unlock_tier": "Spare room",
+   "oem_only_on_closed_brands": true,
+   "notes": "Cleans the nozzle between colour swaps."
+  },
+  {
+   "id": "feeder_rollers_multicolour",
+   "name": "Feeder rollers (multicolour)",
+   "category": "Multicolour",
+   "slot": "mc_rollers",
+   "fits_form_factors": "bedslinger_u_frame,bedslinger_cantilever,corexy_open,corexy_enclosed,enclosed_box,idex,toolchanger,large_format,delta,belt",
+   "lifespan_print_hours": 1500,
+   "failures_when_worn": "filament_jam_feeder",
+   "max_extra_fail_pct_when_worn": 6,
+   "replace_minutes": 20,
+   "base_price_gbp": 14.99,
+   "pack_size": 1,
+   "unlock_tier": "Spare room",
+   "oem_only_on_closed_brands": true,
+   "notes": "Grip filament in multicolour units. Worn rollers mean jams."
+  },
+  {
+   "id": "carbon_air_filter",
+   "name": "Carbon air filter",
+   "category": "Enclosure",
+   "slot": "air_filter",
+   "fits_form_factors": "corexy_enclosed,enclosed_box,idex,toolchanger",
+   "lifespan_print_hours": 500,
+   "failures_when_worn": "",
+   "max_extra_fail_pct_when_worn": 0,
+   "replace_minutes": 5,
+   "base_price_gbp": 12.99,
+   "pack_size": 1,
+   "unlock_tier": "Spare room",
+   "oem_only_on_closed_brands": true,
+   "notes": "No print failures, but a clogged filter lets ABS fumes upset staff."
+  },
+  {
+   "id": "fep_film_pack_of_3",
+   "name": "FEP film (pack of 3)",
+   "category": "Resin",
+   "slot": "fep",
+   "fits_form_factors": "resin_msla",
+   "lifespan_print_hours": 150,
+   "failures_when_worn": "resin_peel_fail,resin_leak",
+   "max_extra_fail_pct_when_worn": 15,
+   "replace_minutes": 20,
+   "base_price_gbp": 19.99,
+   "pack_size": 3,
+   "unlock_tier": "Factory",
+   "oem_only_on_closed_brands": true,
+   "notes": "Clouds and dents. Punctures leak resin onto the screen."
+  },
+  {
+   "id": "lcd_screen",
+   "name": "LCD screen",
+   "category": "Resin",
+   "slot": "lcd",
+   "fits_form_factors": "resin_msla",
+   "lifespan_print_hours": 2000,
+   "failures_when_worn": "resin_dead_pixels",
+   "max_extra_fail_pct_when_worn": 20,
+   "replace_minutes": 40,
+   "base_price_gbp": 69.0,
+   "pack_size": 1,
+   "unlock_tier": "Factory",
+   "oem_only_on_closed_brands": true,
+   "notes": "UV slowly kills it. Dead pixels ruin parts of every print."
+  },
+  {
+   "id": "resin_vat",
+   "name": "Resin vat",
+   "category": "Resin",
+   "slot": "vat",
+   "fits_form_factors": "resin_msla",
+   "lifespan_print_hours": 4000,
+   "failures_when_worn": "resin_leak",
+   "max_extra_fail_pct_when_worn": 6,
+   "replace_minutes": 10,
+   "base_price_gbp": 34.99,
+   "pack_size": 1,
+   "unlock_tier": "Factory",
+   "oem_only_on_closed_brands": true,
+   "notes": "Spare vats let you swap resin colours fast."
+  },
+  {
+   "id": "ipa_and_wash_fluid_5l",
+   "name": "IPA and wash fluid (5L)",
+   "category": "Resin consumable",
+   "slot": "wash_fluid",
+   "fits_form_factors": "resin_msla",
+   "lifespan_print_hours": 60,
+   "failures_when_worn": "poor_surface",
+   "max_extra_fail_pct_when_worn": 5,
+   "replace_minutes": 5,
+   "base_price_gbp": 24.99,
+   "pack_size": 1,
+   "unlock_tier": "Factory",
+   "oem_only_on_closed_brands": false,
+   "notes": "Dirty wash fluid leaves tacky prints."
+  },
+  {
+   "id": "nitrile_gloves_box_of_100",
+   "name": "Nitrile gloves (box of 100)",
+   "category": "Resin consumable",
+   "slot": "gloves",
+   "fits_form_factors": "resin_msla",
+   "lifespan_print_hours": 100,
+   "failures_when_worn": "",
+   "max_extra_fail_pct_when_worn": 0,
+   "replace_minutes": 0,
+   "base_price_gbp": 8.99,
+   "pack_size": 1,
+   "unlock_tier": "Factory",
+   "oem_only_on_closed_brands": false,
+   "notes": "No gloves, no resin printing. Staff refuse."
+  },
+  {
+   "id": "sls_recoater_blade",
+   "name": "SLS recoater blade",
+   "category": "SLS",
+   "slot": "recoater",
+   "fits_form_factors": "sls_cabinet",
+   "lifespan_print_hours": 3000,
+   "failures_when_worn": "sls_powder_short",
+   "max_extra_fail_pct_when_worn": 8,
+   "replace_minutes": 60,
+   "base_price_gbp": 299.0,
+   "pack_size": 1,
+   "unlock_tier": "Factory",
+   "oem_only_on_closed_brands": true,
+   "notes": "Spreads powder layers. Nicks cause streaks."
+  },
+  {
+   "id": "sls_laser_module",
+   "name": "SLS laser module",
+   "category": "SLS",
+   "slot": "laser",
+   "fits_form_factors": "sls_cabinet",
+   "lifespan_print_hours": 15000,
+   "failures_when_worn": "sls_powder_short,poor_surface",
+   "max_extra_fail_pct_when_worn": 15,
+   "replace_minutes": 240,
+   "base_price_gbp": 2499.0,
+   "pack_size": 1,
+   "unlock_tier": "Factory",
+   "oem_only_on_closed_brands": true,
+   "notes": "Big ticket. Plan it into the budget."
+  },
+  {
+   "id": "sls_powder_filters",
+   "name": "SLS powder filters",
+   "category": "SLS",
+   "slot": "sls_filter",
+   "fits_form_factors": "sls_cabinet",
+   "lifespan_print_hours": 400,
+   "failures_when_worn": "sls_powder_short",
+   "max_extra_fail_pct_when_worn": 5,
+   "replace_minutes": 20,
+   "base_price_gbp": 49.0,
+   "pack_size": 2,
+   "unlock_tier": "Factory",
+   "oem_only_on_closed_brands": true,
+   "notes": "Keep the powder station clean."
+  }
+ ],
+ "upgrades": [
+  {
+   "id": "auto_bed_levelling_kit",
+   "name": "Auto bed levelling kit",
+   "category": "Bed",
+   "fits": "bedslinger_u_frame,bedslinger_cantilever,large_format",
+   "effects": {
+    "first_layer_fail_mult": 0.4,
+    "bed_adhesion_fail_mult": 0.7
+   },
+   "install_minutes": 60,
+   "price_gbp": 39,
+   "unlock_tier": "Garage",
+   "requires": "",
+   "notes": "Probe that maps the bed. Big cut in first layer fails."
+  },
+  {
+   "id": "spring_steel_magnetic_bed",
+   "name": "Spring steel magnetic bed",
+   "category": "Bed",
+   "fits": "bedslinger_u_frame,bedslinger_cantilever,corexy_open,corexy_enclosed,enclosed_box,idex,toolchanger,large_format,delta",
+   "effects": {
+    "plate_swap_minutes": -3,
+    "part_removal_damage_mult": 0.5
+   },
+   "install_minutes": 20,
+   "price_gbp": 34,
+   "unlock_tier": "Garage",
+   "requires": "",
+   "notes": "Flex the plate to pop prints off. Fewer broken parts."
+  },
+  {
+   "id": "direct_drive_conversion",
+   "name": "Direct drive conversion",
+   "category": "Extrusion",
+   "fits": "bedslinger_u_frame,bedslinger_cantilever,large_format",
+   "effects": {
+    "enables_families": "TPU",
+    "stringing_fail_mult": 0.8
+   },
+   "install_minutes": 90,
+   "price_gbp": 49,
+   "unlock_tier": "Garage",
+   "requires": "",
+   "notes": "Lets bowden printers print flexible filament."
+  },
+  {
+   "id": "dual_gear_extruder",
+   "name": "Dual gear extruder",
+   "category": "Extrusion",
+   "fits": "bedslinger_u_frame,bedslinger_cantilever,corexy_open,corexy_enclosed,enclosed_box,idex,toolchanger,large_format,delta,belt",
+   "effects": {
+    "under_extrusion_fail_mult": 0.7,
+    "extruder_gear_wear_mult": 0.6
+   },
+   "install_minutes": 45,
+   "price_gbp": 29,
+   "unlock_tier": "Spare room",
+   "requires": "",
+   "notes": "Better grip, fewer slips."
+  },
+  {
+   "id": "all_metal_hotend",
+   "name": "All metal hotend",
+   "category": "Hotend",
+   "fits": "bedslinger_u_frame,bedslinger_cantilever,corexy_open,corexy_enclosed,enclosed_box,idex,toolchanger,large_format,delta,belt",
+   "effects": {
+    "max_nozzle_temp_c": 300,
+    "heat_creep_fail_mult": 0.8,
+    "ptfe_wear_mult": 0.3
+   },
+   "install_minutes": 45,
+   "price_gbp": 59,
+   "unlock_tier": "Spare room",
+   "requires": "",
+   "notes": "Lifts temp limit for ABS, ASA and nylon."
+  },
+  {
+   "id": "high_flow_hotend",
+   "name": "High flow hotend",
+   "category": "Hotend",
+   "fits": "bedslinger_u_frame,bedslinger_cantilever,corexy_open,corexy_enclosed,enclosed_box,idex,toolchanger,large_format,delta,belt",
+   "effects": {
+    "print_time_mult": 0.85
+   },
+   "install_minutes": 45,
+   "price_gbp": 79,
+   "unlock_tier": "Spare room",
+   "requires": "All metal hotend",
+   "notes": "Melts filament faster so the printer can actually use its speed."
+  },
+  {
+   "id": "quick_swap_nozzle_system",
+   "name": "Quick swap nozzle system",
+   "category": "Hotend",
+   "fits": "bedslinger_u_frame,bedslinger_cantilever,corexy_open,corexy_enclosed,enclosed_box,idex,toolchanger,large_format,delta,belt",
+   "effects": {
+    "nozzle_replace_minutes": 1
+   },
+   "install_minutes": 30,
+   "price_gbp": 45,
+   "unlock_tier": "Spare room",
+   "requires": "",
+   "notes": "Tool-free nozzle changes in seconds."
+  },
+  {
+   "id": "silent_stepper_drivers",
+   "name": "Silent stepper drivers",
+   "category": "Electronics",
+   "fits": "bedslinger_u_frame,bedslinger_cantilever,corexy_open,large_format,delta",
+   "effects": {
+    "noise_db": -8
+   },
+   "install_minutes": 60,
+   "price_gbp": 25,
+   "unlock_tier": "Garage",
+   "requires": "",
+   "notes": "Quieter printers. Matters once staff work next to them."
+  },
+  {
+   "id": "input_shaping_accelerometer",
+   "name": "Input shaping accelerometer",
+   "category": "Electronics",
+   "fits": "bedslinger_u_frame,bedslinger_cantilever,corexy_open,corexy_enclosed,enclosed_box,idex,toolchanger,large_format,delta,belt",
+   "effects": {
+    "print_time_mult": 0.85,
+    "poor_surface_fail_mult": 0.8
+   },
+   "install_minutes": 30,
+   "price_gbp": 19,
+   "unlock_tier": "Spare room",
+   "requires": "",
+   "notes": "Tunes out vibration so it can print faster cleanly."
+  },
+  {
+   "id": "wi_fi_control_board",
+   "name": "Wi-Fi control board",
+   "category": "Electronics",
+   "fits": "bedslinger_u_frame,bedslinger_cantilever,corexy_open,corexy_enclosed,enclosed_box,idex,toolchanger,large_format,delta,belt",
+   "effects": {
+    "remote_start": true,
+    "remote_monitoring": true
+   },
+   "install_minutes": 60,
+   "price_gbp": 35,
+   "unlock_tier": "Spare room",
+   "requires": "",
+   "notes": "Start and check prints from the PC without walking over."
+  },
+  {
+   "id": "ai_spaghetti_camera",
+   "name": "AI spaghetti camera",
+   "category": "Electronics",
+   "fits": "bedslinger_u_frame,bedslinger_cantilever,corexy_open,corexy_enclosed,enclosed_box,idex,toolchanger,large_format,delta,belt",
+   "effects": {
+    "auto_stop_on_spaghetti": true,
+    "failure_waste_mult": 0.3
+   },
+   "install_minutes": 20,
+   "price_gbp": 49,
+   "unlock_tier": "Spare room",
+   "requires": "Wi-Fi control board",
+   "notes": "Spots failed prints and pauses them. Saves filament and time."
+  },
+  {
+   "id": "filament_runout_sensor",
+   "name": "Filament runout sensor",
+   "category": "Extrusion",
+   "fits": "bedslinger_u_frame,bedslinger_cantilever,corexy_open,corexy_enclosed,enclosed_box,idex,toolchanger,large_format,delta,belt",
+   "effects": {
+    "auto_pause_on_runout": true
+   },
+   "install_minutes": 20,
+   "price_gbp": 12,
+   "unlock_tier": "Garage",
+   "requires": "",
+   "notes": "Pauses instead of ruining the print when a spool runs out."
+  },
+  {
+   "id": "clog_detection_sensor",
+   "name": "Clog detection sensor",
+   "category": "Extrusion",
+   "fits": "bedslinger_u_frame,bedslinger_cantilever,corexy_open,corexy_enclosed,enclosed_box,idex,toolchanger,large_format,delta,belt",
+   "effects": {
+    "auto_pause_on_clog": true
+   },
+   "install_minutes": 20,
+   "price_gbp": 22,
+   "unlock_tier": "Spare room",
+   "requires": "Filament runout sensor",
+   "notes": "Catches clogs early."
+  },
+  {
+   "id": "snap_on_enclosure",
+   "name": "Snap-on enclosure",
+   "category": "Enclosure",
+   "fits": "bedslinger_u_frame,bedslinger_cantilever,corexy_open",
+   "effects": {
+    "enclosure": "standard",
+    "warping_fail_mult": 0.5,
+    "enables_families": "ABS,ASA"
+   },
+   "install_minutes": 60,
+   "price_gbp": 89,
+   "unlock_tier": "Spare room",
+   "requires": "",
+   "notes": "Tent style cover. Needed for ABS and ASA on open printers."
+  },
+  {
+   "id": "enclosure_heater",
+   "name": "Enclosure heater",
+   "category": "Enclosure",
+   "fits": "corexy_enclosed,enclosed_box,idex,toolchanger",
+   "effects": {
+    "enclosure": "heated",
+    "warping_fail_mult": 0.5,
+    "enables_families": "PC,Nylon"
+   },
+   "install_minutes": 45,
+   "price_gbp": 129,
+   "unlock_tier": "Workshop",
+   "requires": "",
+   "notes": "Heated chamber for engineering materials."
+  },
+  {
+   "id": "carbon_and_hepa_filter_unit",
+   "name": "Carbon and HEPA filter unit",
+   "category": "Enclosure",
+   "fits": "corexy_enclosed,enclosed_box,idex,toolchanger",
+   "effects": {
+    "fumes": "none"
+   },
+   "install_minutes": 30,
+   "price_gbp": 59,
+   "unlock_tier": "Spare room",
+   "requires": "",
+   "notes": "Keeps ABS fumes out of the workspace."
+  },
+  {
+   "id": "plate_auto_ejector",
+   "name": "Plate auto ejector",
+   "category": "Automation",
+   "fits": "bedslinger_u_frame,bedslinger_cantilever,corexy_open,corexy_enclosed,enclosed_box,idex,toolchanger,large_format,delta",
+   "effects": {
+    "auto_clear_plate": true,
+    "queue_next_job": true
+   },
+   "install_minutes": 120,
+   "price_gbp": 129,
+   "unlock_tier": "Workshop",
+   "requires": "Spring steel magnetic bed",
+   "notes": "Pops finished prints off and starts the next job. Farm essential."
+  },
+  {
+   "id": "print_farm_queue_software",
+   "name": "Print farm queue software",
+   "category": "Automation",
+   "fits": "all",
+   "effects": {
+    "farm_job_queue": true,
+    "auto_assign_jobs": true
+   },
+   "install_minutes": 0,
+   "price_gbp": 15,
+   "unlock_tier": "Workshop",
+   "requires": "Wi-Fi control board",
+   "notes": "Monthly subscription. Auto sends jobs to free printers."
+  },
+  {
+   "id": "cable_chain_kit",
+   "name": "Cable chain kit",
+   "category": "Motion",
+   "fits": "bedslinger_u_frame,bedslinger_cantilever,corexy_open,corexy_enclosed,enclosed_box,idex,toolchanger,large_format,delta,belt",
+   "effects": {
+    "wear_mult": 0.9
+   },
+   "install_minutes": 45,
+   "price_gbp": 19,
+   "unlock_tier": "Garage",
+   "requires": "",
+   "notes": "Tidier wiring, fewer snapped wires."
+  },
+  {
+   "id": "linear_rail_conversion",
+   "name": "Linear rail conversion",
+   "category": "Motion",
+   "fits": "bedslinger_u_frame,bedslinger_cantilever",
+   "effects": {
+    "layer_shift_fail_mult": 0.6,
+    "poor_surface_fail_mult": 0.8
+   },
+   "install_minutes": 120,
+   "price_gbp": 69,
+   "unlock_tier": "Spare room",
+   "requires": "",
+   "notes": "Swaps wheels for rails. Smoother and more reliable."
+  },
+  {
+   "id": "larger_z_extension",
+   "name": "Larger Z extension",
+   "category": "Frame",
+   "fits": "bedslinger_u_frame",
+   "effects": {
+    "build_z_mm": "+100"
+   },
+   "install_minutes": 120,
+   "price_gbp": 79,
+   "unlock_tier": "Spare room",
+   "requires": "",
+   "notes": "Taller prints for helmets and vases."
+  },
+  {
+   "id": "anti_vibration_feet",
+   "name": "Anti vibration feet",
+   "category": "Frame",
+   "fits": "bedslinger_u_frame,bedslinger_cantilever,corexy_open,corexy_enclosed,enclosed_box,idex,toolchanger,large_format,delta,belt",
+   "effects": {
+    "poor_surface_fail_mult": 0.9,
+    "noise_db": -3
+   },
+   "install_minutes": 5,
+   "price_gbp": 12,
+   "unlock_tier": "Garage",
+   "requires": "",
+   "notes": "Cheap and cheerful."
+  },
+  {
+   "id": "frame_stiffening_braces",
+   "name": "Frame stiffening braces",
+   "category": "Frame",
+   "fits": "bedslinger_u_frame,large_format",
+   "effects": {
+    "layer_shift_fail_mult": 0.8,
+    "print_time_mult": 0.95
+   },
+   "install_minutes": 45,
+   "price_gbp": 25,
+   "unlock_tier": "Garage",
+   "requires": "",
+   "notes": "Lets wobbly frames go a little faster."
+  },
+  {
+   "id": "ups_power_backup",
+   "name": "UPS power backup",
+   "category": "Power",
+   "fits": "all",
+   "effects": {
+    "survives_power_cut_minutes": 30
+   },
+   "install_minutes": 15,
+   "price_gbp": 149,
+   "unlock_tier": "Spare room",
+   "requires": "",
+   "notes": "Prints keep going through short power cuts."
+  },
+  {
+   "id": "smart_plug_with_energy_monitor",
+   "name": "Smart plug with energy monitor",
+   "category": "Power",
+   "fits": "all",
+   "effects": {
+    "remote_power": true,
+    "shows_energy_cost": true
+   },
+   "install_minutes": 5,
+   "price_gbp": 15,
+   "unlock_tier": "Garage",
+   "requires": "",
+   "notes": "See what each printer costs to run."
+  },
+  {
+   "id": "kestrel_mk4_to_core_one_upgrade_kit",
+   "name": "Kestrel MK4 to Core One upgrade kit",
+   "category": "Model upgrade",
+   "fits": "kestrel_mk4",
+   "effects": {
+    "converts_to": "kestrel_core_one"
+   },
+   "install_minutes": 480,
+   "price_gbp": 449,
+   "unlock_tier": "Workshop",
+   "requires": "",
+   "notes": "Turns an MK4 into a Core One. Cheaper than a new machine."
+  },
+  {
+   "id": "resin_heater",
+   "name": "Resin heater",
+   "category": "Resin",
+   "fits": "resin_msla",
+   "effects": {
+    "resin_peel_fail_mult": 0.6
+   },
+   "install_minutes": 10,
+   "price_gbp": 39,
+   "unlock_tier": "Factory",
+   "requires": "",
+   "notes": "Warm resin flows better in a cold workshop."
+  },
+  {
+   "id": "wash_and_cure_station",
+   "name": "Wash and cure station",
+   "category": "Resin",
+   "fits": "resin_msla",
+   "effects": {
+    "enables_resin_post_processing": true
+   },
+   "install_minutes": 15,
+   "price_gbp": 149,
+   "unlock_tier": "Factory",
+   "requires": "",
+   "notes": "Required to finish resin prints."
+  },
+  {
+   "id": "air_purifier_for_resin",
+   "name": "Air purifier for resin",
+   "category": "Resin",
+   "fits": "resin_msla",
+   "effects": {
+    "fumes": "none"
+   },
+   "install_minutes": 10,
+   "price_gbp": 79,
+   "unlock_tier": "Factory",
+   "requires": "",
+   "notes": "Keeps resin smell away from staff."
+  },
+  {
+   "id": "sls_powder_recovery_station",
+   "name": "SLS powder recovery station",
+   "category": "SLS",
+   "fits": "sls_cabinet",
+   "effects": {
+    "powder_reuse_pct": 80
+   },
+   "install_minutes": 120,
+   "price_gbp": 4999,
+   "unlock_tier": "Factory",
+   "requires": "",
+   "notes": "Required to run SLS. Recycles unused powder."
+  }
+ ]
+}

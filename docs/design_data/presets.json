@@ -1,0 +1,187 @@
+{
+ "version": 1,
+ "notes": "Preset multipliers apply to product print_hours and filament_g, and to the printer's fail chance. Durability and quality are 1 to 5. Product difficulty and printer quality can shift final quality by +/-1.",
+ "durability_scale": {
+  "1": "Fragile. Snaps easily, high chance of transit damage.",
+  "2": "Light duty. Fine for decor, risky for anything handled.",
+  "3": "Normal. Survives everyday use and most deliveries.",
+  "4": "Tough. Good for functional parts and B2B.",
+  "5": "Very tough. Almost never breaks in transit."
+ },
+ "quality_scale": {
+  "1": "Rough",
+  "2": "Okay",
+  "3": "Good",
+  "4": "Great",
+  "5": "Flawless"
+ },
+ "presets": [
+  {
+   "id": "draft",
+   "name": "Draft",
+   "description": "Quick and cheap. Fine for test prints and stuff nobody looks at closely.",
+   "print_time_mult": 0.6,
+   "filament_mult": 0.75,
+   "fail_mult": 1.5,
+   "durability": 2,
+   "quality": 1,
+   "wear_mult": 1.15,
+   "real_settings_tooltip": "0.28 mm layers, 2 walls, 10% infill",
+   "unlock_tier": "Garage"
+  },
+  {
+   "id": "standard",
+   "name": "Standard",
+   "description": "The sensible default. Good looks, decent strength.",
+   "print_time_mult": 1.0,
+   "filament_mult": 1.0,
+   "fail_mult": 1.0,
+   "durability": 3,
+   "quality": 3,
+   "wear_mult": 1.0,
+   "real_settings_tooltip": "0.20 mm layers, 3 walls, 15% infill",
+   "unlock_tier": "Garage"
+  },
+  {
+   "id": "strong",
+   "name": "Strong",
+   "description": "Built like a brick. Takes longer and uses more filament, but survives the post.",
+   "print_time_mult": 1.45,
+   "filament_mult": 1.4,
+   "fail_mult": 0.9,
+   "durability": 5,
+   "quality": 3,
+   "wear_mult": 0.95,
+   "real_settings_tooltip": "0.20 mm layers, 5 walls, 40% gyroid infill",
+   "unlock_tier": "Garage"
+  },
+  {
+   "id": "fine",
+   "name": "Fine detail",
+   "description": "Silky smooth surfaces for figurines and display pieces. Slow.",
+   "print_time_mult": 1.9,
+   "filament_mult": 1.05,
+   "fail_mult": 1.15,
+   "durability": 3,
+   "quality": 5,
+   "wear_mult": 1.0,
+   "real_settings_tooltip": "0.10 mm layers, 3 walls, 15% infill",
+   "unlock_tier": "Spare room"
+  },
+  {
+   "id": "vase",
+   "name": "Vase mode",
+   "description": "One continuous spiral wall. Super fast for vases and lamp shades, but hollow and fragile.",
+   "print_time_mult": 0.35,
+   "filament_mult": 0.4,
+   "fail_mult": 0.8,
+   "durability": 1,
+   "quality": 4,
+   "wear_mult": 0.9,
+   "real_settings_tooltip": "Single spiral wall, no top, no infill",
+   "unlock_tier": "Spare room"
+  },
+  {
+   "id": "speed",
+   "name": "Speed run",
+   "description": "Pushes the printer to its limit. Great on fast machines, risky on slow ones.",
+   "print_time_mult": 0.7,
+   "filament_mult": 1.0,
+   "fail_mult": 1.4,
+   "durability": 3,
+   "quality": 2,
+   "wear_mult": 1.3,
+   "real_settings_tooltip": "0.24 mm layers, 3 walls, 15% infill, max speed",
+   "unlock_tier": "Spare room"
+  },
+  {
+   "id": "production",
+   "name": "Production",
+   "description": "Tuned for batches: balanced strength, consistent results, low fail rate.",
+   "print_time_mult": 1.1,
+   "filament_mult": 1.1,
+   "fail_mult": 0.8,
+   "durability": 4,
+   "quality": 3,
+   "wear_mult": 1.0,
+   "real_settings_tooltip": "0.20 mm layers, 4 walls, 20% infill, slower outer wall",
+   "unlock_tier": "Workshop"
+  }
+ ],
+ "toggles": [
+  {
+   "id": "supports_off",
+   "name": "Supports: off",
+   "description": "No supports. Saves time and plastic, but overhangs may collapse.",
+   "effects": {
+    "print_time_mult": 1.0,
+    "filament_mult": 1.0
+   },
+   "notes": "Overhanging designs roll support_failure with x4 weight"
+  },
+  {
+   "id": "supports_normal",
+   "name": "Supports: normal",
+   "description": "Grid supports under overhangs. Leaves marks to clean up.",
+   "effects": {
+    "print_time_mult": 1.2,
+    "filament_mult": 1.15,
+    "post_process_minutes": 5
+   },
+   "notes": "Default for products with overhangs"
+  },
+  {
+   "id": "supports_tree",
+   "name": "Supports: tree",
+   "description": "Branching supports. Less plastic, cleaner removal.",
+   "effects": {
+    "print_time_mult": 1.15,
+    "filament_mult": 1.08,
+    "post_process_minutes": 3
+   },
+   "notes": "Unlocks at Spare room"
+  },
+  {
+   "id": "brim",
+   "name": "Brim",
+   "description": "Extra rim around the base to stop warping and lifting.",
+   "effects": {
+    "filament_mult": 1.03,
+    "post_process_minutes": 1,
+    "warping_fail_mult": 0.6,
+    "bed_adhesion_fail_mult": 0.6
+   },
+   "notes": ""
+  },
+  {
+   "id": "multicolour",
+   "name": "Multicolour",
+   "description": "Use the product's full colours. Needs a multicolour unit, IDEX or toolchanger.",
+   "effects": {
+    "purge_waste": "from products.json purge_waste_g, scaled by the unit's purge_g_per_swap",
+    "sale_price_mult": 1.0
+   },
+   "notes": "Off = print in one colour. Sells for 30% less and some buyers leave lower reviews"
+  },
+  {
+   "id": "ironing",
+   "name": "Ironing",
+   "description": "Smooths flat top surfaces with a second pass.",
+   "effects": {
+    "print_time_mult": 1.1,
+    "quality": "+1 on flat topped products"
+   },
+   "notes": "Unlocks at Spare room"
+  },
+  {
+   "id": "batch_plate",
+   "name": "Fill the plate",
+   "description": "Print as many copies as fit on the bed at once.",
+   "effects": {
+    "copies": "floor(bed area / product footprint)",
+    "print_time_mult": "0.85 per copy vs printing them one at a time"
+   },
+   "notes": "Copies all fail together if the plate fails"
+  }
+ ]
+}

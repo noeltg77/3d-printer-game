@@ -15,6 +15,7 @@ Cosy isometric 3D printing business sim in Godot 4.7 (GDScript). `docs/GDD.md` i
 ## Layout
 
 - `docs/` GDD, data schemas, balancing notes (ignored by Godot)
+- `docs/design_data/` content designed ahead of the build (660 products, 38 printers, filaments, parts, presets, failures, shipping). Reference only: the game loads `data/`, and each phase imports what it needs from here. Read its README before adding content or product models
 - `tools/generators/` Blender Python asset generators, one per asset family (ignored by Godot)
 - `tools/previews/` preview renders from the generators (git ignored)
 - `assets/` generated `.glb` models, palette texture, shared material
