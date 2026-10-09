@@ -270,7 +270,7 @@ Build small and prove each step before moving on: assets and garage first, then 
 
 - [x] Save and load
 - [ ] UI polish, sound effects, music, lighting pass
-- [ ] Light onboarding hints for non printer owners
+- [x] Light onboarding hints for non printer owners
 - [ ] Balance pass on the garage tier
 - [ ] Playtest with printer owners and complete beginners
 
