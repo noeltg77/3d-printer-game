@@ -635,7 +635,8 @@ def _estate(yard, half_w, half_d):
 
     _flat(ground, front, back, -EXTENT, EXTENT, "linen", top=LAWN)
     _flat(ground, back, EXTENT, -EXTENT, EXTENT, "green", top=LAWN)
-    _flat(ground, -EXTENT, road[0] - pavement, -EXTENT, EXTENT, "linen", top=LAWN)
+    edge = -EXTENT - west
+    _flat(ground, edge, road[0] - pavement, -EXTENT, EXTENT, "linen", top=LAWN)
     _road(yard, road[0], road[1], pavement)
 
     # Forecourt: tarmac in front of the units, parking bays along the verge.
@@ -701,7 +702,7 @@ def _estate(yard, half_w, half_d):
 
     # Over the road: bigger sheds with their loading doors facing us.
     far = road[0] - pavement
-    for rect, height, trim, sign in (((-EXTENT + 0.5, far - 3.2, -17.0, -1.5), 5.0, "navy", "red"), ((-EXTENT + 0.5, far - 3.2, 2.0, 14.5), 4.2, "teal", "yellow"), ((-EXTENT + 0.5, far - 3.2, 17.0, EXTENT - 0.5), 4.6, "brick", "white")):
+    for rect, height, trim, sign in (((edge + 0.5, far - 3.2, -17.0, -1.5), 5.0, "navy", "red"), ((edge + 0.5, far - 3.2, 2.0, 14.5), 4.2, "teal", "yellow"), ((edge + 0.5, far - 3.2, 17.0, EXTENT - 0.5), 4.6, "brick", "white")):
         _unit(yard, rect, height=height, trim=trim, sign=sign, shutter="E", windows="ES", door=("E", 1.5))
     _flat(ground, far - 3.2, far, -EXTENT, EXTENT, "slate")
     _pallets(yard, far - 2.0, -4.5, 5)

@@ -198,8 +198,13 @@ func _build_chrome(current: String) -> Control:
 		tab.add_child(dot)
 		tabs.add_child(tab)
 
-	var address := Ui.panel(Ui.text(app(current)["url"], 14, Ui.MUTED), Ui.box(Ui.SOFT, 17, 16, 0))
-	address.custom_minimum_size.y = 34
+	# The address gives way when the tabs need the room: with every app open
+	# in a tab there is little left for it.
+	var url := Ui.text(app(current)["url"], 14, Ui.MUTED)
+	url.clip_text = true
+	url.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	var address := Ui.panel(url, Ui.box(Ui.SOFT, 17, 16, 0))
+	address.custom_minimum_size = Vector2(90, 34)
 	address.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	address.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	address.get_child(0).size_flags_vertical = Control.SIZE_SHRINK_CENTER

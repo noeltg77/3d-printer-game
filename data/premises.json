@@ -39,6 +39,19 @@
 			"shelf_slots": 48,
 			"rack_slots": 140,
 			"staff": 2
+		},
+		{
+			"id": "factory",
+			"name": "Factory unit",
+			"description": "An industrial unit with a door for lorries. Six benches for two dozen printers, shelving the length of a bus, and room for a proper team.",
+			"tier": 4,
+			"scene": "res://scenes/factory/factory.tscn",
+			"move_cost_pence": 499999,
+			"rent_pence_per_day": 7999,
+			"printer_spots": 24,
+			"shelf_slots": 96,
+			"rack_slots": 280,
+			"staff": 6
 		}
 	]
 }

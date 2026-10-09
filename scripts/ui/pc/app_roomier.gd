@@ -24,7 +24,6 @@ func refresh() -> void:
 	var cards := Ui.hbox([], 20)
 	for place: String in Game.data.premises:
 		cards.add_child(_card(StringName(place)))
-	cards.add_child(_later_card())
 	var page := Ui.margin(Ui.vbox([
 		Ui.wrap(Ui.text("Moving takes your printers, filament, stock and anything waiting by the door with you. Bigger places open up more to buy in the shops.", 14, Ui.MUTED)),
 		cards,
@@ -63,18 +62,8 @@ func _card(place: StringName) -> Control:
 		move.disabled = problem != ""
 		column.add_child(Ui.hbox([Ui.title(Money.format(int(row["move_cost_pence"])), 22), Ui.text("to move", 13, Ui.MUTED), null, move], 8))
 	var card := Ui.card(column, 22, 20, SHADOW)
-	card.custom_minimum_size = Vector2(340, 420)
-	card.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
-	return card
-
-
-## An honest placeholder for the tiers that aren't built yet.
-func _later_card() -> Control:
-	var card := Ui.panel(Ui.vbox([
-		Ui.title("Bigger still", 20, Ui.MUTED),
-		Ui.wrap(Ui.text("Factory units aren't on the market yet.", 13, Ui.MUTED)),
-	], 8), Ui.outlined(Ui.CLEAR, SHADOW, 22, 20, 20))
-	card.custom_minimum_size.x = 260
+	card.custom_minimum_size = Vector2(300, 440)
+	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	card.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	return card
 
