@@ -15,6 +15,14 @@ func get_actions(_agent: Agent) -> Array[Action]:
 	var actions: Array[Action] = [Action.info("%d of %d slots used" % [spools().size(), _slots.size()])]
 	for spool in spools():
 		actions.append(Action.info(spool.describe()))
+	# A spool nobody wants (wet, the wrong colour, nearly gone) only takes up a slot.
+	var unwanted: Array[Action] = []
+	for spool in spools():
+		var bin := Action.new(spool.describe(), _bin.bind(spool))
+		bin.task_name = "Bin the %s" % spool.title().to_lower()
+		unwanted.append(bin)
+	if not unwanted.is_empty():
+		actions.append(Action.submenu("Bin a spool", unwanted))
 	return actions
 
 
@@ -72,6 +80,24 @@ func spools() -> Array[Spool]:
 		if slot.get_child_count() > 0:
 			found.append(slot.get_child(0) as Spool)
 	return found
+
+
+func _bin(agent: Agent, spool: Spool) -> void:
+	if not is_instance_valid(spool) or not spools().has(spool):
+		agent.say("That spool has already gone")
+		return
+	await agent.go_to(self)
+	if not is_instance_valid(spool) or not spools().has(spool):
+		agent.say("That spool has already gone")
+		return
+	var title := spool.title()
+	await agent.reach(func() -> void:
+		spool.get_parent().remove_child(spool)
+		agent.carry(spool)
+		Game.changed.emit())
+	await agent.walk_to(get_tree().get_first_node_in_group(&"bin").global_position)
+	await agent.reach(func() -> void: agent.release().queue_free())
+	agent.say("Binned the %s" % title.to_lower())
 
 
 func save() -> Dictionary:

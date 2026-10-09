@@ -22,7 +22,7 @@
 			"slot": "nozzle",
 			"slot_name": "Nozzle",
 			"description": "Shrugs off glow, wood and carbon filaments, and lasts far longer than brass.",
-			"unlock_tier": 2,
+			"unlock_tier": 1,
 			"lifespan_print_hours": 3000,
 			"abrasive_wear_multiplier": 1.0,
 			"max_extra_fail": 0.06,
