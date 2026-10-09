@@ -48,6 +48,18 @@
 		"step": 0.2,
 		"extra_fail_per_step": 0.03
 	},
+	"contracts": {
+		"unlock_tier": 3,
+		"offers_per_day": 1.2,
+		"max_offers": 3,
+		"max_active": 3,
+		"offer_minutes": 1440,
+		"assumed_printers": 3,
+		"colour_chance": 0.7,
+		"max_late_days": 3,
+		"failed_pay_multiplier": 0.5,
+		"pack_minutes_per_item": 1
+	},
 	"stock": {
 		"unlock_tier": 3,
 		"check_minutes": 10

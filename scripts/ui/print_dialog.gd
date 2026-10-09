@@ -56,9 +56,9 @@ func open(printer: PrinterStation) -> void:
 	_slots = []
 	_copies = 1
 	_preset = StringName(Game.data.settings["default_preset"])
-	_product = Game.owned_designs[0]
+	_product = Game.printable_designs()[0]
 	# Start on something that can actually be printed, if anything can.
-	for product in Game.owned_designs:
+	for product in Game.printable_designs():
 		if printer.print_problem(product, _preset) == "":
 			_product = product
 			break
@@ -106,7 +106,7 @@ func _rebuild() -> void:
 	], 16)
 
 	var designs := Ui.vbox([], 8)
-	for product in Game.owned_designs:
+	for product in Game.printable_designs():
 		designs.add_child(_design_row(product))
 	var left := Ui.vbox([Ui.text("Design", 13, Ui.MUTED, 800), Ui.scroll(designs)], 8)
 	left.custom_minimum_size = Vector2(300, 330)
@@ -139,6 +139,8 @@ func _design_row(product: StringName) -> Control:
 	var fg := Ui.PAPER if chosen else Ui.INK
 	var note := "%d g · %s" % [roundi(Game.print_grams(product, _preset)),
 		GameClock.duration_label(_printer.print_minutes(product, _preset))]
+	if Game.contracts.needs(product):
+		note += " · for a contract"
 	if not PrintRisk.fits(_printer.spec, Game.data.products[product]):
 		note += " · too big for this printer"
 	elif not printable:

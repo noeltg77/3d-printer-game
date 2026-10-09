@@ -68,6 +68,9 @@ func _build() -> void:
 ## True if a design belongs in the list for this category and search text.
 ## The search looks in the design's name and its category.
 static func matches(row: Dictionary, category: String, search: String) -> bool:
+	# A design a client supplies with a contract isn't for sale.
+	if row.get("contract_only", false):
+		return false
 	if category == OWN and not Game.studio.has(StringName(row["id"])):
 		return false
 	if category != ALL and category != OWN and row["category"] != category:

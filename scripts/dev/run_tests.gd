@@ -17,6 +17,7 @@ func _init() -> void:
 	_test_markets_and_trends()
 	_test_premises()
 	_test_stockroom()
+	_test_contracts()
 	_test_clock()
 	_test_bank()
 	_test_money()
@@ -601,6 +602,123 @@ func _test_stockroom() -> void:
 	again.restore(saved)
 	_check(again.rules.size() == 3 and again.rule(red) == stock.rule(red) and typeof(again.rule(red)["point"]) == TYPE_INT, "rules come back from a save, without those for things the game no longer has")
 	_check(int(data.settings["stock"]["unlock_tier"]) <= data.settings["tier_names"].size(), "reordering unlocks at a tier that exists")
+
+
+func _test_contracts() -> void:
+	var data := GameData.load_all()
+	var rules: Dictionary = data.settings["contracts"]
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 8
+	var book := Contracts.new(data)
+	var none: Array[StringName] = []
+	var owned: Array[StringName] = [&"cable_management_clips_x12", &"desk_organiser"]
+	_check(book.offer(0.0, rng, owned, 1) == null, "no client writes to a business that is too small")
+	for client: Dictionary in data.clients.values():
+		for category: String in client["categories"]:
+			_check(data.products.values().any(func(row: Dictionary) -> bool: return row["category"] == category), "every category a client asks for has designs in it (%s %s)" % [client["id"], category])
+	var museum: Dictionary = data.clients["wexcombe_museum"]
+	_check(book.wanted_by(museum, none) == ([&"museum_replica_artefact"] as Array[StringName]), "a client can bring a design of its own")
+	_check(book.wanted_by(data.clients["brindle_and_daw"], owned).has(&"desk_organiser") and not book.wanted_by(data.clients["brindle_and_daw"], owned).has(&"museum_replica_artefact"), "and otherwise asks for designs the business owns, in its line of work")
+
+	var seen := {}
+	for attempt in 60:
+		var enquiry := book.offer(100.0, rng, owned, 3)
+		_check(enquiry != null, "at the right tier there is always a client with something to ask for")
+		var client: Dictionary = data.clients[enquiry.client]
+		seen[enquiry.client] = true
+		_check(enquiry.quantity >= int(client["quantity"][0]) and enquiry.quantity <= int(client["quantity"][1]), "an enquiry is for a quantity in the client's range")
+		_check(enquiry.unit_price > 0 and enquiry.allowed_minutes >= GameClock.DAY and enquiry.text != "", "with a price, at least a day to do it in, and a message")
+		_check(enquiry.colour == &"" or data.filaments[enquiry.material]["colours"].has(String(enquiry.colour)), "and a colour the filament comes in, or none")
+	_check(seen.size() >= 3, "different clients write (%d did)" % seen.size())
+
+	book = Contracts.new(data)
+	var counted := 0
+	for step in 4000:
+		counted += 1 if book.tick(step, step + 1.0, rng, owned, 3) != null else 0
+		for waiting in book.offers():
+			book.decline(waiting)
+	_check(counted >= 1 and counted <= 9, "enquiries come about once a day (%d in under three days)" % counted)
+	book = Contracts.new(data)
+	for step in 20000:
+		book.tick(step, step + 1.0, rng, owned, 3)
+	_check(book.offers().size() == int(rules["max_offers"]), "and stop while the inbox is full")
+
+	book = Contracts.new(data)
+	var job := book.offer(0.0, rng, owned, 3)
+	job.quantity = 10
+	job.unit_price = 500
+	job.material = &"pla"
+	job.colour = &"red"
+	job.min_quality = 3
+	job.min_durability = 1
+	job.late_pct_per_day = 0.1
+	job.allowed_minutes = 2000.0
+	var item := {"product": job.product, "material": "pla", "colour": "red", "quality": 3, "durability": 3, "flawed": false, "plain": false}
+	_check(book.accept(job, 100.0, 1020.0) and job.status == Contracts.Status.ACTIVE, "an enquiry can be accepted")
+	_check(is_equal_approx(job.due_at, 1440.0 + 1020.0), "the deadline is the first courier collection after the time allowed")
+	_check(not book.accept(job, 100.0, 1020.0), "but only once")
+	_check(book.needs(job.product) and book.value(job) == 5000, "a contract in progress wants its design, and is worth price times quantity")
+	_check(book.wants(job, item), "the client takes an item that meets the spec")
+	for change: Array in [["colour", "blue"], ["quality", 2], ["flawed", true], ["plain", true], ["material", "petg"], ["product", "phone_stand"]]:
+		var wrong := item.duplicate()
+		wrong[change[0]] = change[1]
+		_check(not book.wants(job, wrong), "and refuses one with the wrong %s" % change[0])
+	var silk := item.duplicate()
+	silk["material"] = "pla_silk"
+	silk["colour"] = "red"
+	_check(book.wants(job, silk), "a variety of the filament asked for will do")
+	job.min_durability = 5
+	_check(not book.wants(job, item), "a client who needs strength refuses a standard print")
+	job.min_durability = 1
+	job.colour = &""
+	var blue := item.duplicate()
+	blue["colour"] = "blue"
+	_check(book.wants(job, blue), "with no colour asked for, any will do")
+
+	book.pack(job, 4)
+	_check(book.remaining(job) == 6, "items crated up are no longer owed")
+	_check(book.deliver(job, 4, 500.0).is_empty() and job.delivered == 4 and job.packed == 0 and job.status == Contracts.Status.ACTIVE, "a part delivery pays nothing yet")
+	_check(book.days_late(job, job.due_at) == 0 and book.days_late(job, job.due_at + 1.0) == 1 and book.days_late(job, job.due_at + 1441.0) == 2, "any part of a day late counts as a day")
+	_check(book.penalty(job, job.due_at + 1441.0) == 1000 and book.penalty(job, job.due_at + 1440.0 * 30) == 5000, "each day late takes its share off, down to nothing")
+	var on_time := book.deliver(job, 6, job.due_at)
+	_check(on_time == {"payment": 5000, "penalty": 0} and job.status == Contracts.Status.DONE and job.paid == 5000, "the last delivery, on time, is paid in full")
+	_check(book.deliver(job, 1, job.due_at).is_empty() and not book.needs(job.product), "and a finished contract takes no more")
+
+	var slow := book.offer(0.0, rng, owned, 3)
+	slow.quantity = 10
+	slow.unit_price = 500
+	slow.late_pct_per_day = 0.1
+	book.accept(slow, 0.0, 1020.0)
+	var late := book.deliver(slow, 10, slow.due_at + 1500.0)
+	_check(late == {"payment": 4000, "penalty": 1000}, "a contract finished two days late pays 20% less")
+
+	var doomed := book.offer(0.0, rng, owned, 3)
+	doomed.quantity = 10
+	doomed.unit_price = 500
+	book.accept(doomed, 0.0, 1020.0)
+	book.deliver(doomed, 4, 10.0)
+	_check(book.fail_overdue(doomed.due_at + 1440.0 * int(rules["max_late_days"])).is_empty(), "a late contract is still alive up to the limit")
+	var lost := book.fail_overdue(doomed.due_at + 1440.0 * int(rules["max_late_days"]) + 1.0)
+	_check(lost.size() == 1 and lost[0]["payment"] == roundi(4 * 500 * float(rules["failed_pay_multiplier"])) and doomed.status == Contracts.Status.FAILED, "past it the client cancels, paying a cut rate for what arrived")
+	_check(book.finished().size() == 3 and book.finished()[0] == doomed, "finished contracts are kept, newest first")
+
+	var stale := book.offer(1000.0, rng, owned, 3)
+	_check(book.expire(1000.0 + float(rules["offer_minutes"])).is_empty() and book.expire(1001.0 + float(rules["offer_minutes"])) == ([stale] as Array[Contracts.Contract]), "an enquiry nobody answers lapses")
+	for filler in int(rules["max_active"]) + 1:
+		var extra := book.offer(0.0, rng, owned, 3)
+		if filler < int(rules["max_active"]):
+			_check(book.accept(extra, 0.0, 1020.0), "contracts can be taken on up to the limit")
+		else:
+			_check(not book.accept(extra, 0.0, 1020.0) and book.accept_problem(extra) != "", "and no further")
+
+	var saved := _through_file(book.save())
+	saved["all"].append({"id": 99, "client": "gone_client", "product": "phone_stand", "material": "pla"})
+	var again := Contracts.new(data)
+	again.restore(saved)
+	_check(again.all.size() == book.all.size() and again.active().size() == book.active().size(), "contracts come back from a save, without those of clients the game no longer has")
+	var doomed_again := again.by_id(doomed.id)
+	_check(doomed_again.status == Contracts.Status.FAILED and doomed_again.delivered == 4 and doomed_again.paid == doomed.paid and typeof(doomed_again.paid) == TYPE_INT, "each as it was, in whole pence")
+	_check(again.offer(0.0, rng, owned, 3).id == book.offer(0.0, rng, owned, 3).id, "and new enquiries carry on numbering")
 
 
 func _test_clock() -> void:

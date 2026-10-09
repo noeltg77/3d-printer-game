@@ -92,6 +92,7 @@ Generated from `docs/design_data/products.json` by `scripts/dev/import_products.
 | `base_price_pence` | Typical marketplace price before demand and rating effects |
 | `demand_per_day` | Orders per game day when listed at the typical price |
 | `licence` | `type` is `one_off` (pay `fee_pence` once), `royalty` (`royalty_pct` of each sale) or `personal_use` (cannot be sold) |
+| `contract_only` | Optional. True for a design that is never on general sale: a client supplies it with a contract (`supplies` in `contracts.json`). It has no demand and no fee, and the Design Lab leaves it out. From the catalogue's "Contracts" demand pattern |
 
 ## marketplaces.json
 
@@ -242,6 +243,22 @@ The places the business can run from, smallest first.
 | `rent_pence_per_day` | Charged at midnight every game day |
 | `printer_spots`, `shelf_slots`, `rack_slots` | Shown on the place's card. They describe the scene; they don't set it. A scene with several benches still has one `Workbench`, whose `printer_spots` reach onto the others |
 
+## contracts.json
+
+`clients`: the businesses that send contract enquiries (`Contracts`). Written for the game; the design data has no clients, only the contract only products.
+
+| Field | Meaning |
+| --- | --- |
+| `name`, `about` | Shown in the Inbox. Parody names only |
+| `categories` | Product categories it buys. It asks for designs the business owns in these |
+| `supplies` | Optional. Ids of `contract_only` products it brings itself, which the business can print for it without owning them |
+| `quantity` | `[fewest, most]` items in one contract |
+| `price_multiplier` | `[lowest, highest]` multiple of the design's `base_price_pence` it pays for each. There are no marketplace fees on a contract |
+| `slack` | `[tightest, loosest]`. The time allowed is the quantity's print time, on the game's `contracts.assumed_printers`, times this, and never less than a day |
+| `min_quality`, `min_durability` | The lowest finish and strength (1 to 5) it takes. `min_durability` is optional. It never takes a flawed item, or a multicolour design printed in one colour |
+| `late_pct_per_day` | Share of the whole price knocked off for each day, or part of one, past the deadline |
+| `asks` | Things it writes, one picked at random for each enquiry |
+
 ## game.json
 
 Starting conditions and global rates. Not a table of rows.
@@ -256,6 +273,7 @@ Starting conditions and global rates. Not a table of rows.
 | `default_preset` | The preset the print dialog opens on |
 | `moisture` | `gain_per_day`: moisture (0 to 1) a filament with sensitivity 1.0 gains in a day in the open. `wet_at`: the level at which a spool is wet. Every `step` beyond that adds `extra_fail_per_step` to the chance of a print failing, and wet filament raises the `wet_filament` flag for failures |
 | `multicolour` | `main_colour_share`: the share of a multicolour print's filament its first colour takes. `contrast_purge`: how much more a colour change purges going from black to white. `many_swaps`: colour changes at which a print raises `many_colour_swaps`. `reference_jam_chance`: the `jam_chance_per_swap` of a unit that jams as often as the jam failure's `weight` says |
+| `contracts` | `unlock_tier`: the tier at which clients start writing. `offers_per_day`: enquiries a day, while fewer than `max_offers` are waiting; each waits `offer_minutes` for an answer. `max_active`: contracts that can run at once. `assumed_printers`: printers a client assumes when working out how long to allow. `colour_chance`: chance an enquiry for a single colour design names the colour. `max_late_days`: days late past which the client cancels, paying `failed_pay_multiplier` of the price for what arrived. `pack_minutes_per_item`: character time to crate each item |
 | `stock` | `unlock_tier`: the tier at which the Stockroom app's reorder rules switch on. `check_minutes`: how often, in game minutes, the rules are checked |
 | `design` | Rules for the business's own designs (`DesignStudio`). `unlock_tier`: when they become possible. `base_minutes`: PC time for a V1, times (1 + the item's difficulty); an iteration takes `iteration_time` of that, a fix `fix_minutes`. Quality starts at `base_quality` plus a skill level for every `designs_per_skill_level` designs finished (to `max_skill`), rises by one per iteration to `max_version`, and stops at `max_quality`. `fault_chance`, less `fault_chance_per_skill` per skill level, is the chance a new version hides a fault. Demand for an own design is `appeal_base + appeal_per_quality x quality` times the bought design's |
 | `trends` | One product category is in demand and one has gone quiet, for a random `days` range (`[shortest, longest]`), scaling its orders by `hot_multiplier` or `cool_multiplier`. Only categories with at least `min_designs` designs take part, and never those listed in `seasonal`, which wait for a calendar (`Trends`) |
@@ -267,4 +285,4 @@ One game day is 1440 game minutes and lasts 10 real minutes at 1x (`GameClock.MI
 
 ## Not drafted yet
 
-Packaging and courier choices, contracts, staff and events. Each gets a table when its phase starts.
+Packaging and courier choices, staff and events. Each gets a table when its phase starts.

@@ -237,7 +237,7 @@ func _unload_menu() -> Action:
 
 
 func _print_menu() -> Action:
-	if Game.owned_designs.is_empty():
+	if Game.printable_designs().is_empty():
 		return Action.info("Print (no designs owned: buy one at the PC)")
 	var action := Action.new("Print...", _open_print_dialog)
 	action.immediate = true

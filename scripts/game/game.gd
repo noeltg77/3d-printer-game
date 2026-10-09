@@ -30,6 +30,8 @@ var supplier: Supplier
 var studio: DesignStudio
 ## The rules for reordering what runs low (the Stockroom app).
 var stock: Stockroom
+## Enquiries from business clients and the contracts taken on (the Inbox app).
+var contracts: Contracts
 var owned_designs: Array[StringName] = []
 ## Mailer boxes in stock, one used per packed order.
 var packaging := 0
@@ -104,6 +106,8 @@ func _process(delta: float) -> void:
 		bank.charge(rent, "Rent: %s" % premises_row()["name"], clock.minutes)
 		notify("Rent paid on the %s: %s" % [String(premises_row()["name"]).to_lower(), Money.format(rent)])
 		changed.emit()
+	if contracts_unlocked():
+		_run_contracts(before)
 	var stock_check := float(data.settings["stock"]["check_minutes"])
 	if stock_unlocked() and floorf(clock.minutes / stock_check) != floorf(before / stock_check):
 		restock()
@@ -126,6 +130,7 @@ func new_game() -> void:
 	supplier = Supplier.new(data)
 	studio = DesignStudio.new(data.products, data.settings["design"])
 	stock = Stockroom.new(data)
+	contracts = Contracts.new(data)
 	_stock_blocked.clear()
 	owned_designs.assign(start["designs"])
 	packaging = int(start["packaging"])
@@ -187,6 +192,7 @@ func save() -> Dictionary:
 		"trends": trends.save(),
 		"studio": studio.save(),
 		"stock": stock.save(),
+		"contracts": contracts.save(),
 		"owned_designs": owned_designs, "packaging": packaging, "tier": tier, "premises": premises,
 	}
 
@@ -209,6 +215,8 @@ func restore(state: Dictionary) -> void:
 		studio.restore(state["studio"])
 	if state.has("stock"):
 		stock.restore(state["stock"])
+	if state.has("contracts"):
+		contracts.restore(state["contracts"])
 	_share_own_designs()
 	owned_designs.clear()
 	for product: String in state["owned_designs"]:
@@ -531,6 +539,79 @@ func place_supplier_order(basket: Dictionary, shop := "", quiet := false) -> boo
 		notify("Order placed with %s" % shop)
 	changed.emit()
 	return true
+
+
+## True once the business is big enough for clients to come to it.
+func contracts_unlocked() -> bool:
+	return tier >= int(data.settings["contracts"]["unlock_tier"])
+
+
+## Brings in new enquiries, lapses old ones and ends contracts that are far too late.
+func _run_contracts(before: float) -> void:
+	var enquiry := contracts.tick(before, clock.minutes, rng, owned_designs, tier)
+	if enquiry != null:
+		notify("New enquiry in your inbox: %s would like %d x %s" % [client_name(enquiry), enquiry.quantity, product_name(enquiry.product)])
+		changed.emit()
+	if not contracts.expire(clock.minutes).is_empty():
+		changed.emit()
+	for lost in contracts.fail_overdue(clock.minutes):
+		var contract: Contracts.Contract = lost["contract"]
+		if lost["payment"] > 0:
+			bank.earn(lost["payment"], "Contract cut short: %s" % client_name(contract), clock.minutes)
+		notify("%s have given up waiting for their %s and cancelled. They paid %s for the %d that arrived." % [
+			client_name(contract), product_name(contract.product), Money.format(lost["payment"]), contract.delivered], &"bad")
+		changed.emit()
+
+
+func client_name(contract: Contracts.Contract) -> String:
+	return data.clients[contract.client]["name"]
+
+
+## Takes on an enquiry. False if it can't be.
+func accept_contract(contract: Contracts.Contract) -> bool:
+	if not contracts.accept(contract, clock.minutes, float(data.settings["courier_minute_of_day"])):
+		return false
+	notify("Contract agreed with %s: %d x %s" % [client_name(contract), contract.quantity, product_name(contract.product)], &"good")
+	changed.emit()
+	return true
+
+
+func decline_contract(contract: Contracts.Contract) -> void:
+	contracts.decline(contract)
+	changed.emit()
+
+
+## The designs that can be printed now: those the business owns, and those a
+## client has supplied for a contract in progress.
+func printable_designs() -> Array[StringName]:
+	var found := owned_designs.duplicate()
+	for contract in contracts.active():
+		if not found.has(contract.product):
+			found.append(contract.product)
+	return found
+
+
+## How many finished prints on the shelves could go to a contract now.
+func contract_ready(contract: Contracts.Contract) -> int:
+	var shelf: StorageShelf = get_tree().get_first_node_in_group(&"print_storage")
+	return mini(shelf.items_for(contract).size(), contracts.remaining(contract)) if shelf != null else 0
+
+
+## The courier has taken a crate for a contract. The last one gets it paid.
+func ship_contract(id: int, count: int) -> void:
+	var contract := contracts.by_id(id)
+	if contract == null:
+		return
+	var outcome := contracts.deliver(contract, count, clock.minutes)
+	if not outcome.is_empty():
+		bank.earn(outcome["payment"], "Contract: %s" % client_name(contract), clock.minutes)
+		if outcome["penalty"] > 0:
+			notify("%s have their %d x %s, late. They paid %s, after taking off %s." % [client_name(contract), contract.quantity,
+				product_name(contract.product), Money.format(outcome["payment"]), Money.format(outcome["penalty"])], &"bad")
+		else:
+			notify("%s have their %d x %s, on time, and paid %s" % [client_name(contract), contract.quantity,
+				product_name(contract.product), Money.format(outcome["payment"])], &"good")
+	changed.emit()
 
 
 ## True once the business is big enough for stock to reorder itself.
