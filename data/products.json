@@ -85,6 +85,23 @@
 			"base_price_pence": 1499,
 			"demand_per_day": 3.0,
 			"licence": { "type": "royalty", "fee_pence": 0, "royalty_pct": 0.1 }
+		},
+		{
+			"id": "mail_sorter",
+			"name": "Mail Sorter",
+			"category": "home_organisation",
+			"description": "Three slots for the post, the bills and the things to deal with later.",
+			"unlock_tier": 1,
+			"filament_grams": 180,
+			"print_minutes": 360,
+			"size_mm": [200, 105, 130],
+			"difficulty": 0.25,
+			"needs_supports": false,
+			"colour_count": 1,
+			"allowed_filaments": ["pla"],
+			"base_price_pence": 1899,
+			"demand_per_day": 2.0,
+			"licence": { "type": "one_off", "fee_pence": 1999, "royalty_pct": 0.0 }
 		}
 	]
 }

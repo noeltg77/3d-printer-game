@@ -25,6 +25,7 @@
 		{ "generator": "prints", "out": "assets/models/prints/flexi_dragon.glb", "args": { "variant": "flexi_dragon" } },
 		{ "generator": "prints", "out": "assets/models/prints/pen_pot_hex.glb", "args": { "variant": "pen_pot_hex" } },
 		{ "generator": "prints", "out": "assets/models/prints/headphone_stand.glb", "args": { "variant": "headphone_stand" } },
+		{ "generator": "prints", "out": "assets/models/prints/mail_sorter.glb", "args": { "variant": "mail_sorter" } },
 		{ "generator": "props", "out": "assets/models/props/outbox_mat.glb", "args": { "variant": "floor_mat", "colour": "yellow" } },
 		{ "generator": "boxes", "out": "assets/models/props/parcel.glb", "args": { "variant": "closed", "seed": 3, "size": [0.26, 0.2, 0.14] } },
 

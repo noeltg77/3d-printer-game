@@ -92,6 +92,28 @@ def _headphone_stand(builder):
     builder.box((0.036, 0.04, 0.03), (0, 0, 0.165), "white", bevel=0.005)
 
 
+def _slot_rack(builder, width, depth, heights, lean=8.0, base=0.014, panel=0.012):
+    """Base plate with upright panels across it, front to back, leaving slots between.
+
+    One panel per entry in `heights`, the first at the front. `lean` tips them
+    back, in degrees. Covers letter racks, napkin holders, lid racks and card stands.
+    """
+    builder.box((width, depth, base), (0, 0, base / 2), "white", bevel=0.004)
+    tilt = math.radians(lean)
+    # The tallest panel's top overhangs its foot, so the feet stop short of the back edge.
+    front = -depth / 2 + panel
+    back = depth / 2 - panel - max(heights) * math.sin(tilt)
+    for index, height in enumerate(heights):
+        foot = front + (back - front) * index / max(len(heights) - 1, 1)
+        centre = (0, foot + math.sin(tilt) * height / 2, base - 0.002 + math.cos(tilt) * height / 2)
+        builder.box((width - 0.016, panel, height), centre, "white", rotation=(-tilt, 0, 0), bevel=0.004)
+
+
+def _mail_sorter(builder):
+    """Letter rack, the Garage product `mail_sorter`: three panels stepping up to the back."""
+    _slot_rack(builder, 0.26, 0.14, (0.07, 0.115, 0.16))
+
+
 VARIANTS = {
     "desk_organiser": _desk_organiser,
     "cable_clips": _cable_clips,
@@ -100,6 +122,7 @@ VARIANTS = {
     "flexi_dragon": _flexi_dragon,
     "pen_pot_hex": _pen_pot_hex,
     "headphone_stand": _headphone_stand,
+    "mail_sorter": _mail_sorter,
 }
 
 if __name__ == "__main__":
