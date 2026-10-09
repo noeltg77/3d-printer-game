@@ -33,15 +33,12 @@ const LICENCE_FEE_MULTIPLE := 2.0
 const MODEL_SCALE := 1.4
 const SIZE_STEP_MM := 5
 
+## What each design's card says in the Design Lab, by product id. Written by hand.
+const DESCRIPTIONS := "res://data/import/product_descriptions.json"
+
 ## Per product values that replace what the rules give.
 const OVERRIDES := {
-	"cable_management_clips_x12": {
-		"description": "Small, quick and boring. Sells forever.",
-		"licence": {"type": "one_off", "fee_pence": 0, "royalty_pct": 0.0},
-	},
-	"phone_stand": {"description": "Props a phone up at a sensible angle. A steady seller."},
-	"low_poly_planter": {"description": "Faceted pot for succulents. Looks more expensive than it is."},
-	"mail_sorter": {"description": "Three slots for the post, the bills and the things to deal with later."},
+	"cable_management_clips_x12": {"licence": {"type": "one_off", "fee_pence": 0, "royalty_pct": 0.0}},
 }
 
 ## Field order in the output, and which numbers are written as whole numbers.
@@ -54,6 +51,9 @@ const WHOLE: Array[String] = ["unlock_tier", "filament_grams", "print_minutes", 
 
 ## Cheapest catalogue price in each size band, in pounds.
 var _band_floor := {}
+var _descriptions := {}
+## Imported products with nothing written for them, which fall back to their category name.
+var _undescribed: PackedStringArray = []
 
 
 func _init() -> void:
@@ -61,6 +61,7 @@ func _init() -> void:
 	for entry: Dictionary in catalogue["products"]:
 		if TIERS.has(entry["unlock_tier"]) and not SKIPPED_PATTERNS.has(entry["demand_pattern"]):
 			_band_floor[entry["size"]] = minf(_band_floor.get(entry["size"], INF), float(entry["base_price_gbp"]))
+	_descriptions = JSON.parse_string(FileAccess.get_file_as_string(DESCRIPTIONS))
 	var rows: Array[Dictionary] = []
 	var skipped := 0
 	var missing_models: PackedStringArray = []
@@ -92,6 +93,8 @@ func _init() -> void:
 	file.store_string("{\n\t\"schema_version\": 1,\n\t\"products\": [\n%s\n\t]\n}\n" % ",\n".join(blocks))
 	file.close()
 	print("Imported %d products, kept %d from before the catalogue, skipped %d contract only." % [imported, rows.size() - imported, skipped])
+	if not _undescribed.is_empty():
+		print("No description yet for: ", ", ".join(_undescribed))
 	quit(0)
 
 
@@ -102,7 +105,7 @@ func _convert(entry: Dictionary) -> Dictionary:
 		"name": entry["name"],
 		"category": _slug(entry["category"]),
 		"category_name": entry["category"],
-		"description": entry["category"],
+		"description": _descriptions.get(entry["id"], entry["category"]),
 		"unlock_tier": TIERS[entry["unlock_tier"]],
 		"filament_grams": entry["filament_g"],
 		"print_minutes": roundi(float(entry["print_hours"]) * 60.0),
@@ -116,6 +119,8 @@ func _convert(entry: Dictionary) -> Dictionary:
 			* pow(_band_floor[entry["size"]] / float(entry["base_price_gbp"]), DEMAND_PRICE_POWER), 0.05),
 		"licence": {"type": "one_off", "fee_pence": roundi(price * LICENCE_FEE_MULTIPLE / 100.0) * 100 - 1, "royalty_pct": 0.0},
 	}
+	if not _descriptions.has(entry["id"]):
+		_undescribed.append(entry["id"])
 	row.merge(OVERRIDES.get(entry["id"], {}), true)
 	return row
 
