@@ -1,14 +1,14 @@
 {
 	"schema_version": 1,
 	"start": {
-		"cash_cents": 30000,
+		"cash_pence": 30000,
 		"packaging": 5,
 		"designs": ["cable_clips"],
 		"minute_of_day": 480
 	},
 	"bank_name": "PennyBank",
 	"business_name": "Garage Prints",
-	"electricity_cents_per_kwh": 30,
+	"electricity_pence_per_kwh": 30,
 	"courier_minute_of_day": 1020,
 	"supplier": {
 		"filament_shop": "Spoolhouse",
@@ -17,6 +17,6 @@
 		"printer_lead_minutes": 180,
 		"packaging_name": "Mailer boxes",
 		"packaging_pack_size": 10,
-		"packaging_pack_cents": 500
+		"packaging_pack_pence": 499
 	}
 }

@@ -109,7 +109,7 @@ func _printer_card(printer_id: String, spec: Dictionary) -> Control:
 	if problem != "":
 		column.add_child(Ui.panel(Ui.wrap(Ui.text(problem, 13, LOCK_TEXT, 800)), Ui.box(LOCK_BG, 12, 12, 10)))
 	column.add_child(Ui.hbox([
-		Ui.title(Money.text(int(spec["price_cents"])), 22), null,
+		Ui.title(Money.format(int(spec["price_pence"]), Money.PRICE), 22), null,
 		_disabled_if(Ui.button("Buy", _buy.bind(order), BLUE, Ui.WHITE, 44, 14, BLUE_DARK, 15), problem != ""),
 	]))
 	var card := Ui.card(column, 22, 18, SHADOW)
@@ -135,7 +135,7 @@ func _packaging() -> Control:
 		Ui.icon_tile("box", 52, 26, TILE, NAVY),
 		words,
 		Ui.pill("In stock: %d" % Game.packaging, Ui.RED_DARK if low else Ui.GREEN_DARK, Ui.RED_SOFT if low else Ui.GREEN_SOFT),
-		Ui.width(Ui.text(Money.text(int(config["packaging_pack_cents"])), 17, Ui.INK, 800), 70),
+		Ui.width(Ui.text(Money.format(int(config["packaging_pack_pence"]), Money.PRICE), 17, Ui.INK, 800), 70),
 		_disabled_if(Ui.button("Buy", _buy.bind(order), BLUE, Ui.WHITE, 44, 14), problem != ""),
 	], 18), Ui.box(Ui.WHITE, 18, 18, 14, SHADOW, 3))
 	var column := Ui.vbox([row], 12)

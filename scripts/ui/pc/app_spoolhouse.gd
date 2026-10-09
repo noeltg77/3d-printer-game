@@ -117,7 +117,7 @@ func _spool_card(colour: StringName) -> Control:
 		Ui.hbox([Ui.pill("PLA", Ui.PAPER, Ui.INK), null, Ui.text(BRAND, 12, Ui.MUTED)]),
 		Ui.title(Palette.display_name(colour), 17),
 		Ui.hbox([
-			Ui.text(Money.text(Game.supplier.spool_price()), 16, Ui.INK, 800), null,
+			Ui.text(Money.format(Game.supplier.spool_price(), Money.PRICE), 16, Ui.INK, 800), null,
 			Ui.button("Add", _add.bind(String(colour), 1)),
 		]),
 	], 8), 20, 14)
@@ -139,7 +139,7 @@ func _basket_card() -> Control:
 		remove.tooltip_text = "Take one out"
 		lines.add_child(Ui.hbox([
 			SpoolIcon.create(Palette.colour(colour), 36, Ui.WHITE), name_and_count, remove,
-			Ui.text(Money.text(Game.supplier.spool_price() * quantity), 14, Ui.INK, 800),
+			Ui.text(Money.format(Game.supplier.spool_price() * quantity), 14, Ui.INK, 800),
 		], 12))
 	if _basket.is_empty():
 		lines.add_child(Ui.text("Nothing in it yet.", 14, Ui.MUTED))
@@ -157,7 +157,7 @@ func _basket_card() -> Control:
 	var column := Ui.vbox([
 		Ui.title("Basket", 22), lines,
 		Ui.text("Delivery", 14, Ui.INK, 800), delivery,
-		Ui.hbox([Ui.title("Total", 22), null, Ui.title(Money.text(total), 22)]),
+		Ui.hbox([Ui.title("Total", 22), null, Ui.title(Money.format(total), 22)]),
 		Ui.wrap(Ui.text("Arrives day %d at %02d:%02d. Paid from %s." % [
 			arrives.day, minute / 60, minute % 60, Game.data.settings["bank_name"]], 12, Ui.MUTED)),
 	], 14)

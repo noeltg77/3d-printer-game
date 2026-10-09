@@ -42,7 +42,7 @@ func _process(_delta: float) -> void:
 
 
 func _refresh() -> void:
-	_cash.text = Money.text(Game.bank.cash)
+	_cash.text = Money.format(Game.bank.cash)
 	_cash.add_theme_color_override(&"font_color", Color("FF9C8A") if Game.bank.cash < 0 else Ui.CASH)
 	for speed in _speed_buttons:
 		var active := speed == Game.speed

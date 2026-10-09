@@ -1,0 +1,5 @@
+{
+	"GBP": { "name": "Pounds", "rate": 1.0, "symbol": "£", "symbol_after": false, "decimal": ".", "thousands": "," },
+	"USD": { "name": "Dollars", "rate": 1.27, "symbol": "$", "symbol_after": false, "decimal": ".", "thousands": "," },
+	"EUR": { "name": "Euros", "rate": 1.17, "symbol": "€", "symbol_after": true, "decimal": ",", "thousands": "." }
+}

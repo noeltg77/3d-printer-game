@@ -25,7 +25,8 @@ const APPS: Array[Dictionary] = [
 		"script": preload("res://scripts/ui/pc/app_pennybank.gd")},
 	{"id": "inbox", "name": "Inbox", "colour": "2B7A9E", "dark": "1D5A76"},
 	{"id": "stats", "name": "Stats", "colour": "D9A23A", "dark": "A87A22"},
-	{"id": "settings", "name": "Settings", "colour": "5C6B73", "dark": "3E4A50"},
+	{"id": "settings", "name": "Settings", "colour": "5C6B73", "dark": "3E4A50", "url": "plateos://settings",
+		"script": preload("res://scripts/ui/pc/app_settings.gd")},
 ]
 
 var _body: Control

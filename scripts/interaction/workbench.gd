@@ -29,7 +29,7 @@ func get_actions(_agent: Agent) -> Array[Action]:
 ## The task of packing one order and taking the parcel to the outbox.
 ## Disabled, with the reason in its label, if it can't be done yet.
 func pack_action(order: Marketplace.Order) -> Action:
-	var label := "#%d %s, %s" % [order.id, Game.product_name(order.product), Money.text(order.price)]
+	var label := "#%d %s, %s" % [order.id, Game.product_name(order.product), Money.format(order.price, Money.PRICE)]
 	var problem := pack_problem(order)
 	var action := Action.new(label if problem == "" else "%s: %s" % [label, problem], _pack.bind(order), problem == "")
 	action.task_name = pack_task_name(order)

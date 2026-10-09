@@ -19,7 +19,7 @@ Stored exactly as supplied on 2026-10-09. Don't edit them to match the game; cha
 
 ## Differences from the live game to resolve on import
 
-- **Currency.** Every file is in GBP (`*_gbp`, pounds with decimals). The game uses US dollars as integer cents (`*_cents`). Decision needed: use the numbers as they are with a dollar sign, or convert.
+- **Currency.** Settled: the game runs in GBP like these files, and converts only for display. The files hold pounds with decimals (`*_gbp`); `data/` holds integer pence (`*_pence`), so multiply by 100 on import.
 - **Tiers.** These files name tiers (`Garage`, `Spare room`, `Workshop`, `Factory`); `data/` uses numbers 1 to 4.
 - **Field names and units.** For example `print_hours` here against `print_minutes` in `data/`, `filament_g` against `filament_grams`, `difficulty` 1 to 5 here against 0 to 1.
 - **Product ids.** The five designs currently in `data/products.json` were invented before this list. `phone_stand` and `desk_organiser` match ids here; `cable_clips`, `plant_pot` and `flexi_dragon` do not (nearest: `cable_management_clips_x12`, `low_poly_planter`, `articulated_dragon`). Rename them when the catalogue is imported.

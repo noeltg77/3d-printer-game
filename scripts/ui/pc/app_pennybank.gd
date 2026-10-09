@@ -24,7 +24,7 @@ func refresh() -> void:
 	var all_time := bank.totals_since(0.0)
 	var balance := Ui.card(Ui.vbox([
 		Ui.text("Balance", 13, Ui.MUTED, 800),
-		Ui.title(Money.text(bank.cash), 44, Ui.RED if bank.cash < 0 else Ui.INK),
+		Ui.title(Money.format(bank.cash), 44, Ui.RED if bank.cash < 0 else Ui.INK),
 	], 0), 22, 20, SHADOW)
 	var summary := Ui.vbox([
 		balance,
@@ -44,7 +44,7 @@ func refresh() -> void:
 		rows.add_child(Ui.panel(Ui.hbox([
 			Ui.width(Ui.text(when.label(), 13, Ui.MUTED), 120),
 			Ui.grow(Ui.text(entry["text"], 15, Ui.INK, 800)),
-			Ui.text(("+" if amount >= 0 else "") + Money.text(amount), 15, Ui.GREEN_DARK if amount >= 0 else Ui.RED_DARK, 800),
+			Ui.text(("+" if amount >= 0 else "") + Money.format(amount), 15, Ui.GREEN_DARK if amount >= 0 else Ui.RED_DARK, 800),
 		], 12), Ui.box(ROW, 14, 14, 10)))
 	if rows.get_child_count() == 0:
 		rows.add_child(Ui.text("Nothing yet.", 14, Ui.MUTED))
@@ -59,6 +59,6 @@ func refresh() -> void:
 func _totals(label: String, income: int, expenses: int) -> Control:
 	return Ui.card(Ui.vbox([
 		Ui.text(label, 13, Ui.MUTED, 800),
-		Ui.hbox([Ui.text("In", 14, Ui.MUTED), null, Ui.text(Money.text(income), 16, Ui.GREEN_DARK, 800)]),
-		Ui.hbox([Ui.text("Out", 14, Ui.MUTED), null, Ui.text(Money.text(expenses), 16, Ui.RED_DARK, 800)]),
+		Ui.hbox([Ui.text("In", 14, Ui.MUTED), null, Ui.text(Money.format(income), 16, Ui.GREEN_DARK, 800)]),
+		Ui.hbox([Ui.text("Out", 14, Ui.MUTED), null, Ui.text(Money.format(expenses), 16, Ui.RED_DARK, 800)]),
 	], 6), 22, 20, SHADOW)

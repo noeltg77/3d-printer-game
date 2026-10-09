@@ -9,6 +9,7 @@ func _init() -> void:
 	_test_print_job()
 	_test_clock()
 	_test_bank()
+	_test_money()
 	_test_marketplace()
 	_test_supplier()
 	print("Tests passed" if _failures == 0 else "%d test(s) FAILED" % _failures)
@@ -57,7 +58,47 @@ func _test_bank() -> void:
 	_check(bank.cash == 2400, "earn adds cash")
 	var totals := bank.totals_since(15.0)
 	_check(totals["income"] == 2500 and totals["expenses"] == 700, "totals only count entries since the given minute")
-	_check(Money.text(1250) == "$12.50" and Money.text(-5) == "-$0.05", "money formatting")
+
+
+func _test_money() -> void:
+	var chosen := Money.currency
+	Money.set_currency("GBP")
+	_check(Money.format(1250) == "£12.50", "GBP exact")
+	_check(Money.format(-5) == "-£0.05", "GBP negative under a pound")
+	_check(Money.format(-300) == "-£3.00", "GBP negative")
+	_check(Money.format(123456) == "£1,234.56", "GBP over a thousand")
+	_check(Money.format(123456789) == "£1,234,567.89", "GBP over a million")
+	_check(Money.format(0) == "£0.00", "GBP zero")
+	_check(Money.format(1599, Money.PRICE) == "£15.99", "GBP price already ending in 99 is unchanged")
+	_check(Money.format(1600, Money.PRICE) == "£15.99", "GBP price rounds down to the nearest 99")
+	_check(Money.format(1630, Money.PRICE) == "£16.49", "GBP price rounds up to the nearest 49")
+	_check(Money.format(1660, Money.PRICE) == "£16.49", "GBP price rounds down to the nearest 49")
+	_check(Money.format(1780, Money.PRICE) == "£17.99", "GBP price rounds up to the nearest 99")
+	_check(Money.format(20, Money.PRICE) == "£0.49", "a price never rounds below 49")
+	_check(Money.format(0, Money.PRICE) == "£0.00", "a free price stays at zero")
+	_check(Money.format(129900, Money.PRICE) == "£1,298.99", "GBP price over a thousand")
+
+	Money.set_currency("USD")
+	_check(Money.format(1000) == "$12.70", "USD exact uses the rate")
+	_check(Money.format(-1000) == "-$12.70", "USD negative")
+	_check(Money.format(100000) == "$1,270.00", "USD over a thousand")
+	_check(Money.format(1000, Money.PRICE) == "$12.49", "USD price rounds to the nearest 49")
+	_check(Money.format(1599, Money.PRICE) == "$20.49", "USD price from a GBP 15.99 item")
+
+	Money.set_currency("EUR")
+	_check(Money.format(1000) == "11,70 €", "EUR puts the symbol after and uses a decimal comma")
+	_check(Money.format(-1000) == "-11,70 €", "EUR negative")
+	_check(Money.format(100000) == "1.170,00 €", "EUR over a thousand uses a dot separator")
+	_check(Money.format(1000, Money.PRICE) == "11,49 €", "EUR price rounds to the nearest 49")
+	_check(Money.format(123456789) == "1.444.444,43 €", "EUR over a million")
+
+	Money.set_currency("XXX")
+	_check(Money.currency == "EUR", "an unknown currency code is ignored")
+	_check(Money.currency_for_locale("en_GB") == "GBP", "en_GB starts in pounds")
+	_check(Money.currency_for_locale("en_US") == "USD", "en_US starts in dollars")
+	_check(Money.currency_for_locale("de_DE") == "EUR" and Money.currency_for_locale("fr_FR.UTF-8") == "EUR", "eurozone locales start in euros")
+	_check(Money.currency_for_locale("ja_JP") == "GBP" and Money.currency_for_locale("en") == "GBP", "anything else starts in pounds")
+	Money.set_currency(chosen)
 
 
 func _test_marketplace() -> void:
@@ -67,7 +108,7 @@ func _test_marketplace() -> void:
 	rng.seed = 7
 	_check(market.tick(0.0, 1440.0, rng).is_empty(), "nothing sells until it is listed")
 
-	var typical: int = data.products["desk_organiser"]["base_price_cents"]
+	var typical: int = data.products["desk_organiser"]["base_price_pence"]
 	market.set_listing(&"desk_organiser", true, typical)
 	_check(is_equal_approx(market.demand_multiplier(&"desk_organiser", typical), 1.0), "demand is 1x at the typical price")
 	_check(market.demand_multiplier(&"desk_organiser", typical * 2) < 0.25, "doubling the price cuts demand hard")
@@ -101,7 +142,7 @@ func _test_supplier() -> void:
 	var data := GameData.load_all()
 	var supplier := Supplier.new(data)
 	var basket := {"printers": {"plodder_mini": 1}, "spools": {"red": 2, "white": 1}, "packaging": 1}
-	_check(supplier.price_of(basket) == 15900 + 3 * 1600 + 500, "basket price adds printers, spools and packaging")
+	_check(supplier.price_of(basket) == 15899 + 3 * 1599 + 499, "basket price adds printers, spools and packaging")
 	var placed := supplier.place(basket, 100.0)
 	_check(placed.size() == 2, "a printer ships separately from supplies")
 	_check(supplier.collect_due(150.0).is_empty(), "nothing arrives before its lead time")

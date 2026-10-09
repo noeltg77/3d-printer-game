@@ -1,6 +1,6 @@
 class_name Bank
 extends RefCounted
-## Cash and a ledger of every movement. Amounts are integer cents.
+## Cash and a ledger of every movement. Amounts are integer pence.
 
 var cash := 0
 ## Newest last. Each entry: { minute, text, amount } with expenses negative.

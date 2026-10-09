@@ -39,7 +39,7 @@ func _init(p_config: Dictionary, p_products: Dictionary) -> void:
 ## The listing for a design, created at its typical price and unlisted if new.
 func listing(product: StringName) -> Dictionary:
 	if not listings.has(product):
-		listings[product] = {"listed": false, "price": int(products[product]["base_price_cents"]), "sold": 0}
+		listings[product] = {"listed": false, "price": int(products[product]["base_price_pence"]), "sold": 0}
 	return listings[product]
 
 
@@ -51,7 +51,7 @@ func set_listing(product: StringName, listed: bool, price: int) -> void:
 
 ## How demand scales at `price`: 1.0 at the typical price, more when cheaper.
 func demand_multiplier(product: StringName, price: int) -> float:
-	var typical: float = products[product]["base_price_cents"]
+	var typical: float = products[product]["base_price_pence"]
 	var multiplier := pow(typical / maxf(price, 1.0), config["price_sensitivity"])
 	return minf(multiplier, config["max_demand_multiplier"])
 
@@ -106,7 +106,7 @@ func mark_packed(order: Order) -> void:
 
 
 ## Completes a sale. Returns what to put through the bank:
-## { price, fee, royalty } in cents.
+## { price, fee, royalty } in pence.
 func ship(order: Order, minute := 0.0) -> Dictionary:
 	order.status = Status.SHIPPED
 	order.shipped_at = minute
@@ -115,7 +115,7 @@ func ship(order: Order, minute := 0.0) -> Dictionary:
 
 
 func fee_for(price: int) -> int:
-	return roundi(price * float(config["fee_pct"])) + int(config["fee_fixed_cents"])
+	return roundi(price * float(config["fee_pct"])) + int(config["fee_fixed_pence"])
 
 
 func royalty_for(product: StringName, price: int) -> int:

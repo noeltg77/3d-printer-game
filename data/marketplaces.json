@@ -7,7 +7,7 @@
 			"description": "Handmade and custom goods. Friendly buyers, modest fees.",
 			"unlock_tier": 1,
 			"fee_pct": 0.065,
-			"fee_fixed_cents": 20,
+			"fee_fixed_pence": 20,
 			"dispatch_minutes": 2880,
 			"max_open_orders": 6,
 			"price_sensitivity": 2.5,

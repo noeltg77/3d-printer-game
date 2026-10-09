@@ -56,7 +56,7 @@ func _stats() -> Control:
 	var grid := GridContainer.new()
 	grid.columns = 4
 	grid.add_theme_constant_override(&"h_separation", 16)
-	grid.add_child(_stat("Sales today", Money.text(takings), "%d sold today" % sold_today, Ui.GREEN_DARK))
+	grid.add_child(_stat("Sales today", Money.format(takings), "%d sold today" % sold_today, Ui.GREEN_DARK))
 	grid.add_child(_stat("To ship", "%d order%s" % [open.size(), "" if open.size() == 1 else "s"],
 		"%d due today" % due_today if due_today > 0 else "Nothing due today", Ui.RED_DARK if due_today > 0 else Ui.GREEN_DARK))
 	grid.add_child(_stat("Mailer boxes", "%d left" % Game.packaging,
@@ -109,7 +109,7 @@ func _orders_card() -> Control:
 		due.minutes = order.due_at
 		var words := Ui.vbox([
 			Ui.text(Game.product_name(order.product), 15, Ui.INK, 800),
-			Ui.text("%s · Ship by day %d" % [Money.text(order.price), due.day], 13, LABEL),
+			Ui.text("%s · Ship by day %d" % [Money.format(order.price, Money.PRICE), due.day], 13, LABEL),
 		], 0)
 		words.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		rows.add_child(Ui.panel(Ui.hbox([
@@ -145,10 +145,10 @@ func _listing_row(product: StringName) -> Control:
 	toggle.tooltip_text = "Click to take it down" if listed else "Click to put it up for sale"
 	return _table_row([
 		Ui.text(Game.product_name(product), 15, Ui.INK, 800),
-		Ui.hbox([cheaper, Ui.width(Ui.text(Money.text(price), 15), 54),
+		Ui.hbox([cheaper, Ui.width(Ui.text(Money.format(price, Money.PRICE), 15), 66),
 			Ui.button("+", _update.bind(product, listed, price + PRICE_STEP), Ui.WHITE, Ui.INK, 30, 10)], 4),
-		Ui.text(Money.text(Game.unit_cost(product)), 15),
-		Ui.text(Money.text(profit), 15, Ui.GREEN_DARK if profit > 0 else Ui.RED_DARK, 800),
+		Ui.text(Money.format(Game.unit_cost(product)), 15),
+		Ui.text(Money.format(profit), 15, Ui.GREEN_DARK if profit > 0 else Ui.RED_DARK, 800),
 		Ui.text(str(entry["sold"]), 15),
 		Ui.hbox([toggle, Ui.text("%.1f a day" % market.orders_per_day(product, price) if listed else "", 13, LABEL)], 10),
 	])
@@ -176,13 +176,13 @@ func _sales_card() -> Control:
 		when.minutes = order.shipped_at
 		var net := Game.unit_profit(order.product, order.price)
 		rows.add_child(Ui.panel(Ui.vbox([
-			Ui.hbox([Ui.text(Game.product_name(order.product), 14, Ui.INK, 800), null, Ui.text(Money.text(order.price), 14, Ui.GREEN_DARK, 800)]),
-			Ui.text("Day %d · about %s profit" % [when.day, Money.text(net)], 13, LABEL),
+			Ui.hbox([Ui.text(Game.product_name(order.product), 14, Ui.INK, 800), null, Ui.text(Money.format(order.price, Money.PRICE), 14, Ui.GREEN_DARK, 800)]),
+			Ui.text("Day %d · about %s profit" % [when.day, Money.format(net)], 13, LABEL),
 		], 2), Ui.box(ROW, 16, 14, 12)))
 	if shipped.is_empty():
 		rows.add_child(Ui.panel(Ui.wrap(Ui.text("No sales yet. You are paid when the courier collects a packed order.", 14, LABEL)), Ui.box(ROW, 16, 14, 14)))
 	var tip := "Tip: price below the typical price for more orders, or above it for more profit on each one. Fees are %.1f%% + %s a sale." % [
-		float(Game.market.config["fee_pct"]) * 100.0, Money.text(int(Game.market.config["fee_fixed_cents"]))]
+		float(Game.market.config["fee_pct"]) * 100.0, Money.format(int(Game.market.config["fee_fixed_pence"]))]
 	rows.add_child(Ui.panel(Ui.wrap(Ui.text(tip, 13, Ui.GREEN_DARK, 800)), Ui.box(TIP_BG, 16, 14, 14)))
 	var card := _section("Recent sales", rows)
 	card.custom_minimum_size.x = 400

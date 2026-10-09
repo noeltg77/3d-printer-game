@@ -338,7 +338,7 @@ Put this doc in the repo (export as Markdown, e.g. `docs/GDD.md`) and point CLAU
 ## 7. Open questions
 
 - [ ] Final game name
-- [x] Currency and setting: US dollars
+- [x] Currency and setting: the game runs in GBP. The player chooses to see pounds, dollars or euros (fixed rates, display only), defaulting from their computer's region
 - [x] Time scale: one game day is 10 real minutes at 1x, so prints take roughly 20 seconds to 2 minutes. Speeds are pause, 1x, 2x, 4x
 - [ ] Character: customisable or a fixed character?
 - [ ] Exact colour palette and mood board

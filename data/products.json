@@ -14,9 +14,9 @@
 			"needs_supports": false,
 			"colour_count": 1,
 			"allowed_filaments": ["pla", "petg"],
-			"base_price_cents": 450,
+			"base_price_pence": 449,
 			"demand_per_day": 5.0,
-			"licence": { "type": "one_off", "fee_cents": 0, "royalty_pct": 0.0 }
+			"licence": { "type": "one_off", "fee_pence": 0, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "phone_stand",
@@ -31,9 +31,9 @@
 			"needs_supports": false,
 			"colour_count": 1,
 			"allowed_filaments": ["pla", "petg"],
-			"base_price_cents": 800,
+			"base_price_pence": 799,
 			"demand_per_day": 3.5,
-			"licence": { "type": "one_off", "fee_cents": 800, "royalty_pct": 0.0 }
+			"licence": { "type": "one_off", "fee_pence": 799, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "plant_pot",
@@ -48,9 +48,9 @@
 			"needs_supports": false,
 			"colour_count": 1,
 			"allowed_filaments": ["pla", "petg"],
-			"base_price_cents": 1000,
+			"base_price_pence": 999,
 			"demand_per_day": 3.0,
-			"licence": { "type": "one_off", "fee_cents": 1200, "royalty_pct": 0.0 }
+			"licence": { "type": "one_off", "fee_pence": 1199, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "desk_organiser",
@@ -65,9 +65,9 @@
 			"needs_supports": false,
 			"colour_count": 1,
 			"allowed_filaments": ["pla", "petg"],
-			"base_price_cents": 1200,
+			"base_price_pence": 1199,
 			"demand_per_day": 2.5,
-			"licence": { "type": "one_off", "fee_cents": 1500, "royalty_pct": 0.0 }
+			"licence": { "type": "one_off", "fee_pence": 1499, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "flexi_dragon",
@@ -82,9 +82,9 @@
 			"needs_supports": false,
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
-			"base_price_cents": 1500,
+			"base_price_pence": 1499,
 			"demand_per_day": 3.0,
-			"licence": { "type": "royalty", "fee_cents": 0, "royalty_pct": 0.1 }
+			"licence": { "type": "royalty", "fee_pence": 0, "royalty_pct": 0.1 }
 		}
 	]
 }

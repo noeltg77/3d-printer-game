@@ -5,7 +5,7 @@ All content lives in `data/*.json` and is loaded by `scripts/data/game_data.gd`.
 Conventions:
 
 - `id` is a unique snake_case string and is how tables reference each other.
-- Money is an integer in cents (`*_cents`). US dollars.
+- Money is an integer in GBP pence (`*_pence`), everywhere: data, simulation and saves. The player's display currency is applied only when an amount is shown, by `Money.format`. Give shop and listing prices a .49 or .99 ending so the price shown matches the amount charged.
 - Time is in game minutes (`*_minutes`). How long a game minute lasts in real time is a time scale question, not a data one.
 - Multipliers are relative to 1.0. Chances and ratings are 0.0 to 1.0.
 - `unlock_tier` is the progression tier (1 garage to 4 factory) where the entry first appears.
@@ -24,6 +24,17 @@ godot --headless --path . --script res://scripts/dev/validate_data.gd
 | `columns`, `cell_px` | Layout of the generated palette texture |
 | `colours[]` | Ordered `{ name, hex }`. Order sets the texture cell, so append new colours rather than reordering |
 
+## currencies.json
+
+Display currencies, keyed by code. Not a table of rows with ids.
+
+| Field | Meaning |
+| --- | --- |
+| `name` | Shown in the Settings picker |
+| `rate` | Fixed multiplier from GBP |
+| `symbol`, `symbol_after` | The symbol and whether it follows the number (with a space) |
+| `decimal`, `thousands` | Separator characters |
+
 ## printers.json
 
 | Field | Meaning |
@@ -31,7 +42,7 @@ godot --headless --path . --script res://scripts/dev/validate_data.gd
 | `name`, `brand`, `description` | Display text. Parody brands only |
 | `kind` | `fdm` for now. Later: `resin`, `sls`, `industrial` |
 | `motion` | `bed_slinger` or `core_xy` |
-| `price_cents` | Supplier shop price |
+| `price_pence` | Supplier shop price |
 | `speed_multiplier` | Divides a product's `print_minutes` |
 | `build_volume_mm` | `[x, y, z]`. A product must fit to be printable |
 | `reliability` | Base chance a print succeeds before wear, filament and preset modifiers |
@@ -47,7 +58,7 @@ godot --headless --path . --script res://scripts/dev/validate_data.gd
 
 | Field | Meaning |
 | --- | --- |
-| `price_cents_per_kg`, `spool_grams` | Spool cost is derived from these |
+| `price_pence_per_kg`, `spool_grams` | Spool cost is derived from these |
 | `nozzle_temp_c` | Minimum nozzle temperature needed |
 | `speed_multiplier` | Below 1.0 prints slower (TPU) |
 | `value_multiplier` | Sale price uplift for items in this material |
@@ -69,15 +80,15 @@ godot --headless --path . --script res://scripts/dev/validate_data.gd
 | `needs_supports` | Adds post-processing time and waste |
 | `colour_count` | Above 1 needs a multicolour unit (Phase 7) |
 | `allowed_filaments` | Filament ids the design works in |
-| `base_price_cents` | Typical marketplace price before demand and rating effects |
+| `base_price_pence` | Typical marketplace price before demand and rating effects |
 | `demand_per_day` | Orders per game day when listed at the typical price |
-| `licence` | `type` is `one_off` (pay `fee_cents` once), `royalty` (`royalty_pct` of each sale) or `personal_use` (cannot be sold) |
+| `licence` | `type` is `one_off` (pay `fee_pence` once), `royalty` (`royalty_pct` of each sale) or `personal_use` (cannot be sold) |
 
 ## marketplaces.json
 
 | Field | Meaning |
 | --- | --- |
-| `fee_pct`, `fee_fixed_cents` | Taken from every sale |
+| `fee_pct`, `fee_fixed_pence` | Taken from every sale |
 | `dispatch_minutes` | How long an order can wait before it is cancelled |
 | `max_open_orders` | No new orders arrive while this many are waiting to be packed |
 | `price_sensitivity` | Demand is multiplied by (typical price / your price) to this power |
@@ -89,8 +100,8 @@ Starting conditions and global rates. Not a table of rows.
 
 | Field | Meaning |
 | --- | --- |
-| `start.cash_cents`, `start.packaging`, `start.designs`, `start.minute_of_day` | What a new game begins with |
-| `electricity_cents_per_kwh` | Charged when a print finishes, from the printer's `power_watts` and the print time |
+| `start.cash_pence`, `start.packaging`, `start.designs`, `start.minute_of_day` | What a new game begins with |
+| `electricity_pence_per_kwh` | Charged when a print finishes, from the printer's `power_watts` and the print time |
 | `courier_minute_of_day` | When parcels in the outbox are collected and paid |
 | `bank_name`, `business_name` | Names shown on the PC |
 | `supplier` | The filament and hardware shop names, lead times in game minutes, and the packaging pack size and price |

@@ -13,6 +13,8 @@ signal delivery_arrived(delivery: Supplier.Delivery)
 signal courier_arrived
 
 const SPEEDS: Array[int] = [0, 1, 2, 4]
+## Player preferences, kept apart from save games.
+const SETTINGS_FILE := "user://settings.cfg"
 
 var data: GameData
 var clock: GameClock
@@ -27,6 +29,7 @@ var rng := RandomNumberGenerator.new()
 
 
 func _ready() -> void:
+	_load_settings()
 	new_game()
 
 
@@ -38,7 +41,7 @@ func _process(delta: float) -> void:
 		notify("Delivery arrived: %s" % delivery.describe())
 		changed.emit()
 	for order in market.tick(before, clock.minutes, rng):
-		notify("New order: %s for %s" % [product_name(order.product), Money.text(order.price)])
+		notify("New order: %s for %s" % [product_name(order.product), Money.format(order.price, Money.PRICE)])
 		changed.emit()
 	for order in market.expire(clock.minutes):
 		notify("Order #%d was cancelled: not dispatched in time" % order.id)
@@ -52,13 +55,33 @@ func new_game() -> void:
 	var start: Dictionary = data.settings["start"]
 	clock = GameClock.new()
 	clock.minutes = start["minute_of_day"]
-	bank = Bank.new(int(start["cash_cents"]))
+	bank = Bank.new(int(start["cash_pence"]))
 	market = Marketplace.new(data.marketplaces["craftsy"], data.products)
 	supplier = Supplier.new(data)
 	owned_designs.assign(start["designs"])
 	packaging = int(start["packaging"])
 	rng.randomize()
 	set_speed(1)
+
+
+## Changes the currency amounts are shown in and remembers it. Nothing in the
+## game itself changes: everything is held in GBP and converted for display.
+func set_currency(code: String) -> void:
+	Money.set_currency(code)
+	var config := ConfigFile.new()
+	config.load(SETTINGS_FILE)
+	config.set_value("display", "currency", Money.currency)
+	config.save(SETTINGS_FILE)
+	changed.emit()
+
+
+## On first launch the currency follows the computer's region.
+func _load_settings() -> void:
+	var config := ConfigFile.new()
+	if config.load(SETTINGS_FILE) == OK and config.has_section_key("display", "currency"):
+		Money.set_currency(config.get_value("display", "currency"))
+	else:
+		Money.set_currency(Money.currency_for_locale(OS.get_locale()))
 
 
 ## 0 pauses. Everything in the scene follows, because it scales engine time.
@@ -84,7 +107,7 @@ func owns(product: StringName) -> bool:
 func buy_design(product: StringName) -> bool:
 	if owns(product):
 		return false
-	var fee := int(data.products[product]["licence"]["fee_cents"])
+	var fee := int(data.products[product]["licence"]["fee_pence"])
 	if not bank.spend(fee, "Design licence: %s" % product_name(product), clock.minutes):
 		return false
 	owned_designs.append(product)
@@ -133,10 +156,10 @@ func unit_cost(product: StringName) -> int:
 	var pla: Dictionary = data.filaments["pla"]
 	var config: Dictionary = data.settings["supplier"]
 	var printer: Dictionary = data.printers.values()[0]
-	var filament := float(row["filament_grams"]) / 1000.0 * float(pla["price_cents_per_kg"])
+	var filament := float(row["filament_grams"]) / 1000.0 * float(pla["price_pence_per_kg"])
 	var kwh := float(printer["power_watts"]) / 1000.0 * float(row["print_minutes"]) / 60.0
-	var mailer := float(config["packaging_pack_cents"]) / float(config["packaging_pack_size"])
-	return roundi(filament + kwh * float(data.settings["electricity_cents_per_kwh"]) + mailer)
+	var mailer := float(config["packaging_pack_pence"]) / float(config["packaging_pack_size"])
+	return roundi(filament + kwh * float(data.settings["electricity_pence_per_kwh"]) + mailer)
 
 
 ## What is left from one sale at `price` after costs, marketplace fees and royalty.
@@ -163,7 +186,7 @@ func complete_sale(order: Marketplace.Order) -> void:
 ## Charges for the electricity a finished print used.
 func charge_electricity(watts: float, game_minutes: float, what: String) -> void:
 	var kwh := watts / 1000.0 * game_minutes / 60.0
-	bank.charge(roundi(kwh * float(data.settings["electricity_cents_per_kwh"])), "Electricity: %s" % what, clock.minutes)
+	bank.charge(roundi(kwh * float(data.settings["electricity_pence_per_kwh"])), "Electricity: %s" % what, clock.minutes)
 	changed.emit()
 
 

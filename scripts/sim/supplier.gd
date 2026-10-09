@@ -41,16 +41,16 @@ func _init(p_data: GameData) -> void:
 func price_of(basket: Dictionary) -> int:
 	var total := 0
 	for printer_id: String in basket.get("printers", {}):
-		total += int(data.printers[printer_id]["price_cents"]) * int(basket["printers"][printer_id])
+		total += int(data.printers[printer_id]["price_pence"]) * int(basket["printers"][printer_id])
 	total += spool_price() * count_spools(basket)
-	total += int(_config()["packaging_pack_cents"]) * int(basket.get("packaging", 0))
+	total += int(_config()["packaging_pack_pence"]) * int(basket.get("packaging", 0))
 	return total
 
 
 ## Price of one PLA spool. PLA is the only filament sold until Phase 6.
 func spool_price() -> int:
 	var pla: Dictionary = data.filaments["pla"]
-	return roundi(pla["price_cents_per_kg"] * pla["spool_grams"] / 1000.0)
+	return roundi(pla["price_pence_per_kg"] * pla["spool_grams"] / 1000.0)
 
 
 static func count_spools(basket: Dictionary) -> int:
