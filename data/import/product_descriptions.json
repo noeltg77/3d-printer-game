@@ -719,5 +719,15 @@
 	"ring_custom_size": "A finger ring with a faceted stone, made to the customer's size.",
 	"cufflinks": "A pair of cufflinks with a round face and a toggle bar.",
 	"miniature_people_pack_x20": "Twenty tiny figures to stand on a station platform.",
-	"dental_model_batch": "A batch of dental arches for a lab."
+	"dental_model_batch": "A batch of dental arches for a lab.",
+
+	"puzzle_cube_3x3": "A twist puzzle cube with a colour on each face. Six colours in one print, and it turns.",
+	"molecule_kit": "A small molecule with atoms in four colours and the bonds in a fifth.",
+	"fraction_circles": "Six circles, each cut into more slices than the last and each its own colour.",
+	"keycaps_artisan_set": "Six sculpted keycaps with a tiny figure on each in a second colour.",
+	"branded_promo_keyring_x100": "A hundred keyring tags with a customer's logo raised in a second colour.",
+	"shelf_wobblers_x50": "Fifty shelf wobblers: a clip, a springy arm and a sign that catches the eye.",
+	"hotel_key_card_holders_x50": "Fifty wall pockets for key cards, each with a band in the hotel's colour.",
+	"film_and_theatre_props_batch": "A batch of stage props: a chest, a goblet and a sword, trimmed in a second colour.",
+	"medical_training_model": "An anatomical heart on a stand, with the great vessels in a second colour."
 }

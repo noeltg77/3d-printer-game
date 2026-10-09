@@ -618,7 +618,7 @@ func _test_contracts() -> void:
 		for category: String in client["categories"]:
 			_check(data.products.values().any(func(row: Dictionary) -> bool: return row["category"] == category), "every category a client asks for has designs in it (%s %s)" % [client["id"], category])
 	var museum: Dictionary = data.clients["wexcombe_museum"]
-	_check(book.wanted_by(museum, none, 3) == ([&"museum_replica_artefact"] as Array[StringName]), "a client can bring a design of its own")
+	_check(book.wanted_by(museum, none, 3).has(&"museum_replica_artefact"), "a client can bring a design of its own")
 	_check(book.wanted_by(data.clients["brindle_and_daw"], owned, 3).has(&"desk_organiser") and not book.wanted_by(data.clients["brindle_and_daw"], owned, 3).has(&"museum_replica_artefact"), "and otherwise asks for designs the business owns, in its line of work")
 	for client: Dictionary in data.clients.values():
 		for supplied: String in client.get("supplies", []):

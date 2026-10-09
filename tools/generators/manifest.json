@@ -726,6 +726,15 @@
 		{ "generator": "prints_mc_misc", "out": "assets/models/prints/shop_front_kit.glb", "args": { "variant": "shop_front_kit" } },
 		{ "generator": "prints_mc_misc", "out": "assets/models/prints/medal_hanger_custom.glb", "args": { "variant": "medal_hanger_custom" } },
 		{ "generator": "prints_mc_misc", "out": "assets/models/prints/golf_ball_marker_set.glb", "args": { "variant": "golf_ball_marker_set" } },
+		{ "generator": "prints_mc_later", "out": "assets/models/prints/puzzle_cube_3x3.glb", "args": { "variant": "puzzle_cube_3x3" } },
+		{ "generator": "prints_mc_later", "out": "assets/models/prints/molecule_kit.glb", "args": { "variant": "molecule_kit" } },
+		{ "generator": "prints_mc_later", "out": "assets/models/prints/fraction_circles.glb", "args": { "variant": "fraction_circles" } },
+		{ "generator": "prints_mc_later", "out": "assets/models/prints/keycaps_artisan_set.glb", "args": { "variant": "keycaps_artisan_set" } },
+		{ "generator": "prints_mc_later", "out": "assets/models/prints/branded_promo_keyring_x100.glb", "args": { "variant": "branded_promo_keyring_x100" } },
+		{ "generator": "prints_mc_later", "out": "assets/models/prints/shelf_wobblers_x50.glb", "args": { "variant": "shelf_wobblers_x50" } },
+		{ "generator": "prints_mc_later", "out": "assets/models/prints/hotel_key_card_holders_x50.glb", "args": { "variant": "hotel_key_card_holders_x50" } },
+		{ "generator": "prints_mc_later", "out": "assets/models/prints/film_and_theatre_props_batch.glb", "args": { "variant": "film_and_theatre_props_batch" } },
+		{ "generator": "prints_mc_later", "out": "assets/models/prints/medical_training_model.glb", "args": { "variant": "medical_training_model" } },
 
 		{ "generator": "print_fails", "out": "assets/models/fails/spaghetti.glb", "args": { "variant": "spaghetti", "seed": 3 } },
 		{ "generator": "print_fails", "out": "assets/models/fails/noodles.glb", "args": { "variant": "noodles", "seed": 2 } }
