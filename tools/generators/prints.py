@@ -94,6 +94,19 @@ def _pen_pot_hex(builder):
     hex_pot(builder, radius=0.045, height=0.1, wall=0.006)
 
 
+def _headphone_stand(builder):
+    """Oval base, upright post and a curved cradle on top for the headband."""
+    builder.cylinder(0.075, 0.016, (0, 0, 0.008), "white", segments=16, radius_top=0.07)
+    builder.box((0.03, 0.03, 0.17), (0, 0, 0.09), "white", bevel=0.006, bevel_segments=2)
+    # Cradle: a half ring of short boxes, each turned to follow the curve, opening upwards.
+    arc_radius, centre_z, pieces = 0.06, 0.22, 13
+    for index in range(pieces):
+        angle = math.pi + math.pi * index / (pieces - 1)
+        x, z = arc_radius * math.cos(angle), centre_z + arc_radius * math.sin(angle)
+        builder.box((0.03, 0.04, 0.014), (x, 0, z), "white", rotation=(0, -(angle + math.pi / 2), 0), bevel=0.003)
+    builder.box((0.036, 0.04, 0.03), (0, 0, 0.165), "white", bevel=0.005)
+
+
 VARIANTS = {
     "desk_organiser": _desk_organiser,
     "cable_clips": _cable_clips,
@@ -101,6 +114,7 @@ VARIANTS = {
     "plant_pot": _plant_pot,
     "flexi_dragon": _flexi_dragon,
     "pen_pot_hex": _pen_pot_hex,
+    "headphone_stand": _headphone_stand,
 }
 
 if __name__ == "__main__":
