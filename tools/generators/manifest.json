@@ -45,8 +45,9 @@
 		{ "generator": "boxes", "out": "assets/models/props/box_closed_02.glb", "args": { "variant": "closed", "seed": 7, "size": [0.5, 0.4, 0.35] } },
 		{ "generator": "boxes", "out": "assets/models/props/box_open_01.glb", "args": { "variant": "open", "seed": 2 } },
 
-		{ "generator": "character", "out": "assets/models/characters/character_01.glb", "args": { "top": "teal", "bottom": "navy", "hair": "wood_dark", "hair-style": "short", "apron": "orange" } },
-		{ "generator": "character", "out": "assets/models/characters/character_02.glb", "args": { "skin": "skin_dark", "top": "yellow", "bottom": "slate", "hair": "ink", "hair-style": "bun", "shoes": "white" } },
-		{ "generator": "character", "out": "assets/models/characters/character_03.glb", "args": { "skin": "skin_mid", "top": "pink", "bottom": "charcoal", "hair": "brick", "hair-style": "long", "shoes": "red" } }
+		{ "generator": "character", "out": "assets/models/characters/character_01.glb", "args": { "top": "teal", "bottom": "navy", "hair": "wood_dark", "hair-style": "short", "apron": "orange", "seed": 1 } },
+		{ "generator": "character", "out": "assets/models/characters/character_02.glb", "args": { "skin": "skin_dark", "top": "yellow", "bottom": "slate", "hair": "ink", "hair-style": "bun", "shoes": "white", "seed": 2 } },
+		{ "generator": "character", "out": "assets/models/characters/character_03.glb", "args": { "skin": "skin_mid", "top": "pink", "bottom": "charcoal", "hair": "brick", "hair-style": "long", "shoes": "red" } },
+		{ "generator": "character", "out": "assets/models/characters/character_04.glb", "args": { "seed": 4, "skin": "skin_mid", "top": "lime", "bottom": "wood_dark", "hair": "charcoal", "hair-style": "quiff", "shoes": "ink", "apron": "blue" } }
 	]
 }

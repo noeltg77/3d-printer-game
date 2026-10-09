@@ -68,10 +68,11 @@ class MeshBuilder:
         self.bm = bmesh.new()
         self.uv_layer = self.bm.loops.layers.uv.new("UVMap")
 
-    def box(self, size, centre, colour, rotation=(0.0, 0.0, 0.0), taper=1.0, bevel=0.0):
+    def box(self, size, centre, colour, rotation=(0.0, 0.0, 0.0), taper=1.0, bevel=0.0, bevel_segments=1):
         """Box of `size` (x, y, z) at `centre`, rotated by XYZ euler radians.
 
-        `taper` scales the top face (a number, or an (x, y) pair). `bevel` chamfers every edge.
+        `taper` scales the top face (a number, or an (x, y) pair). `bevel` chamfers
+        every edge; more `bevel_segments` round it off.
         """
         before = set(self.bm.faces)
         verts = bmesh.ops.create_cube(self.bm, size=1.0)["verts"]
@@ -84,8 +85,27 @@ class MeshBuilder:
         bmesh.ops.transform(self.bm, matrix=matrix, verts=verts)
         if bevel > 0:
             edges = list({edge for vert in verts for edge in vert.link_edges})
-            bmesh.ops.bevel(self.bm, geom=edges, offset=bevel, segments=1, affect="EDGES", profile=0.5)
+            bmesh.ops.bevel(self.bm, geom=edges, offset=bevel, segments=bevel_segments, affect="EDGES", profile=0.5)
         return self._paint_new(before, colour)
+
+    def capsule(self, radius, length, centre, colour, segments=8, axis="Z", rotation=None, rounding=0.6, round_segments=2):
+        """Low poly cylinder with rounded-off ends, `length` long overall, along `axis`."""
+        before = set(self.bm.faces)
+        verts = bmesh.ops.create_cone(
+            self.bm, cap_ends=True, segments=segments, radius1=radius, radius2=radius, depth=length
+        )["verts"]
+        # The rim edges are the ones lying flat in a cap.
+        rims = [
+            edge for edge in {edge for vert in verts for edge in vert.link_edges}
+            if abs(edge.verts[0].co.z - edge.verts[1].co.z) < 1e-6
+        ]
+        offset = min(radius * rounding, length * 0.45)
+        bmesh.ops.bevel(self.bm, geom=rims, offset=offset, segments=round_segments, affect="EDGES", profile=0.5)
+        faces = [face for face in self.bm.faces if face not in before]
+        matrix = _transform(centre, AXIS_ROTATIONS[axis] if rotation is None else rotation)
+        bmesh.ops.transform(self.bm, matrix=matrix, verts=list({vert for face in faces for vert in face.verts}))
+        self.paint(faces, colour)
+        return faces
 
     def cylinder(self, radius, depth, centre, colour, segments=8, axis="Z", rotation=None, radius_top=None):
         """Cylinder along `axis` (or an explicit rotation). `radius_top` makes it a cone."""
@@ -195,9 +215,16 @@ def export_glb(path):
     print(f"Exported {path}")
 
 
-def render_preview(path, resolution=512):
-    """Renders the scene's meshes from the game's isometric angle to a PNG."""
+def render_preview(path, resolution=512, direction=None):
+    """Renders the scene's meshes to a PNG.
+
+    From the game's isometric angle by default, or looking back along
+    `direction` (a vector from the subject towards the camera). Can be called
+    more than once on the same scene for several views.
+    """
     scene = bpy.context.scene
+    for leftover in [obj for obj in scene.objects if obj.name.startswith("preview_")]:
+        bpy.data.objects.remove(leftover, do_unlink=True)
     bpy.context.view_layer.update()
     objects = [obj for obj in scene.objects if obj.type == "MESH"]
     corners = [obj.matrix_world @ Vector(corner) for obj in objects for corner in obj.bound_box]
@@ -215,7 +242,8 @@ def render_preview(path, resolution=512):
     camera.data.type = "ORTHO"
     camera.data.ortho_scale = extent * 1.15
     # True isometric: 45 degrees round, ~35.26 degrees down.
-    offset = Vector((1.0, -1.0, math.sqrt(2.0) * math.tan(math.radians(35.264)))).normalized() * extent * 10
+    isometric = (1.0, -1.0, math.sqrt(2.0) * math.tan(math.radians(35.264)))
+    offset = Vector(direction or isometric).normalized() * extent * 10
     camera.location = centre + offset
     camera.rotation_euler = (-offset).to_track_quat("-Z", "Y").to_euler()
     camera.data.clip_end = extent * 40

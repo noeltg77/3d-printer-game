@@ -21,8 +21,9 @@ const BLEND_SPEED := 12.0
 ## Stride phase in radians per second. One full stride is TAU.
 const WALK_RATE := 9.0
 const REACH_TIME := 0.7
-## How far the hips drop onto a 0.4 m seat.
-const SIT_DROP := 0.13
+## How far the hips drop to sit. The character's hips already stand at seat
+## height (0.47 m against a 0.4 m seat plus half a thigh), so nothing.
+const SIT_DROP := 0.0
 
 @export var pose := Pose.IDLE
 ## Arms hold an item in front of the chest. Attach it to `carry_socket`.
