@@ -13,6 +13,7 @@ func _init() -> void:
 	_test_bank()
 	_test_money()
 	_test_marketplace()
+	_test_deliveries()
 	_test_supplier()
 	print("Tests passed" if _failures == 0 else "%d test(s) FAILED" % _failures)
 	quit(1 if _failures > 0 else 0)
@@ -254,6 +255,84 @@ func _test_marketplace() -> void:
 	var cancelled := market.expire(late.due_at + 1.0)
 	_check(cancelled.has(late) and late.status == Marketplace.Status.CANCELLED, "orders past their deadline are cancelled")
 	_check(order.status == Marketplace.Status.SHIPPED, "shipped orders are not cancelled")
+
+
+func _test_deliveries() -> void:
+	var data := GameData.load_all()
+	var courier: Dictionary = data.settings["courier"]
+	_check(is_equal_approx(Marketplace.damage_chance(3, courier), 0.04), "a Standard print breaks in the post 4 times in 100")
+	_check(is_equal_approx(Marketplace.damage_chance(2, courier), 0.06), "a Draft print breaks more often")
+	_check(is_zero_approx(Marketplace.damage_chance(5, courier)), "a Strong print never breaks in the post")
+	var rough := {"protection": 1, "damage_multiplier": 1.8}
+	_check(is_equal_approx(Marketplace.damage_chance(3, rough), 0.04 * (5.0 / 3.0) * 1.8), "poor packaging and a rough courier both add to the damage")
+
+	var market := Marketplace.new(data.marketplaces["craftsy"].duplicate(), data.products)
+	market.comments = data.review_comments
+	market.config["max_open_orders"] = 100000
+	market.config["review_chance"] = 1.0
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 5
+	_check(is_zero_approx(market.rating()) and is_equal_approx(market.rating_multiplier(), 1.0), "a shop with no reviews has no rating and normal demand")
+	_check(is_zero_approx(market.return_chance(3, false)), "nobody sends back a good print")
+	_check(market.return_chance(1, false) > 0.0 and market.return_chance(3, true) > market.return_chance(1, false), "rough prints come back sometimes, flawed ones often")
+
+	var total_good := 0
+	var total_flawed := 0
+	for attempt in 300:
+		total_good += Marketplace.stars_for(3, false, rng)
+		total_flawed += Marketplace.stars_for(2, true, rng)
+	_check(total_good / 300.0 > 4.4, "good prints average well over four stars (got %.2f)" % (total_good / 300.0))
+	_check(total_flawed / 300.0 < 3.6, "flawed prints average clearly lower (got %.2f)" % (total_flawed / 300.0))
+
+	market.set_listing(&"desk_organiser", true, 1200)
+	for step in 3000:
+		market.tick(step, step + 1.0, rng)
+	var sent := market.orders.duplicate()
+	_check(sent.size() >= 4, "enough orders arrived to test with")
+
+	# A strong, good print: always arrives, is kept and is reviewed.
+	var good: Marketplace.Order = sent[0]
+	market.mark_packed(good, 5, 3, false)
+	market.ship(good, 100.0, 500.0)
+	_check(market.deliver(499.0, rng, courier).is_empty(), "nothing is delivered before it arrives")
+	var arrived := market.deliver(500.0, rng, courier)
+	_check(arrived.size() == 1 and arrived[0]["order"] == good, "a parcel is delivered when its time comes")
+	_check(arrived[0]["refund"].is_empty() and good.status == Marketplace.Status.DELIVERED, "a strong, good print is delivered and kept")
+	_check(arrived[0]["review"]["stars"] >= 4 and arrived[0]["review"]["text"] != "", "and earns a good review with something to say")
+	_check(market.deliver(9999.0, rng, courier).is_empty(), "an order is only delivered once")
+	_check(market.sold_orders().has(good), "a delivered order still counts as sold")
+
+	# Packaging that can't protect anything: the parcel always arrives broken.
+	var doomed: Marketplace.Order = sent[1]
+	market.mark_packed(doomed, 1, 3, false)
+	market.ship(doomed, 100.0, 200.0)
+	var sold_before: int = market.listing(&"desk_organiser")["sold"]
+	var broken := market.deliver(200.0, rng, {"protection": 1, "damage_multiplier": 100.0})
+	_check(doomed.status == Marketplace.Status.REFUNDED and doomed.refund_reason == "damaged", "a parcel that breaks is refunded")
+	_check(broken[0]["refund"]["price"] == doomed.price and broken[0]["refund"]["fee"] == market.fee_for(doomed.price), "the refund gives back the price, and the fee comes back to the seller")
+	_check(broken[0]["review"]["stars"] == 1, "a broken parcel earns a one star review")
+	_check(market.listing(&"desk_organiser")["sold"] == sold_before - 1, "a refunded order no longer counts as sold on the listing")
+
+	# A flawed print that is certain to be sent back.
+	market.config["return_chance_flawed"] = 1.0
+	var flawed: Marketplace.Order = sent[2]
+	market.mark_packed(flawed, 5, 2, true)
+	market.ship(flawed, 100.0, 300.0)
+	var back := market.deliver(300.0, rng, courier)
+	_check(flawed.refund_reason == "returned" and back[0]["review"]["stars"] == 2, "a returned print is refunded and earns two stars")
+
+	_check(is_equal_approx(market.rating(), (float(arrived[0]["review"]["stars"]) + 1.0 + 2.0) / 3.0), "the rating is the average of the reviews")
+	_check(market.rating_multiplier() < 0.7, "a poor rating cuts demand")
+	var few := market.rating_multiplier()
+	market.config["rating_confidence_reviews"] = 30
+	_check(market.rating_multiplier() > few and market.rating_multiplier() < 1.0, "the first few reviews count for less")
+	market.config["rating_confidence_reviews"] = 5
+	var poor := market.orders_per_day(&"desk_organiser", 1200)
+	for count in 20:
+		market.reviews.append({"stars": 5})
+	_check(is_equal_approx(market.rating(), 5.0), "only the most recent reviews count towards the rating")
+	_check(market.rating_multiplier() > 1.0 and market.orders_per_day(&"desk_organiser", 1200) > poor * 1.5, "a great rating brings the orders back, and a few more")
+	_check(market.rating_multiplier() <= float(market.config["max_rating_multiplier"]), "the boost from a great rating is capped")
 
 
 func _test_supplier() -> void:

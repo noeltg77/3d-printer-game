@@ -15,6 +15,7 @@ const TABLES := {
 const FAILURE_HAPPENS: PackedStringArray = ["start", "mid", "end"]
 const FAILURE_OUTCOMES: PackedStringArray = ["scrap", "stop", "degraded"]
 const SETTINGS := "res://data/game.json"
+const REVIEWS := "res://data/reviews.json"
 
 var printers: Dictionary = {}
 var filaments: Dictionary = {}
@@ -27,6 +28,8 @@ var failures: Dictionary = {}
 var parts: Dictionary = {}
 ## What each durability score (1 to 5) means, keyed by the score as text.
 var durability_labels: Dictionary = {}
+## Lines buyers write in reviews, by kind (data/reviews.json).
+var review_comments: Dictionary = {}
 ## Starting conditions and global rates (data/game.json).
 var settings: Dictionary = {}
 ## Problems found while loading. Empty when the data is valid.
@@ -45,6 +48,11 @@ static func load_all() -> GameData:
 	var presets_file: Variant = JSON.parse_string(FileAccess.get_file_as_string(TABLES["presets"]))
 	if presets_file is Dictionary:
 		data.durability_labels = presets_file.get("durability_labels", {})
+	var reviews_file: Variant = JSON.parse_string(FileAccess.get_file_as_string(REVIEWS))
+	if reviews_file is Dictionary and reviews_file.get("comments") is Dictionary:
+		data.review_comments = reviews_file["comments"]
+	else:
+		data.errors.append("%s: expected an object with a \"comments\" object" % REVIEWS)
 	data._check_references()
 	return data
 

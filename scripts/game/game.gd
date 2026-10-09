@@ -48,6 +48,8 @@ func _process(delta: float) -> void:
 	for order in market.expire(clock.minutes):
 		notify("Order #%d was cancelled: not dispatched in time" % order.id)
 		changed.emit()
+	for outcome in market.deliver(clock.minutes, rng, data.settings["courier"]):
+		_settle_delivery(outcome)
 	if clock.crossed(before, data.settings["courier_minute_of_day"]):
 		courier_arrived.emit()
 
@@ -59,6 +61,7 @@ func new_game() -> void:
 	clock.minutes = start["minute_of_day"]
 	bank = Bank.new(int(start["cash_pence"]))
 	market = Marketplace.new(data.marketplaces["craftsy"], data.products)
+	market.comments = data.review_comments
 	supplier = Supplier.new(data)
 	owned_designs.assign(start["designs"])
 	packaging = int(start["packaging"])
@@ -210,11 +213,38 @@ func stock_of(product: StringName) -> int:
 
 ## Takes payment for a dispatched order, less the marketplace's cut.
 func complete_sale(order: Marketplace.Order) -> void:
-	var sale := market.ship(order, clock.minutes)
+	var transit: Array = data.settings["courier"]["delivery_minutes"]
+	var sale := market.ship(order, clock.minutes, clock.minutes + rng.randf_range(transit[0], transit[1]))
 	var market_name: String = market.config["name"]
 	bank.earn(sale["price"], "Sale: %s (%s)" % [product_name(order.product), market_name], clock.minutes)
 	bank.charge(sale["fee"], "%s fees" % market_name, clock.minutes)
 	bank.charge(sale["royalty"], "Design royalty: %s" % product_name(order.product), clock.minutes)
+	changed.emit()
+
+
+## Chance (0 to 1) that an item of this strength arrives broken, in the
+## packaging and with the courier the business uses.
+func damage_chance(durability: int) -> float:
+	return Marketplace.damage_chance(durability, data.settings["courier"])
+
+
+## Puts a delivered order's refund through the bank and announces how it went.
+func _settle_delivery(outcome: Dictionary) -> void:
+	var order: Marketplace.Order = outcome["order"]
+	var title := product_name(order.product)
+	var review: Dictionary = outcome["review"]
+	if not outcome["refund"].is_empty():
+		var refund: Dictionary = outcome["refund"]
+		var market_name: String = market.config["name"]
+		var why := "arrived broken" if order.refund_reason == "damaged" else "sent back"
+		bank.charge(refund["price"], "Refund: %s (%s)" % [title, why], clock.minutes)
+		if refund["fee"] > 0:
+			bank.earn(refund["fee"], "%s fees returned" % market_name, clock.minutes)
+		if refund["royalty"] > 0:
+			bank.earn(refund["royalty"], "Design royalty returned: %s" % title, clock.minutes)
+		notify("Order #%d %s: %s refunded. \"%s\"" % [order.id, why, Money.format(refund["price"]), review["text"]])
+	elif not review.is_empty():
+		notify("%d star review for %s: \"%s\"" % [review["stars"], title, review["text"]])
 	changed.emit()
 
 

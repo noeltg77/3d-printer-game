@@ -1,0 +1,41 @@
+{
+	"schema_version": 1,
+	"comments": {
+		"damaged": [
+			"Arrived in three pieces. I ordered one.",
+			"The box rattled. That is never a good sign.",
+			"It left their garage in one piece. It did not arrive in one piece.",
+			"Snapped clean in half. The postie looked guilty."
+		],
+		"returned": [
+			"Not what the photos showed. Sent it back.",
+			"Looks like a practice go. Returned.",
+			"I could have made this myself, and I don't own a printer.",
+			"Sorry, but this one should have gone in the bin, not the post."
+		],
+		"1": [
+			"Rough as a badger. Would not recommend.",
+			"I have seen better things come out of a glue gun."
+		],
+		"2": [
+			"It does the job, just about. Looks a bit sad doing it.",
+			"Bits of string all over it. Had to give it a haircut."
+		],
+		"3": [
+			"It's fine. It is a thing and it works.",
+			"Does what it says. Finish is a bit rough up close.",
+			"Okay for the price."
+		],
+		"4": [
+			"Nice little thing, quick delivery.",
+			"Good quality, does exactly what I wanted.",
+			"Pleased with this. Would buy again."
+		],
+		"5": [
+			"Lovely! Bought a second one for my mum.",
+			"Perfect. You can't even see the layers.",
+			"Exactly as described and solid as a rock.",
+			"Brilliant. My desk has never been so organised."
+		]
+	}
+}

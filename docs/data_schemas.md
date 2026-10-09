@@ -96,6 +96,19 @@ Display currencies, keyed by code. Not a table of rows with ids.
 | `max_open_orders` | No new orders arrive while this many are waiting to be packed |
 | `price_sensitivity` | Demand is multiplied by (typical price / your price) to this power |
 | `max_demand_multiplier` | Cap on the boost from pricing below typical |
+| `review_chance` | Chance that a buyer who keeps the item leaves a review |
+| `return_chance_flawed` | Chance a flawed print is sent back for a refund |
+| `return_chance_per_quality_point` | Chance a print is sent back, for each point its quality is below 3 |
+| `rating_window` | The seller rating is the average of this many most recent reviews |
+| `rating_neutral`, `rating_demand_per_star` | Demand is multiplied by 1 + (rating - neutral) x per star |
+| `rating_confidence_reviews` | The rating's effect on demand grows from nothing to full over this many reviews |
+| `min_rating_multiplier`, `max_rating_multiplier` | Limits on that multiplier. A shop with no reviews is at 1.0 |
+
+Stars for a print that is kept are `3.2 + 0.5 x quality`, less 1 if it is flawed, give or take 0.8 (`Marketplace.stars_for`). A parcel that arrives broken gets 1 star, a returned one 2, and both are refunded in full with the marketplace's fee and any royalty handed back.
+
+## reviews.json
+
+`comments`: the lines buyers write, as lists keyed by `damaged`, `returned` and the star counts `1` to `5`.
 
 ## presets.json
 
@@ -160,6 +173,7 @@ Starting conditions and global rates. Not a table of rows.
 | `start.cash_pence`, `start.packaging`, `start.designs`, `start.minute_of_day` | What a new game begins with |
 | `electricity_pence_per_kwh` | Charged when a print finishes, from the printer's `power_watts` and the print time |
 | `courier_minute_of_day` | When parcels in the outbox are collected and paid |
+| `courier` | The one courier and packaging so far: `name`, `damage_multiplier`, `delivery_minutes` as `[shortest, longest]`, and the mailer box's `protection` (1 to 5). A parcel arrives broken with chance `(5 - durability) x 2% x (6 - protection) / 3 x damage_multiplier` (`Marketplace.damage_chance`). The packaging and courier tables in `docs/design_data/shipping.json` replace this when there is a choice of either |
 | `default_preset` | The preset the print dialog opens on |
 | `wear_rate` | Multiplies all part wear. Above 1 because the design's lifespans are in real printer hours, which would take many sessions to matter. A balancing knob |
 | `bank_name`, `business_name` | Names shown on the PC |
@@ -169,4 +183,4 @@ One game day is 1440 game minutes and lasts 10 real minutes at 1x (`GameClock.MI
 
 ## Not drafted yet
 
-Upgrades, shipping, contracts, staff and events. Each gets a table when its phase starts.
+Upgrades, packaging and courier choices, contracts, staff and events. Each gets a table when its phase starts.

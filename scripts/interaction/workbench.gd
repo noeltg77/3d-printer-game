@@ -78,9 +78,10 @@ func _pack(agent: Agent, order: Marketplace.Order) -> void:
 	await agent.go_to(self)
 	await agent.reach()
 	# The item goes in a box and comes back out as a parcel.
-	agent.release().queue_free()
+	var item := agent.release() as PrintedItem
 	Game.packaging -= 1
-	Game.market.mark_packed(order)
+	Game.market.mark_packed(order, item.durability, item.quality, item.is_flawed())
+	item.queue_free()
 	Game.changed.emit()
 	await agent.reach(func() -> void: agent.carry(Parcel.create(order)))
 	var outbox: Outbox = get_tree().get_first_node_in_group(&"outbox")

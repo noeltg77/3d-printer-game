@@ -262,7 +262,7 @@ Build small and prove each step before moving on: assets and garage first, then 
 - [x] Print presets (Draft / Standard / Strong) with risk meter
 - [x] Print failures with visible results
 - [x] Part wear, breakdowns, replacements, spares on shelves
-- [ ] Durability stat, delivery damage, returns, refunds, reviews, seller rating
+- [x] Durability stat, delivery damage, returns, refunds, reviews, seller rating
 
 **Done when:** problems feel fair and funny, not frustrating, and upgrades clearly reduce them.
 
