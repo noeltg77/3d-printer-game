@@ -1,8 +1,9 @@
 extends VBoxContainer
 ## PC app: a marketplace's seller dashboard. One script serves every marketplace:
 ## the entry in PcScreen.APPS says which (`market`) and gives its colours. Headline numbers along the top,
-## orders to pack and the listings table on the left, reviews and recent sales
-## on the right.
+## orders to pack and the listings table on the left (where each design's
+## packaging is chosen), and on the right what is in demand, the courier's
+## service this marketplace sends by, reviews and recent sales.
 ## "Pack & ship" queues the packing job for the character.
 
 const HOT_BG := Color("E3F3EA")
@@ -17,7 +18,7 @@ const RECENT_SALES := 4
 const RECENT_REVIEWS := 4
 const STAR := Color("E0A526")
 ## Listings table column widths, as shares of the row.
-const COLUMNS: Array[float] = [2.2, 1.5, 1.0, 1.0, 0.7, 1.9]
+const COLUMNS: Array[float] = [2.0, 1.4, 1.5, 0.9, 0.9, 0.6, 1.7]
 
 var screen: PcScreen
 ## This app's entry in PcScreen.APPS.
@@ -40,7 +41,7 @@ func refresh() -> void:
 
 	var left := Ui.vbox([_orders_card(), _listings_card()], 20)
 	left.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var right := Ui.vbox([_trends_card(), _reviews_card(), _sales_card()], 20)
+	var right := Ui.vbox([_trends_card(), _postage_card(), _reviews_card(), _sales_card()], 20)
 	right.custom_minimum_size.x = 400
 	var side := Ui.scroll(right)
 	side.size_flags_horizontal = Control.SIZE_SHRINK_END
@@ -65,7 +66,7 @@ func _stats() -> Control:
 	var due_today := open.filter(func(order: Marketplace.Order) -> bool: return order.due_at < today_start + GameClock.DAY).size()
 	var parcels := market.active_orders().size() - open.size()
 	var courier := int(Game.data.settings["courier_minute_of_day"])
-	var low := Game.packaging <= Advice.LOW_PACKAGING
+	var low := not Advice.low_packaging().is_empty()
 
 	var grid := GridContainer.new()
 	grid.columns = 5
@@ -74,7 +75,7 @@ func _stats() -> Control:
 	grid.add_child(_rating_stat())
 	grid.add_child(_stat("To ship", "%d order%s" % [open.size(), "" if open.size() == 1 else "s"],
 		"%d due today" % due_today if due_today > 0 else "Nothing due today", Ui.RED_DARK if due_today > 0 else Ui.GREEN_DARK))
-	grid.add_child(_stat("Mailer boxes", "%d left" % Game.packaging,
+	grid.add_child(_stat("Packaging", "%d left" % Game.packaging_total(),
 		"Order more from %s" % Game.data.settings["supplier"]["hardware_shop"] if low else "One for every order",
 		Ui.RED_DARK if low else LABEL))
 	grid.add_child(_stat("Courier", "%02d:%02d" % [courier / 60, courier % 60],
@@ -110,7 +111,6 @@ func _stat(label: String, value: String, note: String, note_colour: Color) -> Co
 func _orders_card() -> Control:
 	var rows := Ui.vbox([], 10)
 	var agent: Agent = get_tree().get_first_node_in_group(&"player")
-	var bench: Workbench = get_tree().get_first_node_in_group(&"workbench")
 	var queued := agent.get_queued_labels()
 	# Stock is shared out oldest order first, so one item only makes one order ready.
 	var unclaimed: Dictionary[StringName, int] = {}
@@ -124,15 +124,15 @@ func _orders_card() -> Control:
 		if order.status == Marketplace.Status.OPEN:
 			var in_stock := unclaimed[order.product] > 0
 			unclaimed[order.product] -= 1 if in_stock else 0
-			if queued.has(Workbench.pack_task_name(order)):
+			if queued.has(PackingStation.pack_task_name(order)):
 				pill = Ui.pill("Queued", Ui.GREEN_DARK, Ui.GREEN_SOFT)
 				action = Ui.button("Queued", Callable(), DONE_BG, LABEL)
 				action.disabled = true
-			elif in_stock and bench.pack_problem(order) == "":
+			elif in_stock and PackingStation.wrap_problem(order) == "":
 				pill = Ui.pill("Ready to pack", Ui.AMBER_DARK, Ui.AMBER_SOFT)
 				action = Ui.button("Pack & ship", _pack.bind(order), _colour(), Ui.WHITE)
 			else:
-				var reason := "Needs printing" if not in_stock else "No mailer boxes"
+				var reason := "Needs printing" if not in_stock else PackingStation.wrap_problem(order).capitalize()
 				pill = Ui.pill(reason, Ui.RED_DARK, Ui.RED_SOFT)
 				action = Ui.button("Pack & ship", Callable(), DONE_BG, LABEL)
 				action.disabled = true
@@ -155,7 +155,7 @@ func _orders_card() -> Control:
 func _listings_card() -> Control:
 	var table := Ui.vbox([], 8)
 	table.add_child(Ui.margin(_table_row([
-		Ui.text("Item", 13, LABEL, 800), Ui.text("Price", 13, LABEL, 800), Ui.text("Cost to make", 13, LABEL, 800),
+		Ui.text("Item", 13, LABEL, 800), Ui.text("Price", 13, LABEL, 800), Ui.text("Sent in", 13, LABEL, 800), Ui.text("Cost to make", 13, LABEL, 800),
 		Ui.text("Profit", 13, LABEL, 800), Ui.text("Sold", 13, LABEL, 800), Ui.text("For sale", 13, LABEL, 800),
 	]), 14, 0, 14, 0))
 	for product in Game.owned_designs:
@@ -175,10 +175,22 @@ func _listing_row(product: StringName) -> Control:
 		Ui.GREEN if listed else Ui.INK, Ui.WHITE, 34, 10)
 	toggle.custom_minimum_size.x = 76
 	toggle.tooltip_text = "Click to take it down" if listed else "Click to put it up for sale"
+	var kind := Game.packaging_of(product)
+	var wrap: Dictionary = Game.data.packaging.get(kind, {})
+	var options := Game.packaging_options(product)
+	var sent_in := Ui.button(wrap.get("name", "Nothing fits"), _next_packaging.bind(product), Ui.WHITE, Ui.INK, 30, 10)
+	sent_in.clip_text = true
+	sent_in.disabled = options.size() < 2
+	if not wrap.is_empty():
+		sent_in.tooltip_text = "%s\nProtection %d of 5, looks %d of 5. %d in stock.\nAbout %d in 100 Standard prints break in the post.%s" % [
+			wrap["description"], int(wrap["protection"]), int(wrap["presentation"]), Game.packaging_count(kind),
+			roundi(Game.damage_chance(int(Game.data.presets[Game.data.settings["default_preset"]]["durability"]), product, market) * 100.0),
+			"\nClick for the next thing it fits in." if options.size() > 1 else ""]
 	return _table_row([
 		Ui.hbox([ModelPicture.of_product(product, 40), Ui.wrap(Ui.text(Game.product_name(product), 15, Ui.INK, 800))], 10),
 		Ui.hbox([cheaper, Ui.width(Ui.text(Money.format(price), 15), 66),
 			Ui.button("+", _update.bind(product, listed, price + PRICE_STEP), Ui.WHITE, Ui.INK, 30, 10)], 4),
+		sent_in,
 		Ui.text(Money.format(Game.unit_cost(product)), 15),
 		Ui.text(Money.format(profit), 15, Ui.GREEN_DARK if profit > 0 else Ui.RED_DARK, 800),
 		Ui.text(str(entry["sold"]), 15),
@@ -210,7 +222,7 @@ func _sales_card() -> Control:
 		var refunded := order.status == Marketplace.Status.REFUNDED
 		var note := "Day %d · about %s profit" % [when.day, Money.format(net)]
 		if refunded:
-			note = "Day %d · refunded: %s" % [when.day, "arrived broken" if order.refund_reason == "damaged" else "sent back"]
+			note = "Day %d · refunded: %s" % [when.day, {"damaged": "arrived broken", "lost": "lost in the post"}.get(order.refund_reason, "sent back")]
 		elif order.status == Marketplace.Status.SHIPPED:
 			note += " · on its way"
 		rows.add_child(Ui.panel(Ui.vbox([
@@ -251,9 +263,50 @@ func _section(heading: String, content: Control) -> PanelContainer:
 
 func _pack(order: Marketplace.Order) -> void:
 	var agent: Agent = get_tree().get_first_node_in_group(&"player")
-	var bench: Workbench = get_tree().get_first_node_in_group(&"workbench")
-	agent.enqueue(bench.pack_action(order))
+	var station: PackingStation = get_tree().get_first_node_in_group(&"packing_station")
+	agent.enqueue(station.pack_action(order))
 	screen.refresh()
+
+
+## Moves a design on to the next kind of packaging it fits in.
+func _next_packaging(product: StringName) -> void:
+	var options := Game.packaging_options(product)
+	Game.set_packaging_choice(product, options[(options.find(Game.packaging_of(product)) + 1) % options.size()])
+
+
+## The courier's services on offer, and the one this marketplace sends by.
+func _postage_card() -> Control:
+	var market := _market()
+	var chosen := Game.service_of(market)
+	var rows := Ui.vbox([], 8)
+	for id in Game.shipping.services_at(Game.tier):
+		var service: Dictionary = Game.data.services[id]
+		var picked := id == chosen
+		var transit: Array = service["delivery_minutes"]
+		var days := "Same day" if float(transit[1]) < GameClock.DAY else "%d to %d days" % [
+			maxi(roundi(float(transit[0]) / GameClock.DAY), 1), maxi(roundi(float(transit[1]) / GameClock.DAY), 1)]
+		var handling := "careful" if float(service["damage_multiplier"]) < 0.95 else ("rough" if float(service["damage_multiplier"]) > 1.3 else "fair")
+		var facts := "%s · %s handling · %d in 100 late%s" % [days, handling, roundi(float(service["late_chance"]) * 100.0),
+			" · tracked" if service["tracked"] else ""]
+		var prices: PackedStringArray = []
+		for band: String in service["prices"]:
+			prices.append("%s %s" % [Game.data.bands[band]["name"], Money.format(int(service["prices"][band]))])
+		var words := Ui.vbox([
+			Ui.text(service["name"], 14, Ui.PAPER if picked else Ui.INK, 800),
+			Ui.wrap(Ui.text(facts, 12, Ui.PAPER if picked else LABEL)),
+			Ui.wrap(Ui.text(" · ".join(prices), 12, Ui.PAPER if picked else LABEL)),
+		], 0)
+		var row := Ui.panel(words, Ui.box(Ui.INK if picked else ROW, 14, 14, 10))
+		row.tooltip_text = "%s: %s" % [Game.data.couriers[service["courier"]]["name"], Game.data.couriers[service["courier"]]["description"]]
+		if not picked:
+			Ui.clickable(row, _pick_service.bind(id))
+		rows.add_child(row)
+	rows.add_child(Ui.panel(Ui.wrap(Ui.text("Buyers pay the going rate for postage and you pay the courier. A cheaper service leaves you the difference; a dearer one comes out of your profit. Lost, late and broken parcels mean refunds and bad reviews.", 13, Ui.GREEN_DARK, 800)), Ui.box(TIP_BG, 16, 14, 14)))
+	return _section("Postage", rows)
+
+
+func _pick_service(service: StringName) -> void:
+	Game.set_service(_market(), service)
 
 
 func _update(product: StringName, listed: bool, price: int) -> void:

@@ -1,4 +1,7 @@
-"""Furniture generator: shelving, filament rack, workbench, desk, chair.
+"""Furniture generator: shelving, filament rack, workbench, packing station, finishing bench, desk, chair.
+
+The finishing bench's blowtorch is a separate object (`torch`, with its `flame`
+beneath it) so the game can pick it up and light it.
 
 blender --background --factory-startup --python tools/generators/furniture.py -- \
     --variant shelving --out assets/models/furniture/shelving.glb
@@ -15,6 +18,8 @@ from common import MeshBuilder, marker
 TOOL_COLOURS = ("red", "orange", "yellow", "teal", "blue", "green")
 # (name, position, rotation) of markers a variant wants, added once its mesh object exists.
 _pending_markers = []
+# Functions that add a variant's moving parts, called with its mesh object once that exists.
+_pending_parts = []
 # Turns a spool so its axle runs along X.
 SIDEWAYS = (0.0, 0.0, math.pi / 2)
 
@@ -31,10 +36,13 @@ def add_arguments(parser):
 def build(args, rng):
     builder = MeshBuilder()
     _pending_markers.clear()
+    _pending_parts.clear()
     VARIANTS[args.variant](builder, args, rng)
     obj = builder.finish(args.out.stem)
     for name, position, rotation in _pending_markers:
         marker(name, position, obj, rotation=rotation)
+    for add_part in _pending_parts:
+        add_part(obj)
 
 
 def _shelving(builder, args, rng):
@@ -125,6 +133,110 @@ def _workbench(builder, args, rng):
         builder.box((rng.uniform(0.02, 0.06), 0.01, blade), (x, tool_y, top - handle - blade / 2), "metal_light")
 
 
+def _bench_frame(builder, width, depth, height, top="wood"):
+    """Legs, a low shelf and a top, in the workbench's style."""
+    builder.box((width, depth, 0.07), (0, 0, height - 0.035), top, bevel=0.012)
+    for x in (-1, 1):
+        for y in (-1, 1):
+            builder.box((0.09, 0.09, height - 0.07), (x * (width / 2 - 0.09), y * (depth / 2 - 0.08), (height - 0.07) / 2), "wood_dark")
+    builder.box((width - 0.12, depth - 0.1, 0.03), (0, 0, 0.22), "wood_light")
+    builder.box((width - 0.12, 0.04, 0.1), (0, -depth / 2 + 0.08, height - 0.12), "wood_dark")
+
+
+def _packing_station(builder, args, rng):
+    """Packing bench, 1.7 x 0.7, top at 0.9, with pigeonholes along the back for the packaging.
+
+    Markers: `stock_slot_1` to `stock_slot_8`, the floors of the pigeonholes,
+    and `pack_spot`, where an order is packed.
+    """
+    width, depth, height = 1.7, 0.7, 0.9
+    _bench_frame(builder, width, depth, height)
+    # Pigeonholes: two rows of four, open to the front.
+    columns, rows = 4, 2
+    cell_w, cell_h, cell_d = (width - 0.06) / columns, 0.21, 0.27
+    back_y = depth / 2 - cell_d / 2 - 0.01
+    unit_h = rows * cell_h + 0.03
+    builder.box((width, 0.02, unit_h), (0, depth / 2 - 0.01, height + unit_h / 2), "wood_dark")
+    for column in range(columns + 1):
+        x = -width / 2 + 0.03 + column * cell_w
+        builder.box((0.025, cell_d, unit_h), (x, back_y, height + unit_h / 2), "wood")
+    for row in range(1, rows + 1):
+        builder.box((width, cell_d + 0.02, 0.025), (0, back_y, height + row * cell_h + 0.0125), "wood")
+    slot = 1
+    for row in range(rows):
+        for column in range(columns):
+            x = -width / 2 + 0.03 + (column + 0.5) * cell_w
+            floor = height + row * cell_h + (0.025 if row > 0 else 0.0)
+            _pending_markers.append((f"stock_slot_{slot}", (x, back_y - 0.01, floor), (0, 0, 0)))
+            slot += 1
+    # A cutting mat to pack on, a tape gun and a roll of labels.
+    builder.box((0.5, 0.34, 0.006), (0, -0.14, height + 0.003), "teal")
+    _pending_markers.append(("pack_spot", (0, -0.14, height + 0.006), (0, 0, 0)))
+    builder.box((0.11, 0.05, 0.05), (0.55, -0.2, height + 0.025), "red", bevel=0.008)
+    builder.cylinder(0.04, 0.045, (0.52, -0.2, height + 0.075), "tape", axis="Y")
+    builder.cylinder(0.035, 0.07, (-0.6, -0.18, height + 0.035), "white")
+    builder.cylinder(0.012, 0.075, (-0.6, -0.18, height + 0.0375), "cardboard_dark")
+    # A roll of bubble wrap and a spare box on the shelf underneath.
+    builder.cylinder(0.11, 0.6, (-0.3, 0, 0.345), "sky", axis="X", segments=10)
+    builder.box((0.36, 0.3, 0.22), (0.45, 0, 0.345), "cardboard")
+
+
+def _finishing_bench(builder, args, rng):
+    """Finishing bench, 1.3 x 0.65, top at 0.9: a heatproof slab to work on, a gas bottle and a blowtorch.
+
+    Marker: `work_spot`, where the print sits. Objects: `torch`, on its stand
+    with the nozzle pointing down at the slab, and `flame` under it.
+    """
+    width, depth, height = 1.3, 0.65, 0.9
+    _bench_frame(builder, width, depth, height)
+    # A low back with a rail of files and brushes.
+    board_y = depth / 2 - 0.02
+    builder.box((width, 0.03, 0.34), (0, board_y, height + 0.17), "slate")
+    builder.box((width, 0.05, 0.04), (0, board_y, height + 0.34), "wood_dark")
+    for slot in range(4):
+        x = -0.12 + slot * 0.13 + rng.uniform(-0.01, 0.01)
+        handle = rng.uniform(0.07, 0.1)
+        builder.box((0.03, 0.02, handle), (x, board_y - 0.025, height + 0.28 - handle / 2), rng.choice(TOOL_COLOURS), bevel=0.004)
+        builder.box((0.018, 0.01, 0.1), (x, board_y - 0.025, height + 0.28 - handle - 0.05), "metal_light")
+    # The slab, on a steel tray.
+    builder.box((0.52, 0.4, 0.012), (-0.05, -0.06, height + 0.006), "metal_dark")
+    builder.box((0.46, 0.34, 0.03), (-0.05, -0.06, height + 0.027), "stone", bevel=0.004)
+    _pending_markers.append(("work_spot", (-0.05, -0.06, height + 0.042), (0, 0, 0)))
+    # Gas bottle at the back left.
+    builder.cylinder(0.07, 0.24, (-0.5, 0.14, height + 0.12), "blue", segments=10)
+    builder.cylinder(0.03, 0.05, (-0.5, 0.14, height + 0.265), "metal_light")
+    builder.cylinder(0.045, 0.012, (-0.5, 0.14, height + 0.29), "red", segments=6)
+    # The torch's stand at the right: a post with a cradle.
+    stand = (0.45, -0.05)
+    builder.box((0.14, 0.12, 0.015), (stand[0], stand[1], height + 0.0075), "metal_dark")
+    builder.box((0.02, 0.02, 0.14), (stand[0] + 0.04, stand[1], height + 0.085), "metal_dark")
+    builder.box((0.07, 0.03, 0.015), (stand[0] + 0.01, stand[1], height + 0.15), "metal_dark")
+
+    def add_torch(parent):
+        # Built about its grip, leaning so the nozzle points down and to the left.
+        grip = (stand[0], stand[1], height + 0.2)
+        lean = (0.0, math.radians(-125.0), 0.0)
+        along = (math.sin(lean[1]), 0.0, math.cos(lean[1]))
+
+        def at(distance):
+            return tuple(g + a * distance for g, a in zip(grip, along))
+
+        torch = MeshBuilder()
+        torch.cylinder(0.028, 0.13, at(-0.03), "red", rotation=lean, segments=8)
+        torch.cylinder(0.018, 0.03, at(0.05), "metal_dark", rotation=lean, segments=8)
+        torch.cylinder(0.012, 0.09, at(0.105), "metal_light", rotation=lean, segments=6)
+        torch.cylinder(0.017, 0.03, at(0.16), "metal_light", rotation=lean, segments=6)
+        torch.box((0.02, 0.03, 0.03), at(0.03), "ink", rotation=lean)
+        torch_obj = torch.finish("torch", pivot=grip, parent=parent)
+        tip = at(0.175)
+        flame = MeshBuilder()
+        flame.cylinder(0.022, 0.13, tuple(t + a * 0.065 for t, a in zip(tip, along)), "orange", rotation=lean, segments=6, radius_top=0.002)
+        flame.cylinder(0.013, 0.08, tuple(t + a * 0.045 for t, a in zip(tip, along)), "yellow", rotation=lean, segments=6, radius_top=0.001)
+        flame.finish("flame", pivot=tip, parent=torch_obj)
+
+    _pending_parts.append(add_torch)
+
+
 def _desk(builder, args, rng):
     """Office desk, 1.3 x 0.65, top at 0.7. Drawers on the right, sit on the -Y side."""
     width, depth, height = 1.3, 0.65, 0.7
@@ -154,7 +266,8 @@ def _chair(builder, args, rng):
     builder.box((0.44, 0.08, 0.46), (0, 0.23, 0.74), fabric, bevel=0.025)
 
 
-VARIANTS = {"shelving": _shelving, "filament_rack": _filament_rack,"workbench": _workbench, "desk": _desk, "chair": _chair}
+VARIANTS = {"shelving": _shelving, "filament_rack": _filament_rack, "workbench": _workbench, "packing_station": _packing_station,
+            "finishing_bench": _finishing_bench, "desk": _desk, "chair": _chair}
 
 if __name__ == "__main__":
     common.run(sys.modules[__name__])

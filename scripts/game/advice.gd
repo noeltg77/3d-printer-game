@@ -96,7 +96,7 @@ static func items(tree: SceneTree) -> Array[Dictionary]:
 			waiting += 1
 	if ready > 0:
 		_add(found, "Pack %d order%s" % [ready, "" if ready == 1 else "s"],
-			"Click the workbench and choose Pack order. The courier collects what is packed and that is when you get paid.")
+			"Click the packing station and choose Pack order. The courier collects what is packed and that is when you get paid.")
 	if waiting > 0:
 		_add(found, "Print %d more for orders" % waiting, "Someone has ordered one you haven't made yet. Orders left too long are cancelled.")
 	for product in Game.studio.designs:
@@ -113,15 +113,28 @@ static func items(tree: SceneTree) -> Array[Dictionary]:
 	for contract in Game.contracts.active():
 		if Game.contract_ready(contract) > 0:
 			_add(found, "Send %d to %s" % [Game.contract_ready(contract), Game.client_name(contract)],
-				"Click the workbench and choose Send to a client. The courier takes the crate, and the last one gets you paid.")
+				"Click the packing station and choose Send to a client. The courier takes the crate, and the last one gets you paid.")
 		elif Game.contracts.remaining(contract) > 0:
 			_add(found, "Print %d x %s for %s" % [Game.contracts.remaining(contract), Game.product_name(contract.product), Game.client_name(contract)],
 				"A contract has a deadline and a spec. Open Inbox on the computer to see what filament, colour and strength they want.")
 	if Game.stock_unlocked() and Game.stock.rules.is_empty():
 		_add(found, "Let the stockroom do the ordering", "With this many printers something is always running out. Click the computer, open Stockroom and switch on a rule for the filament, spares and boxes you use most.")
-	if Game.packaging <= LOW_PACKAGING:
-		_add(found, "Mailer boxes are nearly out", "Every order goes out in one. Buy a pack at %s, under Packaging." % shops["hardware_shop"])
+	for kind in low_packaging():
+		_add(found, "%s are nearly out" % Game.packaging_plural(kind).capitalize(),
+			"Your designs go out in them, one to an order. Buy a pack at %s, under Packaging, or pick something else on the listing." % shops["hardware_shop"])
+	if shelf != null and not shelf.unfinished().is_empty() and tree.get_first_node_in_group(&"finishing_bench") != null and ready == 0:
+		_add(found, "Give a print a better finish", "Click the finishing bench and choose Finish. A pass with the blowtorch tidies a print up, so buyers rate it higher and send fewer back.")
 	return found
+
+
+## The kinds of packaging the business's designs go out in that have nearly run out.
+static func low_packaging() -> Array[StringName]:
+	var low: Array[StringName] = []
+	for product in Game.owned_designs:
+		var kind := Game.packaging_of(product)
+		if kind != &"" and Game.packaging_count(kind) <= LOW_PACKAGING and not low.has(kind):
+			low.append(kind)
+	return low
 
 
 static func _add(found: Array[Dictionary], text: String, hint: String) -> void:

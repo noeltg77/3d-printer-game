@@ -2,7 +2,7 @@
 	"schema_version": 1,
 	"start": {
 		"cash_pence": 30000,
-		"packaging": 5,
+		"packaging": { "letterbox_box": 3, "small_cardboard_box": 3 },
 		"designs": ["cable_management_clips_x12"],
 		"premises": "garage",
 		"minute_of_day": 480
@@ -11,11 +11,19 @@
 	"business_name": "Garage Prints",
 	"electricity_pence_per_kwh": 30,
 	"courier_minute_of_day": 1020,
-	"courier": {
-		"name": "Postie",
-		"damage_multiplier": 1.0,
-		"delivery_minutes": [1440, 2880],
-		"protection": 3
+	"shipping": {
+		"default_service": "postie_1st_class",
+		"buyer_pays": { "economy": "postie_2nd_class", "standard": "postie_1st_class" },
+		"late_minutes": [1440, 2880],
+		"late_star_penalty": 0.5,
+		"stars_per_presentation_point": 0.25,
+		"neutral_presentation": 3,
+		"speed_stars": { "economy": -0.1, "standard": 0.0, "express": 0.25, "priority": 0.25, "same_day": 0.4 }
+	},
+	"finishing": {
+		"minutes": 6,
+		"quality_gain": 1,
+		"max_quality": 5
 	},
 	"default_preset": "standard",
 	"tier_names": ["Garage", "Small unit", "Workshop", "Factory"],
@@ -95,9 +103,6 @@
 		"hardware_shop": "Printbay",
 		"filament_lead_minutes": 120,
 		"printer_lead_minutes": 180,
-		"parts_lead_minutes": 120,
-		"packaging_name": "Mailer boxes",
-		"packaging_pack_size": 10,
-		"packaging_pack_pence": 499
+		"parts_lead_minutes": 120
 	}
 }

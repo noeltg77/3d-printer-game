@@ -11,7 +11,7 @@ Stored exactly as supplied on 2026-10-09. Don't edit them to match the game; cha
 | `presets.json` | Draft, Standard, Strong and four later presets; support, brim and other toggles; durability and quality scales | Phase 4 (the three Garage presets), rest in Phase 6 |
 | `failures.json` | 24 failure types with causes, outcomes, player text and the roll rules | Phase 4 (FDM failures), resin, SLS and belt ones in Phase 9 |
 | `parts.json` | Wear parts with lifespans, upgrades with effects, wear modifiers | Phase 4 (Garage wear parts and spares), upgrades in Phase 6 |
-| `shipping.json` | Parcel bands, packaging, fillers and extras, 7 couriers, 22 services, damage and review rules | Phase 4 for delivery damage (Garage packaging and couriers), rest as tiers unlock |
+| `shipping.json` | Parcel bands, packaging, fillers and extras, 7 couriers, 22 services, damage and review rules | Bags, boxes, parcel bands and five couriers' services are in (`data/packaging.json`, `data/couriers.json`). Not yet: crates and pallets, fillers and extras, FreightFolk, GlobeHop, collection fees and cut off times |
 | `filaments.json` | 25 materials, 8 brands, 197 colour and material combinations | Garage PLA colours can come in any time; other materials in Phase 6 |
 | `accessories.json` | Multicolour units, dryers and dry boxes, moisture rules | Dryers in Phase 6, multicolour units in Phase 7 (the four slot Spare room ones so far, as rows in `data/upgrades.json`) |
 | `printers.json` | 12 form factors, 10 brands, 38 printers | Garage printers any time; others as tiers unlock (Phases 6, 8, 9) |

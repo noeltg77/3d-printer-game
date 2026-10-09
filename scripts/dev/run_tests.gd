@@ -27,6 +27,7 @@ func _init() -> void:
 	_test_money()
 	_test_marketplace()
 	_test_deliveries()
+	_test_shipping()
 	_test_supplier()
 	_test_saving()
 	print("Tests passed" if _failures == 0 else "%d test(s) FAILED" % _failures)
@@ -629,17 +630,18 @@ func _test_stockroom() -> void:
 	var stock := Stockroom.new(data)
 	var red := Stockroom.spool_key("pla", "red")
 	var nozzle := Stockroom.part_key("brass_nozzle_0_4mm")
+	var boxes := Stockroom.packaging_key("small_cardboard_box")
 	_check(red == "spool:pla:red" and Stockroom.is_spool(red) and not Stockroom.is_spool(nozzle), "stock is named by kind and id")
 	_check(not stock.rule(red)["on"] and not stock.any_on() and stock.due({}).is_empty(), "nothing reorders itself until a rule is switched on")
 	stock.set_rule(red, true, 1, 2)
 	stock.set_rule(nozzle, false, 2, 1)
-	stock.set_rule(Stockroom.PACKAGING, true, 5, 1)
+	stock.set_rule(boxes, true, 5, 1)
 	_check(stock.any_on(), "a rule can be switched on")
-	var plenty := {red: {"have": 3, "coming": 0}, nozzle: {"have": 0, "coming": 0}, Stockroom.PACKAGING: {"have": 12, "coming": 0}}
+	var plenty := {red: {"have": 3, "coming": 0}, nozzle: {"have": 0, "coming": 0}, boxes: {"have": 12, "coming": 0}}
 	_check(stock.due(plenty).is_empty(), "nothing is due while there is more than the reorder point, or the rule is off")
-	var low := {red: {"have": 1, "coming": 0}, Stockroom.PACKAGING: {"have": 6, "coming": 0}}
+	var low := {red: {"have": 1, "coming": 0}, boxes: {"have": 6, "coming": 0}}
 	_check(stock.due(low) == ({red: 2} as Dictionary[String, int]), "stock at its reorder point is due, in the amount set")
-	_check(stock.due({red: {"have": 0, "coming": 2}}).has(Stockroom.PACKAGING) and not stock.due({red: {"have": 0, "coming": 2}}).has(red), "what is already on its way counts, so nothing is ordered twice")
+	_check(stock.due({red: {"have": 0, "coming": 2}}).has(boxes) and not stock.due({red: {"have": 0, "coming": 2}}).has(red), "what is already on its way counts, so nothing is ordered twice")
 	_check(stock.due({}).size() == 2, "a stock there is none of at all is due")
 	stock.set_rule(red, true, -3, 0)
 	_check(int(stock.rule(red)["point"]) == 0 and int(stock.rule(red)["quantity"]) == 1, "a rule can't go below zero stock or order nothing")
@@ -647,10 +649,14 @@ func _test_stockroom() -> void:
 	var basket := Stockroom.add_to_basket({}, red, 2)
 	basket = Stockroom.add_to_basket(basket, red, 1)
 	basket = Stockroom.add_to_basket(basket, nozzle, 1)
-	basket = Stockroom.add_to_basket(basket, Stockroom.PACKAGING, 2)
-	_check(basket == {"spools": {"pla:red": 3}, "parts": {"brass_nozzle_0_4mm": 1}, "packaging": 2}, "what is due becomes a supplier basket")
+	basket = Stockroom.add_to_basket(basket, boxes, 2)
+	_check(basket == {"spools": {"pla:red": 3}, "parts": {"brass_nozzle_0_4mm": 1}, "packaging": {"small_cardboard_box": 2}}, "what is due becomes a supplier basket")
+	_check(Stockroom.is_packaging(boxes) and not Stockroom.is_packaging(nozzle) and stock.knows(boxes) and not stock.knows("packaging:tea_chest"), "packaging is stocked by the kind")
+	var old_rules := Stockroom.new(data)
+	old_rules.restore({"rules": {"packaging": {"on": true, "point": 4, "quantity": 2}}})
+	_check(old_rules.rule(Stockroom.LEGACY_PACKAGING)["on"] and int(old_rules.rule(Stockroom.LEGACY_PACKAGING)["point"]) == 4, "a rule for mailer boxes from an old save becomes one for small boxes")
 	var supplier := Supplier.new(data)
-	_check(supplier.price_of(basket) == supplier.spool_price("pla") * 3 + int(data.parts["brass_nozzle_0_4mm"]["price_pence"]) + int(data.settings["supplier"]["packaging_pack_pence"]) * 2, "which the supplier prices like any other")
+	_check(supplier.price_of(basket) == supplier.spool_price("pla") * 3 + int(data.parts["brass_nozzle_0_4mm"]["price_pence"]) + int(data.packaging["small_cardboard_box"]["price_pence"]) * 2, "which the supplier prices like any other")
 	_check(Stockroom.shop_part(basket, true) == {"spools": {"pla:red": 3}} and not Stockroom.shop_part(basket, false).has("spools"), "filament and hardware go to their own shops")
 
 	stock.set_rule(red, true, 1, 2)
@@ -1098,7 +1104,7 @@ func _test_marketplace() -> void:
 
 func _test_deliveries() -> void:
 	var data := GameData.load_all()
-	var courier: Dictionary = data.settings["courier"]
+	var courier := {"protection": 3, "damage_multiplier": 1.0}
 	_check(is_equal_approx(Marketplace.damage_chance(3, courier), 0.04), "a Standard print breaks in the post 4 times in 100")
 	_check(is_equal_approx(Marketplace.damage_chance(2, courier), 0.06), "a Draft print breaks more often")
 	_check(is_zero_approx(Marketplace.damage_chance(5, courier)), "a Strong print never breaks in the post")
@@ -1208,7 +1214,7 @@ func _test_saving() -> void:
 	var second := market.orders[1]
 	market.mark_packed(first, 5, 3, false)
 	market.ship(first, 100.0, 200.0)
-	market.deliver(200.0, rng, data.settings["courier"])
+	market.deliver(200.0, rng, {"protection": 3, "damage_multiplier": 1.0})
 	market.mark_packed(second, 2, 1, true)
 	market.ship(second, 100.0, 9000.0)
 	var saved_market := _through_file(market.save())
@@ -1224,10 +1230,10 @@ func _test_saving() -> void:
 	var next_before := market.tick(0.0, 1440.0 * 50.0, rng)
 	var next_after := market_again.tick(0.0, 1440.0 * 50.0, rng)
 	_check(not next_before.is_empty() and not next_after.is_empty() and next_after[0].id == next_before[0].id, "new orders carry on numbering from where they left off")
-	_check(market_again.deliver(9000.0, rng, data.settings["courier"]).size() == 1, "a loaded parcel is still delivered when its time comes")
+	_check(market_again.deliver(9000.0, rng, {"protection": 3, "damage_multiplier": 1.0}).size() == 1, "a loaded parcel is still delivered when its time comes")
 
 	var supplier := Supplier.new(data)
-	supplier.place({"printers": {"plodder_mini": 1}, "spools": {"red": 2}, "packaging": 1, "parts": {"brass_nozzle_0_4mm": 1}}, 50.0, "Printbay")
+	supplier.place({"printers": {"plodder_mini": 1}, "spools": {"red": 2}, "packaging": {"letterbox_box": 1}, "parts": {"brass_nozzle_0_4mm": 1}}, 50.0, "Printbay")
 	var supplier_again := Supplier.new(data)
 	supplier_again.restore(_through_file(supplier.save()))
 	_check(supplier_again.pending.size() == 2 and supplier_again.pending[0].describe() == supplier.pending[0].describe(), "deliveries on their way come back")
@@ -1251,16 +1257,103 @@ func _test_saving() -> void:
 	_check(not job_again.advance(30.0) and job_again.advance(30.0) and is_equal_approx(job_again.progress, 0.6), "and fails at the same point it would have")
 
 
+func _test_shipping() -> void:
+	var data := GameData.load_all()
+	var rules := Shipping.new(data)
+	var packaging: Dictionary = data.packaging
+	var services: Dictionary = data.services
+	var flat := {"size_mm": [120, 80, 20], "filament_grams": 30}
+	var chunky := {"size_mm": [120, 80, 60], "filament_grams": 60}
+	var big := {"size_mm": [400, 300, 200], "filament_grams": 900}
+	var heavy := {"size_mm": [120, 80, 20], "filament_grams": 900}
+	_check(rules.band_of(flat) == "large_letter" and rules.band_of(chunky) == "small_parcel" and rules.band_of(big) == "medium_parcel", "a design goes in the smallest band it fits")
+	_check(rules.band_of({"size_mm": [20, 120, 80], "filament_grams": 30}) == "large_letter", "whichever way round it is measured")
+	_check(rules.band_of(heavy) == "small_parcel", "and something too heavy for a band goes up one")
+
+	_check(rules.parcel_band(packaging["letterbox_box"], "large_letter") == "large_letter", "packaging made for a design's size posts it at that size")
+	_check(rules.parcel_band(packaging["small_cardboard_box"], "large_letter") == "small_parcel", "a small thing in a bigger box goes at the box's size")
+	_check(not rules.fits(packaging["letterbox_box"], "small_parcel") and not rules.fits(packaging["poly_mailer_bag"], "medium_parcel"), "and nothing goes in packaging too small for it")
+	_check(rules.default_packaging("large_letter", 1) == &"letterbox_box" and rules.default_packaging("small_parcel", 1) == &"small_cardboard_box", "a design goes out in the cheapest box that posts it at its own size")
+	_check(rules.packaging_for("small_parcel", 1).has(&"poly_mailer_bag") and not rules.packaging_for("small_parcel", 1).has(&"branded_gift_box") and rules.packaging_for("small_parcel", 2).has(&"branded_gift_box"), "the choice of packaging grows with the business")
+	for product: Dictionary in data.products.values():
+		if int(product["unlock_tier"]) == 1 and rules.default_packaging(rules.band_of(product), 1) == &"":
+			_check(false, "%s has packaging it can go out in from the garage" % product["id"])
+
+	var usual: Dictionary = services[data.settings["shipping"]["default_service"]]
+	_check(Shipping.price(usual, "large_letter") < Shipping.price(usual, "small_parcel") and not Shipping.carries(usual, "oversize"), "a service charges by the band, and takes only the bands it prices")
+	_check(rules.services_at(1).has(&"parcelflap_next_day") and not rules.services_at(1).has(&"dashdrop_next_day") and rules.services_at(2).has(&"dashdrop_next_day"), "more couriers will collect from bigger premises")
+	_check(rules.service_for(&"parcelflap_next_day", "small_parcel", 1) == &"parcelflap_next_day", "a parcel goes by the service chosen")
+	_check(rules.service_for(&"dashdrop_next_day", "large_letter", 2) == StringName(usual["id"]), "or by the usual one, if the one chosen won't take it")
+	_check(rules.service_for(&"dashdrop_next_day", "small_parcel", 1) == StringName(usual["id"]), "or isn't on offer yet")
+	_check(rules.service_for(&"", "oversize", 2) == &"dashdrop_2_day_economy", "or by the cheapest that will take it at all")
+	_check(rules.service_for(&"", "oversize", 1) == &"", "and by nobody if nobody will")
+
+	var cheap: Dictionary = services["parcelflap_standard_2_4_days"]
+	var fast: Dictionary = services["postie_special_delivery_by_1pm"]
+	_check(rules.buyer_pays(usual, "small_parcel") == Shipping.price(usual, "small_parcel"), "the buyer pays the going rate, which the usual service costs exactly")
+	_check(rules.buyer_pays(cheap, "small_parcel") == Shipping.price(services["postie_2nd_class"], "small_parcel"), "a buyer promised a slow service pays the slow rate")
+	_check(rules.buyer_pays(cheap, "small_parcel") > Shipping.price(cheap, "small_parcel"), "which leaves the seller something if the courier is cheaper still")
+	_check(rules.buyer_pays(fast, "small_parcel") == Shipping.price(usual, "small_parcel") and Shipping.price(fast, "small_parcel") > rules.buyer_pays(fast, "small_parcel"), "and anything quicker than standard is at the seller's cost")
+
+	var boxed := rules.terms(packaging["small_cardboard_box"], usual, "small_parcel")
+	var bagged := rules.terms(packaging["poly_mailer_bag"], cheap, "small_parcel")
+	_check(boxed == rules.default_terms(chunky, 1), "with nothing chosen a design goes in its usual box by the usual service")
+	_check(is_equal_approx(Marketplace.damage_chance(3, boxed), 0.04) and is_zero_approx(boxed["star_bonus"]) and boxed["cost"] == boxed["buyer_pays"], "which breaks 4 in 100 Standard prints, costs the seller nothing and earns no stars either way")
+	_check(is_equal_approx(Marketplace.damage_chance(3, bagged), 0.04 * (5.0 / 3.0) * 1.8), "a bag and a rough courier break a good many more")
+	_check(bagged["star_bonus"] < 0.0 and rules.terms(packaging["branded_gift_box"], fast, "small_parcel")["star_bonus"] > 0.5, "buyers mark a parcel down for a bin bag and up for a gift box sent express")
+	_check(rules.terms(packaging["small_cardboard_box"], usual, "large_letter")["cost"] > rules.terms(packaging["letterbox_box"], usual, "large_letter")["cost"], "a flat thing costs more to post in a box than in a letterbox box")
+	_check(int(boxed["insured_pence"]) == 0 and int(bagged["insured_pence"]) == int(cheap["insured_pence"]), "only a tracked service insures what it carries")
+
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 11
+	for attempt in 20:
+		var on_time := rules.arrival(usual, 100.0, false, rng)
+		var held_up := rules.arrival(usual, 100.0, true, rng)
+		if on_time < 100.0 + float(usual["delivery_minutes"][0]) or on_time > 100.0 + float(usual["delivery_minutes"][1]) or held_up < on_time - float(usual["delivery_minutes"][1]) + float(usual["delivery_minutes"][0]) + float(data.settings["shipping"]["late_minutes"][0]):
+			_check(false, "a parcel arrives within the service's days, or a day or two after if it is held up")
+
+	# What the terms do to an order once it has gone.
+	var market := Marketplace.new(data.marketplaces["craftsy"].duplicate(), data.products)
+	market.comments = data.review_comments
+	market.config["review_chance"] = 1.0
+	market.set_listing(&"desk_organiser", true, 1200)
+	for step in 3000:
+		market.tick(step, step + 1.0, rng)
+	var lost: Marketplace.Order = market.orders[0]
+	var certain := boxed.duplicate()
+	certain["lost_chance"] = 1.0
+	market.mark_packed(lost, 5, 5, false, 1.0, false, certain)
+	market.ship(lost, 0.0, 10.0)
+	var gone := market.deliver(10.0, rng, {})
+	_check(lost.refund_reason == "lost" and lost.status == Marketplace.Status.REFUNDED and gone[0]["review"]["stars"] == 1 and gone[0]["review"]["text"] != "", "a parcel the courier loses is refunded and earns one star")
+	var prompt: Marketplace.Order = market.orders[1]
+	var late: Marketplace.Order = market.orders[2]
+	var sure := boxed.duplicate()
+	sure["damage_multiplier"] = 0.0
+	sure["late_star_penalty"] = 3.0
+	market.mark_packed(prompt, 5, 5, false, 1.0, false, sure)
+	market.mark_packed(late, 5, 5, false, 1.0, false, sure)
+	late.late = true
+	market.ship(prompt, 0.0, 20.0)
+	market.ship(late, 0.0, 20.0)
+	var both := market.deliver(20.0, rng, {})
+	_check(both[0]["review"]["stars"] == 5 and both[1]["review"]["stars"] <= 3, "and one that turns up late is marked down for it")
+	var kept := Marketplace.Order.restored(_through_file(late.save()))
+	_check(kept.late and kept.shipping["packaging"] == "small_cardboard_box" and is_equal_approx(kept.shipping["late_star_penalty"], 3.0), "how an order was sent is saved with it")
+
+
 func _test_supplier() -> void:
 	var data := GameData.load_all()
 	var supplier := Supplier.new(data)
-	var basket := {"printers": {"plodder_mini": 1}, "spools": {"red": 2, "white": 1}, "packaging": 1}
-	_check(supplier.price_of(basket) == 15899 + 3 * 1599 + 499, "basket price adds printers, spools and packaging")
+	var basket := {"printers": {"plodder_mini": 1}, "spools": {"red": 2, "white": 1}, "packaging": {"small_cardboard_box": 1}}
+	_check(supplier.price_of(basket) == 15899 + 3 * 1599 + 450, "basket price adds printers, spools and packaging")
 	var placed := supplier.place(basket, 100.0)
 	_check(placed.size() == 2, "a printer ships separately from supplies")
 	_check(supplier.collect_due(150.0).is_empty(), "nothing arrives before its lead time")
 	var first := supplier.collect_due(100.0 + 120.0)
-	_check(first.size() == 1 and first[0].spools.size() == 3 and first[0].packaging == 10, "supplies arrive first, with every spool and a full pack")
+	_check(first.size() == 1 and first[0].spools.size() == 3 and first[0].packaging[&"small_cardboard_box"] == 10, "supplies arrive first, with every spool and a full pack")
+	var old_box := Supplier.Delivery.restored({"arrive_at": 5.0, "shop": "Printbay", "printer": "", "spools": [], "packaging": 10, "parts": {}})
+	_check(old_box.packaging == ({&"small_cardboard_box": 10} as Dictionary[StringName, int]), "mailer boxes on their way in an old save arrive as small boxes")
 	var second := supplier.collect_due(100.0 + 180.0)
 	_check(second.size() == 1 and second[0].printer == &"plodder_mini", "the printer arrives after its longer lead time")
 	_check(supplier.pending.is_empty(), "collected deliveries are no longer pending")

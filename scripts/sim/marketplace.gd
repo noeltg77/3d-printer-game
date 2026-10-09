@@ -8,9 +8,10 @@ extends RefCounted
 ## An order must be packed and handed to the courier before its dispatch
 ## deadline or it is cancelled.
 ##
-## A shipped order is delivered some time later. It may arrive broken (weak
-## prints in poor packaging) or be sent back (flawed or rough prints); either
-## way the buyer is refunded and leaves a bad review. Otherwise the buyer may
+## A shipped order is delivered some time later. It may go missing, arrive
+## broken (weak prints in poor packaging, rough couriers) or be sent back
+## (flawed or rough prints); each way the buyer is refunded and leaves a bad
+## review. How it was sent is in the order's `shipping` (Shipping.terms). Otherwise the buyer may
 ## leave a review that follows the item's quality. The seller rating is the
 ## average of the most recent reviews.
 
@@ -26,6 +27,7 @@ const STARS_NOISE := 0.8
 const FLAW_PENALTY := 1.0
 const DAMAGED_STARS := 1
 const RETURNED_STARS := 2
+const LOST_STARS := 1
 ## Quality at or above which nobody sends an item back for being rough.
 const FINE_QUALITY := 3
 
@@ -51,14 +53,20 @@ class Order:
 	var flawed := false
 	## True if a design made for several colours went out in one.
 	var plain := false
-	## Why it was refunded: "damaged" or "returned". Empty otherwise.
+	## Why it was refunded: "damaged", "returned" or "lost". Empty otherwise.
 	var refund_reason := ""
+	## What it was packed in and how it was sent (Shipping.terms). Empty for
+	## an order from before there was a choice.
+	var shipping: Dictionary = {}
+	## True if the courier held it up.
+	var late := false
 
 	func save() -> Dictionary:
 		return {
 			"id": id, "market": market, "product": product, "price": price, "placed_at": placed_at, "due_at": due_at,
 			"shipped_at": shipped_at, "deliver_at": deliver_at, "status": status, "durability": durability,
 			"quality": quality, "flawed": flawed, "plain": plain, "refund_reason": refund_reason,
+			"shipping": shipping, "late": late,
 		}
 
 	static func restored(data: Dictionary) -> Order:
@@ -77,6 +85,8 @@ class Order:
 		order.flawed = bool(data["flawed"])
 		order.plain = bool(data.get("plain", false))
 		order.refund_reason = String(data["refund_reason"])
+		order.shipping = data.get("shipping", {})
+		order.late = bool(data.get("late", false))
 		return order
 
 
@@ -196,9 +206,12 @@ func sold_orders() -> Array[Order]:
 ## Records the order as packed, along with what the item in the parcel is like.
 ## `value_multiplier` is the premium for the filament it was printed in, less
 ## the discount for a multicolour design printed in one colour: the buyer pays
-## the listed price times this. `plain` says it was such a print.
-func mark_packed(order: Order, durability := 3, quality := 3, flawed := false, value_multiplier := 1.0, plain := false) -> void:
+## the listed price times this. `plain` says it was such a print. `shipping`
+## is what it was packed in and how it is being sent (Shipping.terms).
+func mark_packed(order: Order, durability := 3, quality := 3, flawed := false, value_multiplier := 1.0, plain := false,
+		shipping: Dictionary = {}) -> void:
 	order.status = Status.PACKED
+	order.shipping = shipping
 	order.price = roundi(order.price * value_multiplier)
 	order.durability = durability
 	order.quality = quality
@@ -249,14 +262,19 @@ static func stars_for(quality: int, flawed: bool, rng: RandomNumberGenerator, pe
 ## Delivers the shipped orders that have arrived by `minute`. Returns one
 ## outcome for each: { order, refund, review }. `refund` is {} or the
 ## { price, fee, royalty } to put back through the bank; `review` is {} or the
-## review the buyer left.
-func deliver(minute: float, rng: RandomNumberGenerator, shipping: Dictionary) -> Array[Dictionary]:
+## review the buyer left. `usual` is how an order with no `shipping` of its
+## own was sent.
+func deliver(minute: float, rng: RandomNumberGenerator, usual: Dictionary) -> Array[Dictionary]:
 	var outcomes: Array[Dictionary] = []
 	for order in orders:
 		if order.status != Status.SHIPPED or order.deliver_at > minute:
 			continue
+		var shipping := usual if order.shipping.is_empty() else order.shipping
 		var outcome := {"order": order, "refund": {}, "review": {}}
-		if rng.randf() < damage_chance(order.durability, shipping):
+		if rng.randf() < float(shipping.get("lost_chance", 0.0)):
+			outcome["refund"] = _refund(order, "lost")
+			outcome["review"] = _review(order, LOST_STARS, "lost", minute, rng)
+		elif rng.randf() < damage_chance(order.durability, shipping):
 			outcome["refund"] = _refund(order, "damaged")
 			outcome["review"] = _review(order, DAMAGED_STARS, "damaged", minute, rng)
 		elif rng.randf() < return_chance(order.quality, order.flawed):
@@ -265,7 +283,10 @@ func deliver(minute: float, rng: RandomNumberGenerator, shipping: Dictionary) ->
 		else:
 			order.status = Status.DELIVERED
 			if rng.randf() < float(config["review_chance"]):
-				var stars := stars_for(order.quality, order.flawed, rng, plain_star_penalty if order.plain else 0.0)
+				var penalty := (plain_star_penalty if order.plain else 0.0) - float(shipping.get("star_bonus", 0.0))
+				if order.late:
+					penalty += float(shipping.get("late_star_penalty", 0.0))
+				var stars := stars_for(order.quality, order.flawed, rng, penalty)
 				outcome["review"] = _review(order, stars, str(stars), minute, rng)
 		outcomes.append(outcome)
 	return outcomes

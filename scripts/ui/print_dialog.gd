@@ -273,7 +273,7 @@ func _meter() -> Control:
 	var band := PrintRisk.band(chance)
 	var colour: Color = BAND_COLOURS[band]
 	var durability := int(preset["durability"])
-	var breaks := roundi(Game.damage_chance(durability) * 100.0)
+	var breaks := roundi(Game.damage_chance(durability, _product) * 100.0)
 	var post := Ui.text("About %d in 100 break in the post" % breaks if breaks > 0 else "Almost never breaks in the post", 13, Ui.MUTED)
 	post.mouse_filter = Control.MOUSE_FILTER_STOP
 	post.tooltip_text = Game.data.durability_labels[str(durability)]

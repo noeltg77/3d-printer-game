@@ -29,6 +29,8 @@ const PACK_ORDER := 20.0
 const RESERVE := 2000
 const LOW_FILAMENT_GRAMS := 300.0
 const LOW_PACKAGING := 3
+## What the scripted player packs everything in.
+const USUAL_BOX := "small_cardboard_box"
 ## Share of a day the player lets expected orders fill. Printers keep some slack
 ## for failures and for sitting finished until someone comes; the character has none.
 const PRINTER_SHARE := 0.8
@@ -352,7 +354,11 @@ func _play(player: Dictionary, seed_value: int, days: int) -> Dictionary:
 	var s := {"rng": rng, "preset": preset, "bank": bank, "shops": shops, "tier": 1, "owned": owned, "printers": printers,
 		"place": _data.premises[String(settings["start"]["premises"])], "stock": {}, "spools": {}, "spares": {}, "short": {},
 		"selling": {}, "tally": tally}
-	var packaging := int(settings["start"]["packaging"])
+	# The scripted player sends everything the usual way: its usual box, the usual service.
+	var usual := Shipping.new(_data).default_terms(_data.products.values()[0], 1)
+	var packaging := 0
+	for kind: String in settings["start"]["packaging"]:
+		packaging += int(settings["start"]["packaging"][kind])
 	var hands_free_at := start
 	# Hours of a day the listings' expected orders take, and the cash at which the shopping is worth another look.
 	var listed := {}
@@ -378,7 +384,8 @@ func _play(player: Dictionary, seed_value: int, days: int) -> Dictionary:
 				if not s["spools"].has(material):
 					s["spools"][material] = []
 				s["spools"][material].append(float(_data.filaments[material]["spool_grams"]))
-			packaging += delivery.packaging
+			for kind in delivery.packaging:
+				packaging += delivery.packaging[kind]
 			for part in delivery.parts:
 				s["spares"][part] = int(s["spares"].get(part, 0)) + delivery.parts[part]
 			if delivery.printer != &"":
@@ -391,7 +398,7 @@ func _play(player: Dictionary, seed_value: int, days: int) -> Dictionary:
 			market.tick(before, now, rng)
 			market.expire(now)
 		if clock.crossed(before, settings["courier_minute_of_day"]):
-			var transit: Array = settings["courier"]["delivery_minutes"]
+			var transit: Array = _data.services[usual["service"]]["delivery_minutes"]
 			for order in outbox:
 				var sale := shops[order.market].ship(order, now, now + rng.randf_range(transit[0], transit[1]))
 				bank.earn(sale["price"], "Sale", now)
@@ -402,7 +409,7 @@ func _play(player: Dictionary, seed_value: int, days: int) -> Dictionary:
 				tally["sold_in"][material] = int(tally["sold_in"].get(material, 0)) + 1
 			outbox.clear()
 		for market in open:
-			for outcome in market.deliver(now, rng, settings["courier"]):
+			for outcome in market.deliver(now, rng, usual):
 				if not outcome["refund"].is_empty():
 					var refund: Dictionary = outcome["refund"]
 					bank.charge(refund["price"] - refund["fee"] - refund["royalty"], "Refund", now)
@@ -465,9 +472,9 @@ func _play(player: Dictionary, seed_value: int, days: int) -> Dictionary:
 			if not coming:
 				_order(supplier, bank, {"spools": {FilamentRules.spool_key(material, SPOOL_COLOUR): 1}}, now)
 		s["short"].clear()
-		var coming_boxes := supplier.pending.any(func(d: Supplier.Delivery) -> bool: return d.packaging > 0)
+		var coming_boxes := supplier.pending.any(func(d: Supplier.Delivery) -> bool: return not d.packaging.is_empty())
 		if packaging < LOW_PACKAGING and not coming_boxes:
-			_order(supplier, bank, {"packaging": 1}, now)
+			_order(supplier, bank, {"packaging": {USUAL_BOX: 1}}, now)
 		for printer in printers:
 			var wear: PrinterWear = printer["wear"]
 			for slot in wear.slots():
@@ -817,8 +824,8 @@ func _order(supplier: Supplier, bank: Bank, basket: Dictionary, now: float) -> b
 
 
 func _mailer_pence() -> float:
-	var config: Dictionary = _data.settings["supplier"]
-	return float(config["packaging_pack_pence"]) / float(config["packaging_pack_size"])
+	var box: Dictionary = _data.packaging[USUAL_BOX]
+	return float(box["price_pence"]) / float(box["pack_size"])
 
 
 func _mean(results: Array[Dictionary], key: String) -> float:

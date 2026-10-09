@@ -47,9 +47,10 @@ func _unpack(agent: Agent) -> void:
 		await agent.go_to(bench)
 		await agent.reach(func() -> void: bench.install_printer(delivery.printer))
 	if delivery.dryer != &"":
-		await agent.walk_to(Vector3(spot.global_position.x, 0.0, spot.global_position.z + 0.6))
+		var front := spot.global_transform * Vector3(0.0, 0.0, 0.6)
+		await agent.walk_to(Vector3(front.x, 0.0, front.z))
 		await agent.reach(func() -> void: spot.install(delivery.dryer))
-	if not delivery.spools.is_empty() or delivery.packaging > 0:
+	if not delivery.spools.is_empty():
 		var rack: FilamentRack = get_tree().get_first_node_in_group(&"filament_rack")
 		await agent.go_to(rack)
 		await agent.reach(func() -> void:
@@ -57,8 +58,15 @@ func _unpack(agent: Agent) -> void:
 				var material := FilamentRules.material_of(key)
 				rack.store(Spool.create(StringName(FilamentRules.colour_of(key)),
 					float(Game.data.filaments[material]["spool_grams"]), StringName(material)))
-			Game.packaging += delivery.packaging
 			Game.changed.emit())
+	if not delivery.packaging.is_empty():
+		# Boxes and bags are kept at the packing station.
+		var station: PackingStation = get_tree().get_first_node_in_group(&"packing_station")
+		if station != null:
+			await agent.go_to(station)
+		await agent.reach(func() -> void:
+			for kind in delivery.packaging:
+				Game.add_packaging(kind, delivery.packaging[kind]))
 	if not delivery.parts.is_empty():
 		await agent.go_to(shelf)
 		await agent.reach(func() -> void:

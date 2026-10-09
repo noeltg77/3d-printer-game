@@ -1,0 +1,274 @@
+{
+	"schema_version": 1,
+	"packaging": [
+		{
+			"id": "poly_mailer_bag",
+			"name": "Poly mailer bag",
+			"kind": "bag",
+			"description": "Cheapest option. Fine for soft or flat items. Zero crush protection.",
+			"unlock_tier": 1,
+			"fits_bands": [
+				"large_letter",
+				"small_parcel"
+			],
+			"protection": 1,
+			"presentation": 1,
+			"weight_grams": 10,
+			"pack_minutes": 1,
+			"pack_size": 10,
+			"price_pence": 80,
+			"model": "poly_mailer_bag",
+			"look": {
+				"colour": "stone",
+				"accent": "white",
+				"size": [
+					0.3,
+					0.22,
+					0.03
+				]
+			}
+		},
+		{
+			"id": "kraft_paper_mailer",
+			"name": "Kraft paper mailer",
+			"kind": "bag",
+			"description": "Recyclable. Customers who care about plastic leave nicer reviews.",
+			"unlock_tier": 1,
+			"fits_bands": [
+				"large_letter",
+				"small_parcel"
+			],
+			"protection": 1,
+			"presentation": 2,
+			"weight_grams": 25,
+			"pack_minutes": 1,
+			"pack_size": 10,
+			"price_pence": 180,
+			"model": "kraft_paper_mailer",
+			"look": {
+				"colour": "cardboard",
+				"accent": "cardboard_dark",
+				"size": [
+					0.3,
+					0.22,
+					0.03
+				]
+			}
+		},
+		{
+			"id": "padded_bubble_envelope",
+			"name": "Padded bubble envelope",
+			"kind": "bag",
+			"description": "A little cushioning for small sturdy items.",
+			"unlock_tier": 1,
+			"fits_bands": [
+				"large_letter",
+				"small_parcel"
+			],
+			"protection": 2,
+			"presentation": 2,
+			"weight_grams": 30,
+			"pack_minutes": 1,
+			"pack_size": 10,
+			"price_pence": 300,
+			"model": "padded_bubble_envelope",
+			"look": {
+				"colour": "yellow",
+				"accent": "white",
+				"size": [
+					0.3,
+					0.22,
+					0.045
+				]
+			}
+		},
+		{
+			"id": "letterbox_box",
+			"name": "Letterbox box",
+			"kind": "box",
+			"description": "Rigid box that still fits through a letterbox. Great for keyrings and minis.",
+			"unlock_tier": 1,
+			"fits_bands": [
+				"large_letter"
+			],
+			"protection": 3,
+			"presentation": 3,
+			"weight_grams": 60,
+			"pack_minutes": 2,
+			"pack_size": 10,
+			"price_pence": 350,
+			"model": "letterbox_box",
+			"look": {
+				"colour": "cardboard",
+				"accent": "tape",
+				"size": [
+					0.3,
+					0.22,
+					0.05
+				]
+			}
+		},
+		{
+			"id": "small_cardboard_box",
+			"name": "Small cardboard box",
+			"kind": "box",
+			"description": "Single wall shipping box.",
+			"unlock_tier": 1,
+			"fits_bands": [
+				"small_parcel"
+			],
+			"protection": 3,
+			"presentation": 3,
+			"weight_grams": 120,
+			"pack_minutes": 2,
+			"pack_size": 10,
+			"price_pence": 450,
+			"model": "small_cardboard_box",
+			"look": {
+				"colour": "cardboard",
+				"accent": "tape",
+				"size": [
+					0.26,
+					0.2,
+					0.14
+				]
+			}
+		},
+		{
+			"id": "medium_cardboard_box",
+			"name": "Medium cardboard box",
+			"kind": "box",
+			"description": "Single wall, fits most products.",
+			"unlock_tier": 1,
+			"fits_bands": [
+				"small_parcel",
+				"medium_parcel"
+			],
+			"protection": 3,
+			"presentation": 3,
+			"weight_grams": 250,
+			"pack_minutes": 3,
+			"pack_size": 10,
+			"price_pence": 750,
+			"model": "medium_cardboard_box",
+			"look": {
+				"colour": "cardboard",
+				"accent": "tape",
+				"size": [
+					0.34,
+					0.26,
+					0.2
+				]
+			}
+		},
+		{
+			"id": "large_cardboard_box",
+			"name": "Large cardboard box",
+			"kind": "box",
+			"description": "For big prints like helmets and bins.",
+			"unlock_tier": 2,
+			"fits_bands": [
+				"medium_parcel",
+				"large_parcel"
+			],
+			"protection": 3,
+			"presentation": 3,
+			"weight_grams": 450,
+			"pack_minutes": 4,
+			"pack_size": 10,
+			"price_pence": 1200,
+			"model": "large_cardboard_box",
+			"look": {
+				"colour": "cardboard",
+				"accent": "tape",
+				"size": [
+					0.44,
+					0.34,
+					0.28
+				]
+			}
+		},
+		{
+			"id": "double_wall_box",
+			"name": "Double wall box",
+			"kind": "box",
+			"description": "Much stronger. Use for heavy or tall fragile prints.",
+			"unlock_tier": 2,
+			"fits_bands": [
+				"medium_parcel",
+				"large_parcel",
+				"oversize"
+			],
+			"protection": 4,
+			"presentation": 3,
+			"weight_grams": 700,
+			"pack_minutes": 5,
+			"pack_size": 10,
+			"price_pence": 2100,
+			"model": "double_wall_box",
+			"look": {
+				"colour": "cardboard_dark",
+				"accent": "tape",
+				"size": [
+					0.44,
+					0.34,
+					0.3
+				]
+			}
+		},
+		{
+			"id": "branded_gift_box",
+			"name": "Branded gift box",
+			"kind": "box",
+			"description": "Printed with your shop logo. Big boost to reviews and repeat buyers.",
+			"unlock_tier": 2,
+			"fits_bands": [
+				"large_letter",
+				"small_parcel"
+			],
+			"protection": 3,
+			"presentation": 5,
+			"weight_grams": 150,
+			"pack_minutes": 3,
+			"pack_size": 10,
+			"price_pence": 1100,
+			"model": "branded_gift_box",
+			"look": {
+				"colour": "cream",
+				"accent": "terracotta",
+				"size": [
+					0.26,
+					0.2,
+					0.12
+				]
+			}
+		},
+		{
+			"id": "custom_printed_shipping_box",
+			"name": "Custom printed shipping box",
+			"kind": "box",
+			"description": "Your brand on the outside. Minimum order of 100.",
+			"unlock_tier": 3,
+			"fits_bands": [
+				"small_parcel",
+				"medium_parcel"
+			],
+			"protection": 3,
+			"presentation": 4,
+			"weight_grams": 260,
+			"pack_minutes": 3,
+			"pack_size": 10,
+			"price_pence": 1400,
+			"model": "custom_printed_shipping_box",
+			"look": {
+				"colour": "white",
+				"accent": "teal",
+				"size": [
+					0.3,
+					0.24,
+					0.18
+				]
+			}
+		}
+	]
+}

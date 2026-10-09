@@ -153,7 +153,7 @@ func _active_card(contract: Contracts.Contract) -> Control:
 	if late > 0:
 		column.add_child(Ui.wrap(Ui.text("%s is coming off the price so far. Much later and they will cancel." % Money.format(contracts.penalty(contract, now)), 13, Ui.RED_DARK, 800)))
 	elif ready > 0:
-		column.add_child(Ui.wrap(Ui.text("Send what is ready from the workbench: Send to a client.", 13, Ui.GREEN_DARK, 800)))
+		column.add_child(Ui.wrap(Ui.text("Send what is ready from the packing station: Send to a client.", 13, Ui.GREEN_DARK, 800)))
 	column.add_child(Ui.hbox([
 		Ui.title(Money.format(contracts.value(contract) - contracts.penalty(contract, now)), 22),
 		Ui.text("when the last one arrives", 13, Ui.MUTED),

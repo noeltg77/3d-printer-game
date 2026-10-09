@@ -1,17 +1,19 @@
 class_name Stockroom
 extends RefCounted
 ## Reorder rules for the things the business uses up: spools of filament, spare
-## parts and mailer boxes. Each rule says how low a stock may fall before more
+## parts and packaging. Each rule says how low a stock may fall before more
 ## is ordered, and how much to order. Given what is in stock and on its way,
 ## it says what is due; placing the order is the caller's job.
 ##
 ## Stock is named by key: "spool:<material>:<colour>", "part:<id>" or
-## "packaging". Spools and parts are counted singly and ordered by the spool or
-## the pack; mailer boxes are counted singly and ordered by the pack.
+## "packaging:<id>". Everything is counted singly; spools are ordered by the
+## spool, parts and packaging by the pack.
 
 const SPOOL := "spool:"
 const PART := "part:"
-const PACKAGING := "packaging"
+const PACKAGING := "packaging:"
+## What a rule for "packaging" from before there were kinds of it now covers.
+const LEGACY_PACKAGING := "packaging:small_cardboard_box"
 ## What a stock with no rule of its own shows in the app: off, and modest.
 const DEFAULT_RULE := {"on": false, "point": 1, "quantity": 1}
 
@@ -33,8 +35,16 @@ static func part_key(part: String) -> String:
 	return PART + part
 
 
+static func packaging_key(kind: String) -> String:
+	return PACKAGING + kind
+
+
 static func is_spool(key: String) -> bool:
 	return key.begins_with(SPOOL)
+
+
+static func is_packaging(key: String) -> bool:
+	return key.begins_with(PACKAGING)
 
 
 ## The rule for a stock, or the default one if none has been set.
@@ -53,8 +63,8 @@ func any_on() -> bool:
 
 ## True if the game still has the thing a key names.
 func knows(key: String) -> bool:
-	if key == PACKAGING:
-		return true
+	if key.begins_with(PACKAGING):
+		return data.packaging.has(key.trim_prefix(PACKAGING))
 	if key.begins_with(PART):
 		return data.parts.has(key.trim_prefix(PART))
 	if not key.begins_with(SPOOL):
@@ -80,11 +90,8 @@ func due(levels: Dictionary) -> Dictionary[String, int]:
 ## Adds `quantity` of a stock to a supplier basket (see Supplier) and returns it.
 static func add_to_basket(basket: Dictionary, key: String, quantity: int) -> Dictionary:
 	var added := basket.duplicate(true)
-	if key == PACKAGING:
-		added["packaging"] = int(added.get("packaging", 0)) + quantity
-		return added
-	var kind := "spools" if is_spool(key) else "parts"
-	var id := key.trim_prefix(SPOOL if is_spool(key) else PART)
+	var kind := "spools" if is_spool(key) else ("packaging" if is_packaging(key) else "parts")
+	var id := key.trim_prefix(SPOOL if is_spool(key) else (PACKAGING if is_packaging(key) else PART))
 	if not added.has(kind):
 		added[kind] = {}
 	added[kind][id] = int(added[kind].get(id, 0)) + quantity
@@ -108,7 +115,8 @@ func save() -> Dictionary:
 ## Puts back saved rules, leaving out those for things the game no longer has.
 func restore(saved: Dictionary) -> void:
 	rules.clear()
-	for key: String in saved.get("rules", {}):
+	for saved_key: String in saved.get("rules", {}):
+		var key := LEGACY_PACKAGING if saved_key == "packaging" else saved_key
 		if knows(key):
-			var entry: Dictionary = saved["rules"][key]
+			var entry: Dictionary = saved["rules"][saved_key]
 			set_rule(key, bool(entry["on"]), int(entry["point"]), int(entry["quantity"]))

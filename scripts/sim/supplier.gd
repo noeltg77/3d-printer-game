@@ -2,10 +2,14 @@ class_name Supplier
 extends RefCounted
 ## The supplier shop: prices a basket and turns it into deliveries that arrive
 ## after a lead time. A basket is
-##   { printers: { printer_id: qty }, spools: { spool key: qty }, packaging: packs,
+##   { printers: { printer_id: qty }, spools: { spool key: qty }, packaging: { packaging id: packs },
 ##     parts: { part or upgrade id: packs }, dryers: { dryer_id: qty } }
 ## A spool key is "material:colour" (FilamentRules.spool_key); a bare colour
 ## means PLA. Each printer and each dryer ships in its own box; spools, packaging and spare parts share one.
+
+
+## What the mailer boxes of an old save are now.
+const LEGACY_PACKAGING := "small_cardboard_box"
 
 
 class Delivery:
@@ -19,8 +23,8 @@ class Delivery:
 	var dryer: StringName = &""
 	## One spool key per spool.
 	var spools: Array[StringName] = []
-	## Individual packaging units, not packs.
-	var packaging := 0
+	## Packaging, id -> how many, not packs.
+	var packaging: Dictionary[StringName, int] = {}
 	## Spare parts and upgrade kits, id -> how many, not packs.
 	var parts: Dictionary[StringName, int] = {}
 
@@ -36,7 +40,12 @@ class Delivery:
 		delivery.dryer = StringName(data.get("dryer", ""))
 		for colour: String in data["spools"]:
 			delivery.spools.append(StringName(colour))
-		delivery.packaging = int(data["packaging"])
+		# Saves from before there were kinds of packaging hold a count of mailer boxes.
+		var saved_packaging: Variant = data["packaging"]
+		if not saved_packaging is Dictionary:
+			saved_packaging = {LEGACY_PACKAGING: saved_packaging} if int(saved_packaging) > 0 else {}
+		for kind: String in saved_packaging:
+			delivery.packaging[StringName(kind)] = int(saved_packaging[kind])
 		for part: String in data["parts"]:
 			delivery.parts[StringName(part)] = int(data["parts"][part])
 		return delivery
@@ -49,8 +58,11 @@ class Delivery:
 		var lines: PackedStringArray = []
 		if not spools.is_empty():
 			lines.append("%d spool%s" % [spools.size(), "" if spools.size() == 1 else "s"])
-		if packaging > 0:
-			lines.append("%d mailer boxes" % packaging)
+		var wraps := 0
+		for count: int in packaging.values():
+			wraps += count
+		if wraps > 0:
+			lines.append("%d boxes and bags" % wraps)
 		var spares := 0
 		for count: int in parts.values():
 			spares += count
@@ -76,7 +88,8 @@ func price_of(basket: Dictionary) -> int:
 		total += int(data.printers[printer_id]["price_pence"]) * int(basket["printers"][printer_id])
 	for key: String in basket.get("spools", {}):
 		total += spool_price(FilamentRules.material_of(key)) * int(basket["spools"][key])
-	total += int(_config()["packaging_pack_pence"]) * int(basket.get("packaging", 0))
+	for kind: String in basket.get("packaging", {}):
+		total += int(data.packaging[kind]["price_pence"]) * int(basket["packaging"][kind])
 	for part_id: String in basket.get("parts", {}):
 		total += int(data.kit(part_id)["price_pence"]) * int(basket["parts"][part_id])
 	for dryer_id: String in basket.get("dryers", {}):
@@ -113,12 +126,13 @@ func place(basket: Dictionary, minute: float, shop := "") -> Array[Delivery]:
 	for colour: String in basket.get("spools", {}):
 		for i in int(basket["spools"][colour]):
 			supplies.spools.append(StringName(colour))
-	supplies.packaging = int(basket.get("packaging", 0)) * int(_config()["packaging_pack_size"])
+	for kind: String in basket.get("packaging", {}):
+		supplies.packaging[StringName(kind)] = int(basket["packaging"][kind]) * int(data.packaging[kind]["pack_size"])
 	for part_id: String in basket.get("parts", {}):
 		supplies.parts[StringName(part_id)] = int(basket["parts"][part_id]) * int(data.kit(part_id).get("pack_size", 1))
-	if supplies.spools.is_empty() and supplies.packaging == 0:
+	if supplies.spools.is_empty() and supplies.packaging.is_empty():
 		supplies.arrive_at = minute + float(_config()["parts_lead_minutes"])
-	if not supplies.spools.is_empty() or supplies.packaging > 0 or not supplies.parts.is_empty():
+	if not supplies.spools.is_empty() or not supplies.packaging.is_empty() or not supplies.parts.is_empty():
 		placed.append(supplies)
 	for printer_id: String in basket.get("printers", {}):
 		for i in int(basket["printers"][printer_id]):

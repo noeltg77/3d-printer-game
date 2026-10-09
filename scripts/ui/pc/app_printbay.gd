@@ -148,28 +148,40 @@ func _stat(label: String, value: float, colour: Color) -> Control:
 
 
 func _packaging() -> Control:
-	var config: Dictionary = Game.data.settings["supplier"]
-	var low := Game.packaging <= Advice.LOW_PACKAGING
-	var order := {"packaging": 1}
-	var problem := Game.supplier_problem(order)
-	var words := Ui.vbox([
-		Ui.text("%s, pack of %d" % [config["packaging_name"], config["packaging_pack_size"]], 16, Ui.INK, 800),
-		Ui.text("One is used for every order you pack. Arrives in %s." % GameClock.duration_label(config["filament_lead_minutes"]), 13, Ui.MUTED),
-	], 0)
-	words.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var row := Ui.panel(Ui.hbox([
-		ModelPicture.tile(Parcel.MODEL.resource_path, ROW_PICTURE, TILE),
-		words,
-		Ui.pill("In stock: %d" % Game.packaging, Ui.RED_DARK if low else Ui.GREEN_DARK, Ui.RED_SOFT if low else Ui.GREEN_SOFT),
-		Ui.width(Ui.text(Money.format(int(config["packaging_pack_pence"])), 17, Ui.INK, 800), 70),
-		_disabled_if(Ui.button("Buy", _buy.bind(order), BLUE, Ui.WHITE, 44, 14), problem != ""),
-	], 18), Ui.box(Ui.WHITE, 18, 18, 14, SHADOW, 3))
-	var column := Ui.vbox([row], 12)
-	column.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
-	return column
+	var rows := Ui.vbox([], 12)
+	var lead := GameClock.duration_label(Game.data.settings["supplier"]["filament_lead_minutes"])
+	rows.add_child(Ui.wrap(Ui.text("One goes out with every order, and each design is sent in the kind you pick on its listing. Kept at the packing station. Arrives in %s." % lead, 14, Ui.MUTED)))
+	for kind: String in Game.data.packaging:
+		var wrap: Dictionary = Game.data.packaging[kind]
+		var count := Game.packaging_count(StringName(kind))
+		var order := {"packaging": {kind: 1}}
+		var problem := Game.supplier_problem(order) if Game.unlocked(wrap) else "Unlocks when you move to a bigger space"
+		var fits: PackedStringArray = []
+		for band: String in wrap["fits_bands"]:
+			fits.append(String(Game.data.bands[band]["name"]).to_lower())
+		var words := Ui.vbox([
+			Ui.text("%s, pack of %d" % [wrap["name"], int(wrap["pack_size"])], 16, Ui.INK, 800),
+			Ui.text("%s Takes a %s." % [wrap["description"], " or ".join(fits)], 13, Ui.MUTED),
+		], 0)
+		words.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var buy := _disabled_if(Ui.button("Buy", _buy.bind(order), BLUE, Ui.WHITE, 44, 14), problem != "")
+		buy.tooltip_text = problem
+		var scores := Ui.vbox([
+			Ui.hbox([Ui.width(Ui.text("Protection", 12, Ui.MUTED), 72), Ui.pips(int(wrap["protection"]), 5, BLUE, TILE, 10)], 6),
+			Ui.hbox([Ui.width(Ui.text("Looks", 12, Ui.MUTED), 72), Ui.pips(int(wrap["presentation"]), 5, BLUE, TILE, 10)], 6),
+		], 4)
+		rows.add_child(Ui.panel(Ui.hbox([
+			ModelPicture.tile(GameData.PACKAGING_MODEL % wrap["model"], ROW_PICTURE, TILE),
+			words,
+			scores,
+			Ui.width(Ui.pill("In stock: %d" % count, Ui.GREEN_DARK if count > 0 else Ui.MUTED, Ui.GREEN_SOFT if count > 0 else TILE) if Game.unlocked(wrap)
+				else Ui.pill("Needs more space", LOCK_TEXT, LOCK_BG), 130),
+			Ui.width(Ui.text(Money.format(int(wrap["price_pence"])), 17, Ui.INK, 800), 70),
+			buy,
+		], 18), Ui.box(Ui.WHITE, 18, 18, 14, SHADOW, 3)))
+	return Ui.scroll(rows)
 
 
-## A row per wear part, with how many spares are on the shelving.
 func _parts() -> Control:
 	var shelf: StorageShelf = get_tree().get_first_node_in_group(&"print_storage")
 	var lead := GameClock.duration_label(Game.data.settings["supplier"]["parts_lead_minutes"])

@@ -1,0 +1,438 @@
+{
+	"schema_version": 1,
+	"bands": [
+		{
+			"id": "large_letter",
+			"name": "Large letter",
+			"description": "Fits through a letterbox. Max 35 x 25 x 2.5 cm.",
+			"max_size_mm": [
+				350,
+				250,
+				25
+			],
+			"max_weight_grams": 750
+		},
+		{
+			"id": "small_parcel",
+			"name": "Small parcel",
+			"description": "Shoebox size. Max 45 x 35 x 16 cm.",
+			"max_size_mm": [
+				450,
+				350,
+				160
+			],
+			"max_weight_grams": 2000
+		},
+		{
+			"id": "medium_parcel",
+			"name": "Medium parcel",
+			"description": "Max 61 x 46 x 46 cm.",
+			"max_size_mm": [
+				610,
+				460,
+				460
+			],
+			"max_weight_grams": 10000
+		},
+		{
+			"id": "large_parcel",
+			"name": "Large parcel",
+			"description": "Max 100 x 60 x 60 cm.",
+			"max_size_mm": [
+				1000,
+				600,
+				600
+			],
+			"max_weight_grams": 20000
+		},
+		{
+			"id": "oversize",
+			"name": "Oversize",
+			"description": "Max 150 x 80 x 80 cm. Two person lift.",
+			"max_size_mm": [
+				1500,
+				800,
+				800
+			],
+			"max_weight_grams": 30000
+		}
+	],
+	"couriers": [
+		{
+			"id": "postie",
+			"name": "Postie",
+			"tagline": "Through every letterbox.",
+			"description": "The national post. Reliable enough, everywhere, good for letters and small parcels.",
+			"colour": "#D7322C"
+		},
+		{
+			"id": "parcelflap",
+			"name": "ParcelFlap",
+			"tagline": "It'll get there. Probably.",
+			"description": "The budget option. Cheapest prices, rough handling, parcels sometimes thrown over fences.",
+			"colour": "#2E8FCB"
+		},
+		{
+			"id": "dashdrop",
+			"name": "DashDrop",
+			"tagline": "Your 1 hour window, sorted.",
+			"description": "Tracked next day specialists. Customers love the delivery window. Mid price.",
+			"colour": "#C62F3A"
+		},
+		{
+			"id": "swiftline",
+			"name": "Swiftline Express",
+			"tagline": "Before 9. Or before 12. Or now.",
+			"description": "Premium express. Very careful, very fast, very expensive.",
+			"colour": "#5B2C83"
+		},
+		{
+			"id": "pedalpost",
+			"name": "Pedal Post",
+			"tagline": "Across town in an hour.",
+			"description": "Local cargo bike couriers. Same day within your town only. Small parcels only.",
+			"colour": "#2F8F6B"
+		}
+	],
+	"services": [
+		{
+			"id": "postie_2nd_class",
+			"courier": "postie",
+			"name": "Postie 2nd Class",
+			"service": "2nd Class",
+			"speed": "economy",
+			"unlock_tier": 1,
+			"delivery_minutes": [
+				2880,
+				4320
+			],
+			"tracked": false,
+			"insured_pence": 2000,
+			"damage_multiplier": 1.0,
+			"lost_chance": 0.004,
+			"late_chance": 0.06,
+			"prices": {
+				"large_letter": 155,
+				"small_parcel": 320,
+				"medium_parcel": 510
+			}
+		},
+		{
+			"id": "postie_1st_class",
+			"courier": "postie",
+			"name": "Postie 1st Class",
+			"service": "1st Class",
+			"speed": "standard",
+			"unlock_tier": 1,
+			"delivery_minutes": [
+				1440,
+				2880
+			],
+			"tracked": false,
+			"insured_pence": 2000,
+			"damage_multiplier": 1.0,
+			"lost_chance": 0.004,
+			"late_chance": 0.06,
+			"prices": {
+				"large_letter": 210,
+				"small_parcel": 410,
+				"medium_parcel": 640
+			}
+		},
+		{
+			"id": "postie_tracked_48",
+			"courier": "postie",
+			"name": "Postie Tracked 48",
+			"service": "Tracked 48",
+			"speed": "economy",
+			"unlock_tier": 1,
+			"delivery_minutes": [
+				2880,
+				4320
+			],
+			"tracked": true,
+			"insured_pence": 5000,
+			"damage_multiplier": 1.0,
+			"lost_chance": 0.004,
+			"late_chance": 0.06,
+			"prices": {
+				"large_letter": 295,
+				"small_parcel": 375,
+				"medium_parcel": 595,
+				"large_parcel": 980
+			}
+		},
+		{
+			"id": "postie_tracked_24",
+			"courier": "postie",
+			"name": "Postie Tracked 24",
+			"service": "Tracked 24",
+			"speed": "standard",
+			"unlock_tier": 1,
+			"delivery_minutes": [
+				1440,
+				2160
+			],
+			"tracked": true,
+			"insured_pence": 5000,
+			"damage_multiplier": 1.0,
+			"lost_chance": 0.004,
+			"late_chance": 0.06,
+			"prices": {
+				"large_letter": 375,
+				"small_parcel": 475,
+				"medium_parcel": 695,
+				"large_parcel": 1120
+			}
+		},
+		{
+			"id": "postie_special_delivery_by_1pm",
+			"courier": "postie",
+			"name": "Postie Special Delivery by 1pm",
+			"service": "Special Delivery by 1pm",
+			"speed": "express",
+			"unlock_tier": 2,
+			"delivery_minutes": [
+				1440,
+				2160
+			],
+			"tracked": true,
+			"insured_pence": 75000,
+			"damage_multiplier": 1.0,
+			"lost_chance": 0.004,
+			"late_chance": 0.06,
+			"prices": {
+				"large_letter": 795,
+				"small_parcel": 995,
+				"medium_parcel": 1350
+			}
+		},
+		{
+			"id": "parcelflap_standard_2_4_days",
+			"courier": "parcelflap",
+			"name": "ParcelFlap Standard 2-4 days",
+			"service": "Standard 2-4 days",
+			"speed": "economy",
+			"unlock_tier": 1,
+			"delivery_minutes": [
+				2880,
+				5760
+			],
+			"tracked": true,
+			"insured_pence": 2500,
+			"damage_multiplier": 1.8,
+			"lost_chance": 0.015,
+			"late_chance": 0.14,
+			"prices": {
+				"large_letter": 199,
+				"small_parcel": 289,
+				"medium_parcel": 399,
+				"large_parcel": 699
+			}
+		},
+		{
+			"id": "parcelflap_next_day",
+			"courier": "parcelflap",
+			"name": "ParcelFlap Next Day",
+			"service": "Next Day",
+			"speed": "standard",
+			"unlock_tier": 1,
+			"delivery_minutes": [
+				1440,
+				2880
+			],
+			"tracked": true,
+			"insured_pence": 2500,
+			"damage_multiplier": 1.8,
+			"lost_chance": 0.015,
+			"late_chance": 0.14,
+			"prices": {
+				"large_letter": 349,
+				"small_parcel": 429,
+				"medium_parcel": 549,
+				"large_parcel": 899
+			}
+		},
+		{
+			"id": "dashdrop_next_day",
+			"courier": "dashdrop",
+			"name": "DashDrop Next Day",
+			"service": "Next Day",
+			"speed": "standard",
+			"unlock_tier": 2,
+			"delivery_minutes": [
+				1440,
+				2160
+			],
+			"tracked": true,
+			"insured_pence": 10000,
+			"damage_multiplier": 0.8,
+			"lost_chance": 0.002,
+			"late_chance": 0.03,
+			"prices": {
+				"small_parcel": 520,
+				"medium_parcel": 680,
+				"large_parcel": 950,
+				"oversize": 1900
+			}
+		},
+		{
+			"id": "dashdrop_saturday",
+			"courier": "dashdrop",
+			"name": "DashDrop Saturday",
+			"service": "Saturday",
+			"speed": "express",
+			"unlock_tier": 2,
+			"delivery_minutes": [
+				1440,
+				2160
+			],
+			"tracked": true,
+			"insured_pence": 10000,
+			"damage_multiplier": 0.8,
+			"lost_chance": 0.002,
+			"late_chance": 0.03,
+			"prices": {
+				"small_parcel": 990,
+				"medium_parcel": 1190,
+				"large_parcel": 1550
+			}
+		},
+		{
+			"id": "dashdrop_2_day_economy",
+			"courier": "dashdrop",
+			"name": "DashDrop 2 Day Economy",
+			"service": "2 Day Economy",
+			"speed": "economy",
+			"unlock_tier": 2,
+			"delivery_minutes": [
+				2880,
+				3600
+			],
+			"tracked": true,
+			"insured_pence": 10000,
+			"damage_multiplier": 0.8,
+			"lost_chance": 0.002,
+			"late_chance": 0.03,
+			"prices": {
+				"small_parcel": 440,
+				"medium_parcel": 560,
+				"large_parcel": 780,
+				"oversize": 1500
+			}
+		},
+		{
+			"id": "swiftline_before_12",
+			"courier": "swiftline",
+			"name": "Swiftline Express Before 12",
+			"service": "Before 12",
+			"speed": "express",
+			"unlock_tier": 3,
+			"delivery_minutes": [
+				1440,
+				2160
+			],
+			"tracked": true,
+			"insured_pence": 50000,
+			"damage_multiplier": 0.6,
+			"lost_chance": 0.001,
+			"late_chance": 0.01,
+			"prices": {
+				"large_letter": 1200,
+				"small_parcel": 1450,
+				"medium_parcel": 1800,
+				"large_parcel": 2600,
+				"oversize": 4500
+			}
+		},
+		{
+			"id": "swiftline_before_9",
+			"courier": "swiftline",
+			"name": "Swiftline Express Before 9",
+			"service": "Before 9",
+			"speed": "priority",
+			"unlock_tier": 3,
+			"delivery_minutes": [
+				1440,
+				2160
+			],
+			"tracked": true,
+			"insured_pence": 100000,
+			"damage_multiplier": 0.6,
+			"lost_chance": 0.001,
+			"late_chance": 0.01,
+			"prices": {
+				"large_letter": 1900,
+				"small_parcel": 2200,
+				"medium_parcel": 2700,
+				"large_parcel": 3800,
+				"oversize": 6500
+			}
+		},
+		{
+			"id": "swiftline_same_day_dedicated_van",
+			"courier": "swiftline",
+			"name": "Swiftline Express Same Day Dedicated Van",
+			"service": "Same Day Dedicated Van",
+			"speed": "priority",
+			"unlock_tier": 3,
+			"delivery_minutes": [
+				120,
+				360
+			],
+			"tracked": true,
+			"insured_pence": 500000,
+			"damage_multiplier": 0.6,
+			"lost_chance": 0.001,
+			"late_chance": 0.01,
+			"prices": {
+				"small_parcel": 6500,
+				"medium_parcel": 7500,
+				"large_parcel": 9000,
+				"oversize": 12000
+			}
+		},
+		{
+			"id": "pedalpost_same_day_local",
+			"courier": "pedalpost",
+			"name": "Pedal Post Same Day Local",
+			"service": "Same Day Local",
+			"speed": "same_day",
+			"unlock_tier": 2,
+			"delivery_minutes": [
+				120,
+				360
+			],
+			"tracked": true,
+			"insured_pence": 20000,
+			"damage_multiplier": 0.9,
+			"lost_chance": 0.001,
+			"late_chance": 0.04,
+			"prices": {
+				"large_letter": 650,
+				"small_parcel": 850
+			}
+		},
+		{
+			"id": "pedalpost_1_hour_rush",
+			"courier": "pedalpost",
+			"name": "Pedal Post 1 Hour Rush",
+			"service": "1 Hour Rush",
+			"speed": "priority",
+			"unlock_tier": 3,
+			"delivery_minutes": [
+				120,
+				360
+			],
+			"tracked": true,
+			"insured_pence": 20000,
+			"damage_multiplier": 0.9,
+			"lost_chance": 0.001,
+			"late_chance": 0.04,
+			"prices": {
+				"large_letter": 1200,
+				"small_parcel": 1500
+			}
+		}
+	]
+}

@@ -27,6 +27,8 @@ var durability := 3
 var quality := 3
 ## Id of the failure that spoiled it, or empty if it came out as intended.
 var flaw: StringName = &""
+## True once it has been over the finishing bench, which can only be done once.
+var finished := false
 ## Finished height in metres, for the printer's build-up animation.
 var height := 0.0
 ## How much of the plate it covers, in metres: across and front to back.
@@ -66,6 +68,16 @@ func spoil(failure: Dictionary) -> void:
 	quality = maxi(quality - int(failure.get("quality_loss", 1)), 1)
 
 
+## Gives it the finish the blowtorch leaves (the `finishing` rules in data/game.json).
+func finish() -> void:
+	if finished:
+		return
+	var rules: Dictionary = Game.data.settings["finishing"]
+	finished = true
+	quality = mini(quality + int(rules["quality_gain"]), int(rules["max_quality"]))
+	Game.changed.emit()
+
+
 func is_flawed() -> bool:
 	return flaw != &""
 
@@ -75,13 +87,15 @@ func is_plain() -> bool:
 	return colours.size() < Multicolour.colours_of(Game.data.products[product])
 
 
-## "Phone Stand", "Phone Stand (corners warped)" or "Desk Nameplate (one colour)"
+## "Phone Stand", "Phone Stand (corners warped)", "Desk Nameplate (one colour)" or "Phone Stand (finished)"
 func describe() -> String:
 	var notes: PackedStringArray = []
 	if is_plain():
 		notes.append(Game.data.toggles["multicolour"]["off_name"].to_lower())
 	if is_flawed():
 		notes.append(String(Game.data.failures[flaw]["name"]).to_lower())
+	if finished:
+		notes.append("finished")
 	var title := Game.product_name(product)
 	return title if notes.is_empty() else "%s (%s)" % [title, ", ".join(notes)]
 
@@ -94,7 +108,7 @@ func facts() -> Dictionary:
 
 func save() -> Dictionary:
 	return {"product": product, "colours": colours, "material": material, "preset": preset, "durability": durability,
-		"quality": quality, "flaw": flaw}
+		"quality": quality, "flaw": flaw, "finished": finished}
 
 
 ## Null if the design or preset is no longer in the game.
@@ -110,6 +124,7 @@ static func restored(data: Dictionary) -> PrintedItem:
 		StringName(saved_material) if Game.data.filaments.has(saved_material) else &"pla")
 	item.durability = int(data["durability"])
 	item.quality = int(data["quality"])
+	item.finished = bool(data.get("finished", false))
 	if Game.data.failures.has(data["flaw"]):
 		item.flaw = StringName(data["flaw"])
 	return item

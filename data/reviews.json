@@ -7,6 +7,11 @@
 			"It left their garage in one piece. It did not arrive in one piece.",
 			"Snapped clean in half. The postie looked guilty."
 		],
+		"lost": [
+			"Still waiting. I assume it is on a tour of the country.",
+			"Tracking says delivered. My doormat says otherwise.",
+			"Never arrived. The courier left a card for somebody else's parcel."
+		],
 		"returned": [
 			"Not what the photos showed. Sent it back.",
 			"Looks like a practice go. Returned.",

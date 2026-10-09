@@ -321,7 +321,8 @@ Starting conditions and global rates. Not a table of rows.
 | `start.cash_pence`, `start.packaging`, `start.designs`, `start.premises`, `start.minute_of_day` | What a new game begins with |
 | `electricity_pence_per_kwh` | Charged when a print finishes, from the printer's `power_watts` and the print time |
 | `courier_minute_of_day` | When parcels in the outbox are collected and paid |
-| `courier` | The one courier and packaging so far: `name`, `damage_multiplier`, `delivery_minutes` as `[shortest, longest]`, and the mailer box's `protection` (1 to 5). A parcel arrives broken with chance `(5 - durability) x 2% x (6 - protection) / 3 x damage_multiplier` (`Marketplace.damage_chance`). The packaging and courier tables in `docs/design_data/shipping.json` replace this when there is a choice of either |
+| `shipping` | `default_service`: the service a marketplace sends by until the player picks another, and a parcel goes by if the one picked won't take it. `buyer_pays`: speed class to the service whose price the buyer is charged for postage (anything quicker than standard is charged at the standard rate). `late_minutes`: `[shortest, longest]` a held up parcel is delayed, and `late_star_penalty` what the buyer knocks off for it. `stars_per_presentation_point`: stars a review moves for each point the packaging's `presentation` is above or below `neutral_presentation`. `speed_stars`: stars added by speed class |
+| `finishing` | The finishing bench: `minutes` of the character's time for one print, the `quality_gain` it gets and the `max_quality` it stops at. A print can be finished once |
 | `default_preset` | The preset the print dialog opens on |
 | `moisture` | `gain_per_day`: moisture (0 to 1) a filament with sensitivity 1.0 gains in a day in the open. `wet_at`: the level at which a spool is wet. Every `step` beyond that adds `extra_fail_per_step` to the chance of a print failing, and wet filament raises the `wet_filament` flag for failures |
 | `multicolour` | `main_colour_share`: the share of a multicolour print's filament its first colour takes. `contrast_purge`: how much more a colour change purges going from black to white. `many_swaps`: colour changes at which a print raises `many_colour_swaps`. `reference_jam_chance`: the `jam_chance_per_swap` of a unit that jams as often as the jam failure's `weight` says |
@@ -333,10 +334,46 @@ Starting conditions and global rates. Not a table of rows.
 | `trends` | One product category is in demand and one has gone quiet, for a random `days` range (`[shortest, longest]`), scaling its orders by `hot_multiplier` or `cool_multiplier`. Only categories with at least `min_designs` designs take part, and never those listed in `seasonal`, which wait for a calendar (`Trends`) |
 | `wear_rate` | Multiplies all part wear. Above 1 because the design's lifespans are in real printer hours, which would take many sessions to matter. A balancing knob |
 | `bank_name`, `business_name` | Names shown on the PC |
-| `supplier` | The filament and hardware shop names, lead times in game minutes (filament, printers, spare parts), and the packaging pack size and price |
+| `supplier` | The filament and hardware shop names, lead times in game minutes (filament, printers, spare parts) |
 
 One game day is 1440 game minutes and lasts 10 real minutes at 1x (`GameClock.MINUTES_PER_SECOND`).
 
-## Not drafted yet
+## packaging.json
 
-Packaging and courier choices. They get a table when there is a choice of either.
+What an order goes out in. Kept, counted by kind, at the packing station (`Game.packaging`).
+
+| Field | Meaning |
+| --- | --- |
+| `kind` | `bag` or `box`. A design goes out in the cheapest box that fits unless the player picks something else for it |
+| `fits_bands` | The parcel bands it is made for (see couriers.json). A design fits packaging made for its own band or a bigger one; in a bigger one the parcel is posted at that size (`Shipping.parcel_band`) |
+| `protection` | 1 to 5. A parcel arrives broken with chance `(5 - durability) x 2% x (6 - protection) / 3 x` the service's `damage_multiplier` (`Marketplace.damage_chance`) |
+| `presentation` | 1 to 5. Moves the buyer's review (the `shipping` settings in game.json) |
+| `pack_minutes` | Character time to pack an order in it |
+| `pack_size`, `price_pence` | How many come in a pack, and what the pack costs |
+| `weight_grams` | From the design data. Not used yet |
+| `model` | Its models in `assets/models/packaging/`: `<model>.glb` made up as a parcel, with `flap_*` meshes the game opens and shuts, and `<model>_stack.glb` flat in a pile. Both built by `tools/generators/parcels.py` from `look` (`colour`, `accent`, `size` in metres) |
+
+Imported from `docs/design_data/shipping.json` (`packaging`): the ten bags and boxes. Crates, pallets and inner bags are not in, nor the fillers and extras. Prices are the design's price each, in packs of ten.
+
+## couriers.json
+
+Three lists: `bands`, `couriers` and `services`.
+
+A band is a size of parcel, smallest first: `max_size_mm` (longest side first) and `max_weight_grams`. A design falls in the smallest band it fits by its `size_mm` and `filament_grams` (`Shipping.band_of`).
+
+A courier has a `name`, `tagline`, `description` and `colour`. A service is one thing a courier offers:
+
+| Field | Meaning |
+| --- | --- |
+| `courier` | Id of the courier |
+| `speed` | `economy`, `standard`, `express`, `priority` or `same_day`. Decides what the buyer pays towards postage and moves the review (the `shipping` settings in game.json) |
+| `delivery_minutes` | `[shortest, longest]` from collection to the buyer's door |
+| `prices` | Band id to what the seller pays, in pence. A band not listed is one the service won't take |
+| `damage_multiplier` | How rough it is with a parcel. See `protection` above |
+| `lost_chance` | Chance (0 to 1) a parcel never arrives: refunded, one star |
+| `late_chance` | Chance (0 to 1) it is held up for `late_minutes` and marked down |
+| `tracked`, `insured_pence` | A tracked service pays out for a parcel it loses, up to this much |
+
+Each marketplace sends by one service, picked in its app (`Game.service_choice`). The buyer pays the going rate for the speed promised and the seller pays the courier, so a cheaper service leaves a little over and a dearer one costs. What an order was packed in and sent by is recorded on it when it is packed (`Shipping.terms`).
+
+Imported from `docs/design_data/shipping.json` (`parcel_bands`, `couriers`, `services`). FreightFolk and GlobeHop are not in: nothing goes by the pallet and there are no buyers abroad. Collection fees, drop off walks and order cut off times are not modelled: one courier run a day takes everything.

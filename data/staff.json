@@ -16,6 +16,14 @@
 			"unlock_tier": 3,
 			"wage_pence_per_day": 3999,
 			"duties": ["pack", "send"]
+		},
+		{
+			"id": "finisher",
+			"name": "Finisher",
+			"description": "Goes over every print on the shelf with the blowtorch, so what you sell has a better finish.",
+			"unlock_tier": 3,
+			"wage_pence_per_day": 3999,
+			"duties": ["finish"]
 		}
 	],
 	"shifts": [

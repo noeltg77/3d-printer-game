@@ -39,17 +39,16 @@ func refresh() -> void:
 		if Game.unlocked(Game.data.parts[part_id]):
 			parts.add_child(_part_tile(part_id, levels.get(Stockroom.part_key(part_id), {})))
 	var packaging := _grid()
-	packaging.add_child(_packaging_tile(levels.get(Stockroom.PACKAGING, {})))
-	# Keeps the one tile the width of the others.
-	for gap in COLUMNS - 1:
-		packaging.add_child(Ui.grow(Ui.spacer()))
+	for kind: String in Game.data.packaging:
+		if Game.unlocked(Game.data.packaging[kind]):
+			packaging.add_child(_packaging_tile(kind, levels.get(Stockroom.packaging_key(kind), {})))
 	_scroll = Ui.scroll(Ui.vbox([
 		_intro(),
 		_heading("Filament", "Counted in spools with a decent amount left, on the rack or in a printer. Arrives in %s." % GameClock.duration_label(config["filament_lead_minutes"])),
 		spools,
 		_heading("Spare parts", "Counted on the shelving. Arrives in %s." % GameClock.duration_label(config["parts_lead_minutes"])),
 		parts,
-		_heading("Packaging", "One mailer box goes out with every order."),
+		_heading("Packaging", "Counted at the packing station. One goes out with every order."),
 		packaging,
 	], 12))
 	var page := Ui.panel(Ui.margin(_scroll, 40, 24, 40, 24), Ui.box(PAGE, 0, 0, 0))
@@ -122,10 +121,10 @@ func _part_tile(part_id: String, level: Dictionary) -> Control:
 		"%s %s" % [Money.format(int(part["price_pence"])), "a pack of %d" % pack if pack > 1 else "each"], pack)
 
 
-func _packaging_tile(level: Dictionary) -> Control:
-	var config: Dictionary = Game.data.settings["supplier"]
-	return _tile(Stockroom.PACKAGING, ModelPicture.create(Parcel.MODEL.resource_path, PICTURE), config["packaging_name"], level, "pack", "packs",
-		"%s a pack of %d" % [Money.format(int(config["packaging_pack_pence"])), int(config["packaging_pack_size"])], int(config["packaging_pack_size"]))
+func _packaging_tile(kind: String, level: Dictionary) -> Control:
+	var wrap: Dictionary = Game.data.packaging[kind]
+	return _tile(Stockroom.packaging_key(kind), ModelPicture.create(GameData.PACKAGING_MODEL % wrap["model"], PICTURE), wrap["name"], level, "pack", "packs",
+		"%s a pack of %d" % [Money.format(int(wrap["price_pence"])), int(wrap["pack_size"])], int(wrap["pack_size"]))
 
 
 ## One stock: what there is, and its rule. `unit` and `units` name what is

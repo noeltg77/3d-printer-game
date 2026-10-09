@@ -58,8 +58,9 @@ func store(item: Node3D) -> bool:
 
 
 ## Removes one item of a design from the shelf and returns it, or null if there
-## is none. Good ones go first: a flawed one only when nothing else is left, and
-## one printed in a single colour only when there is none in full colour.
+## is none. Good ones go first: a flawed one only when nothing else is left,
+## one printed in a single colour only when there is none in full colour, and
+## one that has been finished before one that hasn't.
 func take(product: StringName) -> PrintedItem:
 	var found: PrintedItem = null
 	for item in _items():
@@ -81,6 +82,19 @@ func take_item(item: PrintedItem) -> PrintedItem:
 	item.get_parent().remove_child(item)
 	Game.changed.emit()
 	return item
+
+
+## The prints that have not been over the finishing bench yet.
+func unfinished() -> Array[PrintedItem]:
+	return _items().filter(func(item: PrintedItem) -> bool: return not item.finished)
+
+
+## Takes an unfinished print of a design off the shelf, or null if there is none.
+func take_unfinished(product: StringName) -> PrintedItem:
+	for item in unfinished():
+		if item.product == product:
+			return take_item(item)
+	return null
 
 
 ## Every box of spare parts on the shelf.
@@ -148,7 +162,7 @@ func _bin(agent: Agent, item: PrintedItem) -> void:
 
 ## How far down the queue to be sold an item is: 0 for one as it should be.
 func _rank(item: PrintedItem) -> int:
-	return (2 if item.is_flawed() else 0) + (1 if item.is_plain() else 0)
+	return (4 if item.is_flawed() else 0) + (2 if item.is_plain() else 0) + (0 if item.finished else 1)
 
 
 func _spare_box(part: StringName) -> SparePart:

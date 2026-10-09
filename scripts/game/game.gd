@@ -17,6 +17,8 @@ const SPEEDS: Array[int] = [0, 1, 2, 4]
 const SETTINGS_FILE := "user://settings.cfg"
 ## Bumped when a save from before can no longer be read.
 const SAVE_VERSION := 1
+## What the mailer boxes of an old save are now.
+const LEGACY_PACKAGING := Supplier.LEGACY_PACKAGING
 
 var data: GameData
 var clock: GameClock
@@ -40,8 +42,15 @@ var milestones: Milestones
 ## Running totals the milestones are judged on. See stat_view() for the rest.
 var stats: Dictionary[String, int] = {}
 var owned_designs: Array[StringName] = []
-## Mailer boxes in stock, one used per packed order.
-var packaging := 0
+## The rules of packaging and postage (Shipping), and what the player has
+## chosen: the packaging each design goes out in, where they have said (design
+## id -> packaging id), and the courier's service each marketplace sends by
+## (marketplace id -> service id).
+var shipping: Shipping
+var pack_choice: Dictionary[StringName, StringName] = {}
+var service_choice: Dictionary[StringName, StringName] = {}
+## Packaging in stock, by kind (data/packaging.json). One is used per packed order.
+var packaging: Dictionary[StringName, int] = {}
 ## How far the business has grown: 1 garage to 4 factory. Decides what the
 ## shops will sell (each row's `unlock_tier`).
 var tier := 1
@@ -104,7 +113,7 @@ func _process(delta: float) -> void:
 		for order in shop.expire(clock.minutes):
 			notify("Order %s was cancelled: not dispatched in time" % shop.order_label(order), &"bad")
 			changed.emit()
-		for outcome in shop.deliver(clock.minutes, rng, data.settings["courier"]):
+		for outcome in shop.deliver(clock.minutes, rng, usual_shipping()):
 			_settle_delivery(outcome)
 	if clock.crossed(before, data.settings["courier_minute_of_day"]):
 		courier_arrived.emit()
@@ -158,7 +167,12 @@ func new_game() -> void:
 		"contracts_done": 0, "largest_contract": 0, "staff_hired": 0, "moulded_items": 0}
 	_stock_blocked.clear()
 	owned_designs.assign(start["designs"])
-	packaging = int(start["packaging"])
+	shipping = Shipping.new(data)
+	pack_choice.clear()
+	service_choice.clear()
+	packaging.clear()
+	for kind: String in start["packaging"]:
+		packaging[StringName(kind)] = int(start["packaging"][kind])
 	premises = StringName(start_premises if data.premises.has(start_premises) else start["premises"])
 	tier = maxi(int(premises_row()["tier"]), start_tier)
 	rng.randomize()
@@ -221,6 +235,7 @@ func save() -> Dictionary:
 		"staff": staff.save(),
 		"events": events.save(), "milestones": milestones.save(), "stats": stats,
 		"owned_designs": owned_designs, "packaging": packaging, "tier": tier, "premises": premises,
+		"pack_choice": pack_choice, "service_choice": service_choice,
 	}
 
 
@@ -259,7 +274,22 @@ func restore(state: Dictionary) -> void:
 	for product: String in state["owned_designs"]:
 		if data.products.has(product):
 			owned_designs.append(StringName(product))
-	packaging = int(state["packaging"])
+	packaging.clear()
+	# Saves from before there was a choice of packaging hold a count of mailer boxes.
+	var saved_packaging: Variant = state["packaging"]
+	if not saved_packaging is Dictionary:
+		saved_packaging = {LEGACY_PACKAGING: saved_packaging}
+	for kind: String in saved_packaging:
+		if data.packaging.has(kind):
+			packaging[StringName(kind)] = int(saved_packaging[kind])
+	pack_choice.clear()
+	for product: String in state.get("pack_choice", {}):
+		if data.products.has(product) and data.packaging.has(state["pack_choice"][product]):
+			pack_choice[StringName(product)] = StringName(state["pack_choice"][product])
+	service_choice.clear()
+	for market_id: String in state.get("service_choice", {}):
+		if markets.has(StringName(market_id)) and data.services.has(state["service_choice"][market_id]):
+			service_choice[StringName(market_id)] = StringName(state["service_choice"][market_id])
 	if data.premises.has(state.get("premises", "")):
 		premises = StringName(state["premises"])
 	tier = maxi(maxi(int(state.get("tier", 1)), int(premises_row()["tier"])), start_tier)
@@ -824,7 +854,8 @@ func stock_levels() -> Dictionary:
 	for box in (shelf.spares() if shelf != null else ([] as Array[SparePart])):
 		if data.parts.has(box.part):
 			_stock_add(levels, Stockroom.part_key(box.part), "have", box.count)
-	_stock_add(levels, Stockroom.PACKAGING, "have", packaging)
+	for kind in packaging:
+		_stock_add(levels, Stockroom.packaging_key(kind), "have", packaging[kind])
 	var coming: Array[Supplier.Delivery] = supplier.pending.duplicate()
 	for box: DeliveryBox in get_tree().get_nodes_in_group(&"delivery_box"):
 		coming.append(box.delivery)
@@ -834,8 +865,8 @@ func stock_levels() -> Dictionary:
 		for part in delivery.parts:
 			if data.parts.has(part):
 				_stock_add(levels, Stockroom.part_key(part), "coming", delivery.parts[part])
-		if delivery.packaging > 0:
-			_stock_add(levels, Stockroom.PACKAGING, "coming", delivery.packaging)
+		for kind in delivery.packaging:
+			_stock_add(levels, Stockroom.packaging_key(kind), "coming", delivery.packaging[kind])
 	return levels
 
 
@@ -870,35 +901,131 @@ func restock() -> void:
 	notify("The stockroom reordered: %s" % ", ".join(ordered))
 
 
-## What a Stockroom key is called: "Red PLA", "Brass nozzle 0.4mm", "Mailer boxes".
+## What a Stockroom key is called: "Red PLA", "Brass nozzle 0.4mm", "Small cardboard box".
 func stock_name(key: String) -> String:
-	if key == Stockroom.PACKAGING:
-		return data.settings["supplier"]["packaging_name"]
+	if Stockroom.is_packaging(key):
+		return data.packaging[key.trim_prefix(Stockroom.PACKAGING)]["name"]
 	if not Stockroom.is_spool(key):
 		return data.parts[key.trim_prefix(Stockroom.PART)]["name"]
 	var spool := key.trim_prefix(Stockroom.SPOOL)
 	return "%s %s" % [Palette.display_name(FilamentRules.colour_of(spool)), data.filaments[FilamentRules.material_of(spool)]["name"]]
 
 
-## What one unit of a design costs to make and send: filament, electricity on
-## the starter printer, and a mailer box.
+## What one unit of a design costs to make and wrap: filament, electricity on
+## the starter printer, and the packaging it goes out in.
 func unit_cost(product: StringName) -> int:
 	var row: Dictionary = data.products[product]
 	var pla: Dictionary = data.filaments["pla"]
-	var config: Dictionary = data.settings["supplier"]
 	var printer: Dictionary = data.printers.values()[0]
 	var filament := float(row["filament_grams"]) / 1000.0 * float(pla["price_pence_per_kg"])
 	var kwh := float(printer["power_watts"]) / 1000.0 * float(row["print_minutes"]) / 60.0
-	var mailer := float(config["packaging_pack_pence"]) / float(config["packaging_pack_size"])
-	return roundi(filament + kwh * float(data.settings["electricity_pence_per_kwh"]) + mailer)
+	return roundi(filament + kwh * float(data.settings["electricity_pence_per_kwh"]) + packaging_price(packaging_of(product)))
 
 
-## What is left from one sale at `price` after costs and a marketplace's fees
-## and royalty. The first marketplace's, unless told which.
+## What is left from one sale at `price` after costs, postage and a
+## marketplace's fees and royalty. The first marketplace's, unless told which.
 func unit_profit(product: StringName, price: int, shop: Marketplace = null) -> int:
 	if shop == null:
 		shop = market
-	return price - unit_cost(product) - shop.fee_for(price) - shop.royalty_for(product, price)
+	return price - unit_cost(product) - postage_shortfall(product, shop) - shop.fee_for(price) - shop.royalty_for(product, price)
+
+
+## What one of a kind of packaging costs, in pence. 0 for none.
+func packaging_price(kind: StringName) -> float:
+	if not data.packaging.has(kind):
+		return 0.0
+	return float(data.packaging[kind]["price_pence"]) / float(data.packaging[kind]["pack_size"])
+
+
+## "small cardboard boxes", "poly mailer bags": a kind of packaging, in the plural.
+func packaging_plural(kind: StringName) -> String:
+	var title := String(data.packaging[kind]["name"]).to_lower()
+	return title + ("es" if title.ends_with("x") else "s")
+
+
+## How many of a kind of packaging are in stock.
+func packaging_count(kind: StringName) -> int:
+	return int(packaging.get(kind, 0))
+
+
+func packaging_total() -> int:
+	var total := 0
+	for kind in packaging:
+		total += packaging[kind]
+	return total
+
+
+## Takes one of a kind of packaging out of stock. False if there is none.
+func use_packaging(kind: StringName) -> bool:
+	if packaging_count(kind) <= 0:
+		return false
+	packaging[kind] -= 1
+	changed.emit()
+	return true
+
+
+func add_packaging(kind: StringName, count: int) -> void:
+	packaging[kind] = packaging_count(kind) + count
+	changed.emit()
+
+
+## The packaging a design goes out in: what the player chose for it, if that
+## is still something it fits, else the usual box for its size.
+func packaging_of(product: StringName) -> StringName:
+	var band := shipping.band_of(data.products[product])
+	var chosen: StringName = pack_choice.get(product, &"")
+	if data.packaging.has(chosen) and unlocked(data.packaging[chosen]) and shipping.fits(data.packaging[chosen], band):
+		return chosen
+	return shipping.default_packaging(band, tier)
+
+
+## Every kind of packaging on sale that a design fits in.
+func packaging_options(product: StringName) -> Array[StringName]:
+	return shipping.packaging_for(shipping.band_of(data.products[product]), tier)
+
+
+func set_packaging_choice(product: StringName, kind: StringName) -> void:
+	pack_choice[product] = kind
+	changed.emit()
+
+
+## The courier's service a marketplace sends by.
+func service_of(shop: Marketplace) -> StringName:
+	var chosen: StringName = service_choice.get(StringName(shop.config["id"]), &"")
+	if data.services.has(chosen) and unlocked(data.services[chosen]):
+		return chosen
+	return StringName(data.settings["shipping"]["default_service"])
+
+
+func set_service(shop: Marketplace, service: StringName) -> void:
+	service_choice[StringName(shop.config["id"])] = service
+	changed.emit()
+
+
+## How a design sold on a marketplace is sent, as things stand
+## (Shipping.terms): in its packaging, by the marketplace's service or, for a
+## parcel that service won't take, the nearest that will. {} if nothing will.
+func shipping_terms(product: StringName, shop: Marketplace) -> Dictionary:
+	var kind := packaging_of(product)
+	if kind == &"":
+		return {}
+	var band := shipping.band_of(data.products[product])
+	var service := shipping.service_for(service_of(shop), shipping.parcel_band(data.packaging[kind], band), tier)
+	if service == &"":
+		return {}
+	return shipping.terms(data.packaging[kind], data.services[service], band)
+
+
+## How an order from before there was a choice was sent.
+func usual_shipping() -> Dictionary:
+	return shipping.default_terms(data.products.values()[0], tier)
+
+
+## What posting one of a design costs the business over what its buyer pays
+## towards it. Negative if the buyer pays more than the courier charges.
+func postage_shortfall(product: StringName, shop: Marketplace) -> int:
+	var terms := shipping_terms(product, shop)
+	return int(terms.get("cost", 0)) - int(terms.get("buyer_pays", 0))
 
 
 ## Finished items of a design on the shelves.
@@ -907,24 +1034,33 @@ func stock_of(product: StringName) -> int:
 	return shelf.count_of(product) if shelf != null else 0
 
 
-## Takes payment for a dispatched order, less the marketplace's cut.
+## Takes payment for a dispatched order, less the marketplace's cut, and pays
+## the courier. The buyer's share of the postage comes in with the sale.
 func complete_sale(order: Marketplace.Order) -> void:
-	var transit: Array = data.settings["courier"]["delivery_minutes"]
 	var shop := market_of(order)
-	var sale := shop.ship(order, clock.minutes, clock.minutes + rng.randf_range(transit[0], transit[1]))
+	if order.shipping.is_empty():
+		order.shipping = usual_shipping()
+	var service: Dictionary = data.services[order.shipping["service"]]
+	order.late = rng.randf() < float(order.shipping["late_chance"])
+	var sale := shop.ship(order, clock.minutes, shipping.arrival(service, clock.minutes, order.late, rng))
 	var market_name: String = shop.config["name"]
 	bank.earn(sale["price"], "Sale: %s (%s)" % [product_name(order.product), market_name], clock.minutes)
 	stats["sales"] += 1
 	_count_takings(sale["price"])
 	bank.charge(sale["fee"], "%s fees" % market_name, clock.minutes)
 	bank.charge(sale["royalty"], "Design royalty: %s" % product_name(order.product), clock.minutes)
+	if int(order.shipping["buyer_pays"]) > 0:
+		bank.earn(int(order.shipping["buyer_pays"]), "Postage paid by the buyer (%s)" % shop.order_label(order), clock.minutes)
+	bank.charge(int(order.shipping["cost"]), "Postage: %s (%s)" % [service["name"], shop.order_label(order)], clock.minutes)
 	changed.emit()
 
 
-## Chance (0 to 1) that an item of this strength arrives broken, in the
-## packaging and with the courier the business uses.
-func damage_chance(durability: int) -> float:
-	return Marketplace.damage_chance(durability, data.settings["courier"])
+## Chance (0 to 1) that an item of this strength arrives broken, sent the
+## usual way: or, given a design and the marketplace it is for, the way that
+## design is sent from there.
+func damage_chance(durability: int, product: StringName = &"", shop: Marketplace = null) -> float:
+	var terms := usual_shipping() if product == &"" else shipping_terms(product, shop if shop != null else market)
+	return Marketplace.damage_chance(durability, terms) if not terms.is_empty() else 0.0
 
 
 ## Puts a delivered order's refund through the bank and announces how it went.
@@ -935,8 +1071,14 @@ func _settle_delivery(outcome: Dictionary) -> void:
 	if not outcome["refund"].is_empty():
 		var refund: Dictionary = outcome["refund"]
 		var market_name: String = market_of(order).config["name"]
-		var why := "arrived broken" if order.refund_reason == "damaged" else "sent back"
+		var why: String = {"damaged": "arrived broken", "lost": "lost in the post"}.get(order.refund_reason, "sent back")
 		bank.charge(refund["price"], "Refund: %s (%s)" % [title, why], clock.minutes)
+		if int(order.shipping.get("buyer_pays", 0)) > 0:
+			bank.charge(int(order.shipping["buyer_pays"]), "Postage refunded (%s)" % market_of(order).order_label(order), clock.minutes)
+		# A tracked service pays out for what it loses, up to what it insures.
+		var cover := mini(int(order.shipping.get("insured_pence", 0)), int(refund["price"]) + int(order.shipping.get("buyer_pays", 0)))
+		if order.refund_reason == "lost" and cover > 0:
+			bank.earn(cover, "Insurance: %s" % data.services[order.shipping["service"]]["name"], clock.minutes)
 		if refund["fee"] > 0:
 			bank.earn(refund["fee"], "%s fees returned" % market_name, clock.minutes)
 		if refund["royalty"] > 0:

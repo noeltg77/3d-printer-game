@@ -164,8 +164,8 @@ func _shelve_action(output_key: String) -> Action:
 func _crate_action(contract: Contracts.Contract, output_key: String) -> Action:
 	var count := mini(int(moulding.output[output_key]), Game.contracts.remaining(contract))
 	var label := "Crate %d x %s for %s" % [count, output_name(output_key), Game.client_name(contract)]
-	if Game.packaging <= 0:
-		return Action.info("%s (no mailer boxes)" % label)
+	if PackingStation.crate_kind() == &"":
+		return Action.info("%s (no boxes)" % label)
 	var action := Action.new(label, _crate.bind(contract.id, output_key)).for_duty(&"send")
 	action.task_name = "Crate up %d for %s" % [count, Game.client_name(contract)]
 	return action
@@ -249,7 +249,7 @@ func _shelve(agent: Agent, output_key: String) -> void:
 
 func _crate(agent: Agent, contract_id: int, output_key: String) -> void:
 	var contract := Game.contracts.by_id(contract_id)
-	if contract == null or contract.status != Contracts.Status.ACTIVE or Game.packaging <= 0 or not moulding.output.has(output_key) \
+	if contract == null or contract.status != Contracts.Status.ACTIVE or PackingStation.crate_kind() == &"" or not moulding.output.has(output_key) \
 			or not Game.contracts.wants(contract, moulding.facts(output_key)):
 		agent.say("Nothing to crate for that client right now")
 		return
@@ -258,7 +258,7 @@ func _crate(agent: Agent, contract_id: int, output_key: String) -> void:
 	if count <= 0:
 		return
 	await agent.work(float(Game.data.settings["moulding"]["setup_minutes"]))
-	Game.packaging -= 1
+	Game.use_packaging(PackingStation.crate_kind())
 	Game.contracts.pack(contract, count)
 	Game.changed.emit()
 	await agent.reach(func() -> void: agent.carry(Parcel.create_crate(contract.id, count)))

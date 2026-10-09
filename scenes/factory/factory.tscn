@@ -1,4 +1,4 @@
-[gd_scene load_steps=36 format=3]
+[gd_scene load_steps=40 format=3]
 
 [ext_resource type="PackedScene" path="res://assets/models/garage/factory.glb" id="1_garage"]
 [ext_resource type="PackedScene" path="res://assets/models/furniture/workbench_long.glb" id="2_workbench"]
@@ -49,6 +49,10 @@
 [ext_resource type="PackedScene" path="res://assets/models/automation/moulding_bay.glb" id="50_moulding_bay"]
 [ext_resource type="PackedScene" path="res://assets/models/automation/moulding_machine.glb" id="51_moulding_machine"]
 [ext_resource type="Script" path="res://scripts/interaction/moulding_machine.gd" id="52_moulding"]
+[ext_resource type="PackedScene" path="res://assets/models/furniture/packing_station.glb" id="60_packing_station"]
+[ext_resource type="Script" path="res://scripts/interaction/packing_station.gd" id="61_packing_station"]
+[ext_resource type="PackedScene" path="res://assets/models/furniture/finishing_bench.glb" id="62_finishing_bench"]
+[ext_resource type="Script" path="res://scripts/interaction/finishing_bench.gd" id="63_finishing_bench"]
 
 [sub_resource type="Environment" id="Environment_garage"]
 background_mode = 1
@@ -240,6 +244,18 @@ transform = Transform3D(0.866, 0, -0.5, 0, 1, 0, 0.5, 0, 0.866, 7.4, 0, 5.4)
 
 [node name="FloorBox3" parent="." groups=["obstacle"] instance=ExtResource("14_box_a")]
 transform = Transform3D(0.9659, 0, -0.2588, 0, 1, 0, 0.2588, 0, 0.9659, -8.4, 0, 5.2)
+
+[node name="PackingStation" parent="." groups=["obstacle"] instance=ExtResource("60_packing_station")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.6, 0, 2.2)
+script = ExtResource("61_packing_station")
+display_name = "Packing station"
+stand_offset = Vector3(0, 0, 0.75)
+
+[node name="FinishingBench" parent="." groups=["obstacle"] instance=ExtResource("62_finishing_bench")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.6, 0, -2.0)
+script = ExtResource("63_finishing_bench")
+display_name = "Finishing bench"
+stand_offset = Vector3(0, 0, 0.75)
 
 [node name="Player" parent="." instance=ExtResource("17_player")]
 transform = Transform3D(0.7071, 0, 0.7071, 0, 1, 0, -0.7071, 0, 0.7071, -5.5, 0, 0.4)
