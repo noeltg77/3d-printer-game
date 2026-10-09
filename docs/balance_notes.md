@@ -17,7 +17,7 @@ The catalogue is far bigger than a garage can print, so the scripted player does
 - Each preset is a real choice: Draft tempting but costly, Standard the safe default, Strong worth it in some situation.
 - A player doing everything sensibly is never penalised by the seller rating.
 
-## Where it stands (200 runs of 7 game days, 2026-10-09, with the 160 design Garage catalogue)
+## Where it stands (200 runs of 7 game days, last run 2026-10-09 with all 635 products imported)
 
 | Player | Second printer | Worth after 7 days | Sold a day | Printer busy | Designs owned | Ruined | Flawed | Refunded | Rating | Effect on orders |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -32,6 +32,24 @@ The catalogue is far bigger than a garage can print, so the scripted player does
 - **Failures:** about one print in 25 goes wrong on a fresh Plodder Mini, roughly one every game day and a half. On target.
 - **Wear:** still only the nozzle wears out inside a week. Spares cost £5 to £10.
 - **Rating:** a careful Standard player still gains a little from it (x1.06).
+
+## Re-run after the whole catalogue came in
+
+The table above was first measured with only the 160 Garage designs in the game. It was run again once the Spare room and Workshop products were imported (635 in all) and every figure came out the same. That is expected, and worth knowing why:
+
+- The scripted player only chooses from designs on sale in the garage. The 475 for later tiers are held back in the game too, so they change nothing here.
+- The import did not alter any Garage product's numbers. Three were renamed, and that is all.
+
+So the garage is where the last pass left it. What the re-run cannot tell you is below.
+
+## What the report does not cover
+
+It plays the garage with the Phase 5 rules. Rules added since are in the game but not in the model:
+
+- **Trends.** Every three to five days one category sells at 1.8 times its usual rate and another at 0.6. A player whose sixteen designs lean on the cool category will earn less than the table says, and one who chases the hot one more. Seasonal categories are left out of trends, and seasons themselves are still not applied.
+- **Damp filament.** PLA takes five game days in the open to get wet, and a busy garage empties a spool in a day or two, so it should hardly matter in the first week. It matters for a slow starter, and for PETG and TPU later.
+- **Printer upgrades and the second marketplace.** Neither is bought or used.
+- **Everything after the garage.** There are no figures at all for the small unit: 462 designs become available there with demand and licence fees from the same placeholder rules, against rent of £9.99 a day. Nobody has checked that it pays.
 
 ## Changed in the catalogue pass
 
@@ -59,5 +77,5 @@ Tried and dropped: halving demand with a fee of 3 times the price put the second
 - **Strong is a real choice again, but a costly one.** It ends 23% behind Standard and buys the second printer a day later, for almost no refunds and the best rating. With one printer its longer prints are what hold it back.
 - **A casual player's printers sit idle half the time.** With sixteen designs of mostly small prints, the character's attention is the limit, not the printer. That is why the casual player's second printer slipped from day 3.4 to 4.4.
 - **The starting design earns very little alone.** The free clips bring about £9 a day, so a new player has to buy designs straight away. Starting cash leaves about £125 after the first printer and spool, enough for four to eight designs.
-- **Seasons are not applied.** Seasonal designs sell all year, and two of the best ten are seasonal.
+- **Seasons are not applied.** Seasonal designs sell all year, and two of the best ten are seasonal (the Monster tooth necklace and the Heart lithophane).
 - **The move to a small unit** (£399.99 and £9.99 a day) was priced before this pass. An attentive Standard player ends a week with about £470 in cash after the second printer.
