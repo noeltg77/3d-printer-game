@@ -517,6 +517,7 @@
 		{ "generator": "garage", "out": "assets/models/garage/workshop.glb", "args": { "size": [12.0, 9.0, 3.0], "window": [3.9, 2.2], "door-width": 2.8, "door-height": 2.4, "wall": "cream", "outside": "brick", "cap": "charcoal", "floor": "stone" } },
 		{ "generator": "outdoors", "out": "assets/models/surroundings/street.glb", "args": { "variant": "street", "seed": 3 } },
 		{ "generator": "outdoors", "out": "assets/models/surroundings/estate.glb", "args": { "variant": "estate", "seed": 5, "room": [8.0, 7.0] } },
+		{ "generator": "outdoors", "out": "assets/models/surroundings/estate_workshop.glb", "args": { "variant": "estate", "seed": 9, "room": [12.0, 9.0] } },
 		{ "generator": "vehicles", "out": "assets/models/vehicles/car_red.glb", "args": { "variant": "car", "colour": "red" } },
 		{ "generator": "vehicles", "out": "assets/models/vehicles/car_teal.glb", "args": { "variant": "car", "colour": "teal" } },
 		{ "generator": "vehicles", "out": "assets/models/vehicles/car_yellow.glb", "args": { "variant": "car", "colour": "yellow" } },

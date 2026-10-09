@@ -36,6 +36,13 @@
 [ext_resource type="Script" path="res://scripts/world/day_night.gd" id="37_day_night"]
 [ext_resource type="Script" path="res://scripts/world/dryer_spot.gd" id="38_dryer_spot"]
 [ext_resource type="Script" path="res://scripts/world/staff_room.gd" id="39_staff_room"]
+[ext_resource type="PackedScene" path="res://assets/models/surroundings/estate_workshop.glb" id="40_surroundings"]
+[ext_resource type="Script" path="res://scripts/world/surroundings.gd" id="41_surroundings"]
+[ext_resource type="PackedScene" path="res://assets/models/vehicles/car_red.glb" id="42_car_red"]
+[ext_resource type="PackedScene" path="res://assets/models/vehicles/car_teal.glb" id="43_car_teal"]
+[ext_resource type="PackedScene" path="res://assets/models/vehicles/car_yellow.glb" id="44_car_yellow"]
+[ext_resource type="PackedScene" path="res://assets/models/vehicles/car_blue.glb" id="45_car_blue"]
+[ext_resource type="PackedScene" path="res://assets/models/vehicles/van_white.glb" id="46_van"]
 
 [sub_resource type="Environment" id="Environment_garage"]
 background_mode = 1
@@ -97,7 +104,7 @@ current = true
 size = 13.0
 far = 80.0
 script = ExtResource("18_camera")
-max_size = 15.5
+max_size = 19.0
 pan_limit = 4.5
 
 [node name="FloorGrid" type="Node3D" parent="."]
@@ -106,6 +113,11 @@ area = Rect2(-5.75, -4.25, 11.5, 8.5)
 
 [node name="Shell" parent="." instance=ExtResource("1_garage")]
 script = ExtResource("20_cutaway")
+
+[node name="Surroundings" parent="." instance=ExtResource("40_surroundings")]
+script = ExtResource("41_surroundings")
+vehicles = Array[PackedScene]([ExtResource("42_car_red"), ExtResource("43_car_teal"), ExtResource("44_car_yellow"), ExtResource("45_car_blue"), ExtResource("46_van")])
+courier_van = ExtResource("46_van")
 
 [node name="Door" type="Node3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 0, 0)

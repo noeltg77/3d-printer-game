@@ -619,9 +619,16 @@ def _street(yard, half_w, half_d):
 
 
 def _estate(yard, half_w, half_d):
-    """A trading estate: a terrace of units on a concrete yard, with warehouses over the road."""
+    """A trading estate: a terrace of units on a concrete yard, with warehouses over the road.
+
+    Laid out round the small unit (8 x 7). A bigger room pushes the road further
+    west and the yard further south by as much as it has grown, so the forecourt
+    and the gap to the yard's clutter stay the same.
+    """
     rng, ground = yard.rng, yard.ground
-    road = (-18.2, -12.2)
+    west = half_w - (4.0 + WALL_THICKNESS)
+    south = half_d - (3.5 + WALL_THICKNESS)
+    road = (-18.2 - west, -12.2 - west)
     pavement = 1.2
     front = road[1] + pavement
     back = half_w + 4.6
@@ -650,26 +657,26 @@ def _estate(yard, half_w, half_d):
     _parked(yard, forecourt[0] + 2.2, -19.5, 3, variant="van", colour="white")
 
     # The rest of the terrace to the north, and the next block to the south.
-    for rect, trim, sign in (((-half_w, half_w, half_d + 1.7, half_d + 9.2), "teal", "yellow"), ((-half_w, half_w, half_d + 9.5, half_d + 17.0), "brick", "white"), ((-half_w, half_w, -22.5, -14.8), "blue", "orange")):
+    for rect, trim, sign in (((-half_w, half_w, half_d + 1.7, half_d + 9.2), "teal", "yellow"), ((-half_w, half_w, half_d + 9.5, half_d + 17.0), "brick", "white"), ((-half_w, half_w, -22.5 - south, -14.8 - south), "blue", "orange")):
         _unit(yard, rect, trim=trim, sign=sign, shutter="W", windows="E", door=("S", 1.4))
         _flat(ground, rect[0] - 0.2, rect[0], (rect[2] + rect[3]) / 2 - 1.5, (rect[2] + rect[3]) / 2 + 1.5, "yellow", top=PAVED + 0.004)
     for y in (-1.6, 1.6):
         _bollard(yard, -half_w - 0.35, y)
 
     # The yard to the south: somewhere to eat lunch, and the usual clutter.
-    island = (-1.2, 3.4, -10.6, -7.2)
+    island = (-1.2, 3.4, -10.6 - south, -7.2 - south)
     _flat(ground, *island, "green", top=PAVED + 0.03)
     for low, high, start, end in ((island[0] - 0.1, island[1] + 0.1, island[2] - 0.1, island[2]), (island[0] - 0.1, island[1] + 0.1, island[3], island[3] + 0.1),
                                   (island[0] - 0.1, island[0], island[2], island[3]), (island[1], island[1] + 0.1, island[2], island[3])):
         _flat(ground, low, high, start, end, "linen", top=PAVED + 0.05)
-    _tree(yard, 2.2, -9.3, colour="lime", scale=0.85)
-    _bench(yard, 0.2, -8.3)
+    _tree(yard, 2.2, -9.3 - south, colour="lime", scale=0.85)
+    _bench(yard, 0.2, -8.3 - south)
     _tufts(yard, island[0] + 0.2, island[1] - 0.2, island[2] + 0.2, island[3] - 0.2, 14)
-    _skip(yard, -1.6, -12.6)
-    _pallets(yard, 2.6, -5.0, 4, turn=0.2)
-    _pallets(yard, 1.2, -5.3, 2, turn=-0.1)
+    _skip(yard, -1.6, -12.6 - south)
+    _pallets(yard, 2.6, -5.0 - south, 4, turn=0.2)
+    _pallets(yard, 1.2, -5.3 - south, 2, turn=-0.1)
     _pallets(yard, half_w + 1.3, -1.5, 3)
-    for x, y in ((-3.6, -5.2), (-3.0, -5.6), (half_w + 1.2, 1.4)):
+    for x, y in ((-3.6, -5.2 - south), (-3.0, -5.6 - south), (half_w + 1.2, 1.4)):
         _cone(yard, x, y)
     _wheelie_bin(yard, half_w + 1.7, 2.9, "blue")
     _wheelie_bin(yard, half_w + 2.35, 2.9, "green")
