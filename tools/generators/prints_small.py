@@ -286,6 +286,98 @@ def _museum_replica_artefact(builder):
         print_shapes.strut(builder, (side * 0.062, 0, 0.165), (side * 0.05, 0, 0.125), 0.009)
 
 
+# Cosplay and props, Spare room tier
+
+def _armour_gauntlet(builder):
+    """Gauntlet standing on its cuff: a flared cuff, a forearm tube, a hand plate and four finger plates."""
+    builder.cylinder(0.068, 0.045, (0, 0, 0.0225), COLOUR, segments=8, radius_top=0.05)
+    builder.cylinder(0.05, 0.13, (0, 0, 0.11), COLOUR, segments=8, radius_top=0.042)
+    builder.box((0.085, 0.05, 0.055), (0, 0, 0.2), COLOUR, taper=(0.9, 0.9))
+    for x, _ in print_shapes.grid(4, 1, 0.021, 0):
+        builder.box((0.018, 0.03, 0.05), (x, -0.004, 0.25), COLOUR, taper=(0.8, 0.6))
+    for z in (0.085, 0.13):
+        builder.cylinder(0.052, 0.008, (0, 0, z), COLOUR, segments=8)
+
+
+def _shoulder_pauldron_pair(builder):
+    """Two domed shoulder plates, each stepped in three overlapping bands."""
+    for side in (-1, 1):
+        x = side * 0.075
+        builder.cylinder(0.07, 0.03, (x, 0, 0.015), COLOUR, segments=8, radius_top=0.062)
+        builder.cylinder(0.056, 0.03, (x, 0, 0.045), COLOUR, segments=8, radius_top=0.042)
+        builder.cylinder(0.038, 0.022, (x, 0, 0.071), COLOUR, segments=8, radius_top=0.014)
+
+
+def _crown(builder):
+    """Round band with five tall points standing up from it."""
+    builder.shell(0.07, 0.035, 0.006, COLOUR, segments=10, open_base=True)
+    for index in range(5):
+        angle = math.pi / 2 + math.tau * index / 5
+        builder.box((0.03, 0.006, 0.05), (0.064 * math.cos(angle), 0.064 * math.sin(angle), 0.058), COLOUR,
+                    rotation=(0, 0, angle + math.pi / 2), taper=(0.1, 1.0))
+
+
+def _tiara(builder):
+    """Half band standing on edge, curving round the front, with three peaks, the middle one tallest."""
+    for index in range(6):
+        angle = math.pi + (index + 0.5) * math.pi / 6
+        builder.box((0.036, 0.006, 0.014), (0.065 * math.cos(angle), 0.03 + 0.065 * math.sin(angle), 0.007), COLOUR,
+                    rotation=(0, 0, angle + math.pi / 2))
+    for index, height in ((2, 0.03), (3, 0.03), (2.5, 0.05)):
+        angle = math.pi + (index + 0.5) * math.pi / 6
+        builder.box((0.028, 0.006, height), (0.065 * math.cos(angle), 0.03 + 0.065 * math.sin(angle), 0.012 + height / 2), COLOUR,
+                    rotation=(0, 0, angle + math.pi / 2), taper=(0.1, 1.0))
+    builder.enlarge(1.2)
+
+
+def _elf_ears_flexible(builder):
+    """Pair of flat pointed ear tips, mirror images, each with a ridge inside the curve."""
+    for side in (-1, 1):
+        ear = [(side * x, y) for x, y in ((0.0, -0.04), (0.03, -0.03), (0.036, 0.0), (0.016, 0.06), (0.004, 0.02))]
+        if side < 0:
+            ear.reverse()
+        builder.plate(ear, 0.008, COLOUR, centre=(side * 0.012, 0, 0))
+        builder.box((0.006, 0.05, 0.006), (side * 0.03, 0.0, 0.01), COLOUR, rotation=(0, 0, side * 0.25))
+
+
+def _prop_coins_x20(builder):
+    """Twenty prop coins: three stacks of five, with the last five loose in front."""
+    for x in (-0.035, 0.0, 0.035):
+        builder.cylinder(0.016, 0.02, (x, 0.02, 0.01), COLOUR, segments=8)
+    for x, _ in print_shapes.grid(5, 1, 0.034, 0):
+        builder.cylinder(0.016, 0.004, (x, -0.022, 0.002), COLOUR, segments=8)
+
+
+def _cyberpunk_visor(builder):
+    """Wrap-round visor band standing on edge: a flat front, angled sides, an arm each end and a nose notch."""
+    angle = math.radians(40)
+    builder.box((0.09, 0.008, 0.04), (0, -0.03, 0.03), COLOUR)
+    for side in (-1, 1):
+        builder.box((0.06, 0.008, 0.04), (side * (0.045 + 0.03 * math.cos(angle)), -0.03 + 0.03 * math.sin(angle), 0.03), COLOUR,
+                    rotation=(0, 0, side * angle))
+        builder.box((0.008, 0.08, 0.014), (side * 0.091, 0.048, 0.036), COLOUR)
+    builder.box((0.022, 0.014, 0.014), (0, -0.03, 0.007), COLOUR, taper=(0.5, 1.0))
+
+
+def _prop_book_cover_corners_x4(builder):
+    """Four corner plates for a prop book, each with a raised stud."""
+    corner = [(-0.022, -0.022), (0.022, -0.022), (0.022, -0.006), (-0.006, 0.022), (-0.022, 0.022)]
+    for x, y in print_shapes.grid(2, 2, 0.055, 0.055):
+        builder.plate(corner, 0.005, COLOUR, centre=(x, y, 0))
+        builder.cylinder(0.006, 0.006, (x - 0.008, y - 0.008, 0.006), COLOUR, segments=6)
+    builder.enlarge(1.2)
+
+
+def _movie_prop_badge(builder):
+    """Seven-pointed star on a shield, with a round boss in the middle."""
+    builder.plate([(-0.04, 0.045), (-0.04, -0.01), (0.0, -0.05), (0.04, -0.01), (0.04, 0.045), (0.0, 0.035)], 0.005, COLOUR)
+    star = [((0.034 if index % 2 == 0 else 0.017) * math.cos(math.pi / 2 + math.pi * index / 7),
+             (0.034 if index % 2 == 0 else 0.017) * math.sin(math.pi / 2 + math.pi * index / 7)) for index in range(14)]
+    builder.plate(star, 0.005, COLOUR, centre=(0, 0.002, 0.004))
+    builder.cylinder(0.012, 0.005, (0, 0.002, 0.011), COLOUR, segments=8)
+    builder.enlarge(1.3)
+
+
 VARIANTS = {
     "cotton_bud_dispenser": _cotton_bud_dispenser,
     "toothpaste_squeezer": _toothpaste_squeezer,
@@ -315,6 +407,15 @@ VARIANTS = {
     "remote_battery_door": _remote_battery_door,
     "restaurant_menu_holders_x20": _restaurant_menu_holders_x20,
     "museum_replica_artefact": _museum_replica_artefact,
+    "armour_gauntlet": _armour_gauntlet,
+    "shoulder_pauldron_pair": _shoulder_pauldron_pair,
+    "crown": _crown,
+    "tiara": _tiara,
+    "elf_ears_flexible": _elf_ears_flexible,
+    "prop_coins_x20": _prop_coins_x20,
+    "cyberpunk_visor": _cyberpunk_visor,
+    "prop_book_cover_corners_x4": _prop_book_cover_corners_x4,
+    "movie_prop_badge": _movie_prop_badge,
 }
 
 if __name__ == "__main__":

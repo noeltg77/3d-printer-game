@@ -137,6 +137,79 @@ def _drawer_bin_for_cutlery(builder):
         builder.box((0.006, 0.156, 0.046), (x, -0.028, 0.023), COLOUR)
 
 
+# Kitchen, Spare room tier
+
+def _knife_block_insert(builder):
+    """Sloping block with five slots across the top, marked by raised guides."""
+    builder.plate([(-0.11, 0.0), (0.11, 0.0), (0.11, 0.06), (-0.11, 0.14)], 0.11, COLOUR, upright=True)
+    tilt = math.atan2(0.08, 0.22)
+    for index in range(5):
+        along = (index + 0.5) / 5
+        builder.box((0.008, 0.09, 0.008), (-0.11 + along * 0.22, 0, 0.142 - along * 0.08), COLOUR, rotation=(0, tilt, 0))
+
+
+def _pan_lid_rack(builder):
+    """Two upright rails joined by four cradles, one above another, that pan lids rest in."""
+    for side in (-1, 1):
+        builder.box((0.014, 0.014, 0.21), (side * 0.1, 0.03, 0.105), COLOUR)
+    for index in range(4):
+        z = 0.02 + index * 0.05
+        builder.box((0.214, 0.01, 0.01), (0, 0.03, z + 0.005), COLOUR)
+        for side in (-1, 1):
+            builder.box((0.01, 0.06, 0.01), (side * 0.07, 0.0, z + 0.012), COLOUR, rotation=(math.radians(-18), 0, 0))
+    builder.box((0.214, 0.05, 0.01), (0, 0.012, 0.005), COLOUR)
+
+
+def _sink_sponge_holder(builder):
+    """Small tray for a sponge with a strap up the back that hooks over the edge of the sink."""
+    builder.tray((0.12, 0.07, 0.04), 0.006, COLOUR, chamfer=0.003)
+    for y in (-0.015, 0.015):
+        builder.box((0.1, 0.006, 0.006), (0, y, 0.009), COLOUR)
+    builder.box((0.05, 0.006, 0.06), (0, 0.038, 0.07), COLOUR)
+    builder.box((0.05, 0.03, 0.006), (0, 0.05, 0.097), COLOUR)
+
+
+def _bottle_opener(builder):
+    """Flat opener: a ring with a lip that catches the cap, on a long handle."""
+    builder.shell(0.03, 0.007, 0.009, COLOUR, segments=8, centre=(0, 0.05, 0), turn=math.pi / 8, open_base=True)
+    builder.plate([(-0.012, 0.026), (-0.016, -0.07), (0.016, -0.07), (0.012, 0.026)], 0.007, COLOUR)
+    builder.box((0.02, 0.008, 0.007), (0, 0.068, 0.0035), COLOUR)
+
+
+def _jar_opener_grip(builder):
+    """Ring with teeth round the inside that grips a jar lid, and a handle to turn it by."""
+    builder.shell(0.055, 0.014, 0.008, COLOUR, segments=10, open_base=True)
+    for index in range(5):
+        angle = math.tau * index / 5
+        builder.box((0.012, 0.008, 0.014), (0.043 * math.cos(angle), 0.043 * math.sin(angle), 0.007), COLOUR, rotation=(0, 0, angle))
+    builder.box((0.03, 0.09, 0.014), (0, -0.095, 0.007), COLOUR, bevel=0.004)
+
+
+def _measuring_spoon_set(builder):
+    """Four measuring spoons in a row, small to large, each a five-sided bowl on a flat handle."""
+    for (x, _), radius in zip(print_shapes.grid(4, 1, 0.046, 0), (0.012, 0.015, 0.018, 0.021)):
+        builder.shell(radius, radius * 0.9, 0.004, COLOUR, segments=5, centre=(x, 0.035, 0), turn=math.pi / 2)
+        builder.box((0.01, 0.075, 0.004), (x, -0.012, radius * 0.9 - 0.002), COLOUR)
+
+
+def _cling_film_cutter(builder):
+    """Long rail with a raised track along it, a slider that carries the blade and a stop at each end."""
+    builder.box((0.28, 0.035, 0.014), (0, 0, 0.007), COLOUR, bevel=0.004)
+    builder.box((0.26, 0.008, 0.006), (0, 0, 0.016), COLOUR)
+    builder.box((0.03, 0.04, 0.02), (0.05, 0, 0.022), COLOUR)
+    for side in (-1, 1):
+        builder.box((0.012, 0.035, 0.012), (side * 0.134, 0, 0.02), COLOUR)
+
+
+def _cereal_clip_with_spout(builder):
+    """Wide bag clip with a round pouring spout and cap rising from the top jaw."""
+    builder.box((0.12, 0.03, 0.01), (0, 0, 0.005), COLOUR)
+    builder.box((0.12, 0.03, 0.01), (0, 0, 0.02), COLOUR)
+    builder.box((0.12, 0.008, 0.016), (0, 0.016, 0.0125), COLOUR)
+    builder.cylinder(0.018, 0.03, (0.02, 0, 0.04), COLOUR, segments=8)
+    builder.cylinder(0.021, 0.01, (0.02, 0, 0.06), COLOUR, segments=8)
+
+
 VARIANTS = {
     "cookie_cutter_set_x6": _cookie_cutter_set_x6,
     "herb_stripper": _herb_stripper,
@@ -154,6 +227,14 @@ VARIANTS = {
     "pasta_measure": _pasta_measure,
     "cookie_stamp_set": _cookie_stamp_set,
     "drawer_bin_for_cutlery": _drawer_bin_for_cutlery,
+    "knife_block_insert": _knife_block_insert,
+    "pan_lid_rack": _pan_lid_rack,
+    "sink_sponge_holder": _sink_sponge_holder,
+    "bottle_opener": _bottle_opener,
+    "jar_opener_grip": _jar_opener_grip,
+    "measuring_spoon_set": _measuring_spoon_set,
+    "cling_film_cutter": _cling_film_cutter,
+    "cereal_clip_with_spout": _cereal_clip_with_spout,
 }
 
 if __name__ == "__main__":

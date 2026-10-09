@@ -132,6 +132,87 @@ def _lid_organiser_rack(builder):
     print_shapes.slot_rack(builder, 0.28, 0.18, (0.1, 0.1, 0.1, 0.1), lean=0.0)
 
 
+# Home organisation, Spare room tier
+
+HOOK = [(-0.008, 0.03), (-0.008, -0.04), (0.004, -0.055), (0.03, -0.055), (0.03, -0.03), (0.02, -0.03),
+        (0.02, -0.043), (0.008, -0.043), (0.008, 0.03)]
+
+
+def _under_shelf_basket(builder):
+    """Wide basket with two arms that rise at the back and reach forward to slide over a shelf."""
+    builder.tray((0.26, 0.18, 0.075), 0.007, COLOUR, chamfer=0.004)
+    for side in (-1, 1):
+        builder.box((0.02, 0.008, 0.07), (side * 0.11, 0.086, 0.105), COLOUR)
+        builder.box((0.02, 0.17, 0.008), (side * 0.11, 0.005, 0.14), COLOUR)
+
+
+def _adhesive_wall_hooks_x4(builder):
+    """Four stick-on hooks lying on their backs: a flat pad with an upturned hook."""
+    for x, y in print_shapes.grid(2, 2, 0.045, 0.055):
+        builder.box((0.032, 0.044, 0.005), (x, y, 0.0025), COLOUR)
+        builder.box((0.014, 0.012, 0.02), (x, y - 0.01, 0.014), COLOUR)
+        builder.box((0.014, 0.022, 0.006), (x, y - 0.005, 0.026), COLOUR)
+    builder.enlarge(1.3)
+
+
+def _shoe_rack_spacer_clips_x8(builder):
+    """Eight U-shaped spacer clips in two rows."""
+    clip = [(-0.016, -0.016), (0.016, -0.016), (0.016, 0.016), (0.007, 0.016), (0.007, -0.006), (-0.007, -0.006), (-0.007, 0.016), (-0.016, 0.016)]
+    for x, y in print_shapes.grid(4, 2, 0.042, 0.045):
+        builder.plate(clip, 0.014, COLOUR, centre=(x, y, 0))
+
+
+def _wardrobe_hanger_hooks_x4(builder):
+    """Four flat hooks side by side, each a shank with a J at the bottom to hang the next hanger from."""
+    for x, _ in print_shapes.grid(4, 1, 0.05, 0):
+        builder.plate(HOOK, 0.008, COLOUR, centre=(x - 0.01, 0.012, 0))
+
+
+def _plastic_bag_dispenser(builder):
+    """Tall square bin, wider at the top, with a pull slot surround low on the front and a hanging tab behind."""
+    builder.tray((0.11, 0.11, 0.24), 0.007, COLOUR, taper=0.012, chamfer=0.004)
+    builder.box((0.06, 0.012, 0.04), (0, -0.048, 0.045), COLOUR)
+    builder.plate([(-0.02, 0.0), (0.02, 0.0), (0.02, 0.03), (0.0, 0.045), (-0.02, 0.03)], 0.007, COLOUR, centre=(0, 0.052, 0.235), upright=True)
+
+
+def _cupboard_door_caddy(builder):
+    """Long caddy with two straps up the back that hook over the top of a cupboard door."""
+    builder.tray((0.24, 0.085, 0.1), 0.007, COLOUR, chamfer=0.004)
+    for side in (-1, 1):
+        builder.box((0.022, 0.007, 0.12), (side * 0.08, 0.046, 0.155), COLOUR)
+        builder.box((0.022, 0.03, 0.007), (side * 0.08, 0.058, 0.2115), COLOUR)
+        builder.box((0.022, 0.007, 0.03), (side * 0.08, 0.07, 0.2), COLOUR)
+
+
+def _shelf_bracket_pair(builder):
+    """Two L brackets standing side by side, each with a diagonal brace."""
+    for side in (-1, 1):
+        x = side * 0.04
+        builder.box((0.022, 0.012, 0.12), (x, 0.05, 0.06), COLOUR)
+        builder.box((0.022, 0.11, 0.012), (x, 0.001, 0.114), COLOUR)
+        print_shapes.strut(builder, (x, 0.046, 0.018), (x, -0.04, 0.108), 0.014)
+
+
+def _floating_shelf_support_pair(builder):
+    """Two wall plates, each with a pair of long rods that slide into the back of a shelf."""
+    for side in (-1, 1):
+        x = side * 0.05
+        builder.box((0.035, 0.01, 0.11), (x, 0.06, 0.055), COLOUR)
+        for z in (0.03, 0.08):
+            print_shapes.limb(builder, (x, 0.058, z), (x, -0.07, z), 0.009, 0.007)
+
+
+def _over_door_hook_x2(builder):
+    """Two over-door hooks: a top that sits over the door, a long strap down the front and an upturned hook."""
+    for side in (-1, 1):
+        x = side * 0.035
+        builder.box((0.03, 0.007, 0.16), (x, 0.0, 0.08), COLOUR)
+        builder.box((0.03, 0.05, 0.007), (x, 0.022, 0.1565), COLOUR)
+        builder.box((0.03, 0.007, 0.035), (x, 0.044, 0.142), COLOUR)
+        builder.box((0.03, 0.04, 0.007), (x, -0.02, 0.0035), COLOUR)
+        builder.box((0.03, 0.007, 0.035), (x, -0.037, 0.0175), COLOUR)
+
+
 VARIANTS = {
     "drawer_divider_set": _drawer_divider_set,
     "stackable_storage_bin": _stackable_storage_bin,
@@ -149,6 +230,15 @@ VARIANTS = {
     "charging_cable_spool": _charging_cable_spool,
     "coat_peg_x3": _coat_peg_x3,
     "lid_organiser_rack": _lid_organiser_rack,
+    "under_shelf_basket": _under_shelf_basket,
+    "adhesive_wall_hooks_x4": _adhesive_wall_hooks_x4,
+    "shoe_rack_spacer_clips_x8": _shoe_rack_spacer_clips_x8,
+    "wardrobe_hanger_hooks_x4": _wardrobe_hanger_hooks_x4,
+    "plastic_bag_dispenser": _plastic_bag_dispenser,
+    "cupboard_door_caddy": _cupboard_door_caddy,
+    "shelf_bracket_pair": _shelf_bracket_pair,
+    "floating_shelf_support_pair": _floating_shelf_support_pair,
+    "over_door_hook_x2": _over_door_hook_x2,
 }
 
 if __name__ == "__main__":

@@ -154,6 +154,84 @@ def _bridge_girder_set(builder):
         builder.box((0.008, 0.08, 0.008), (x, 0, 0.03), COLOUR)
 
 
+# RC and drones, Spare room tier
+
+def _fpv_drone_camera_mount(builder):
+    """Tilted cradle for a small camera: a base, an ear either side and the camera block between them."""
+    builder.box((0.04, 0.03, 0.006), (0, 0, 0.003), COLOUR)
+    for side in (-1, 1):
+        builder.box((0.006, 0.026, 0.03), (side * 0.017, 0, 0.02), COLOUR, taper=(1.0, 0.6))
+    builder.box((0.026, 0.02, 0.02), (0, -0.002, 0.022), COLOUR, rotation=(math.radians(-25), 0, 0))
+    builder.cylinder(0.007, 0.008, (0, -0.014, 0.027), COLOUR, segments=6, rotation=(math.radians(65), 0, 0))
+    builder.enlarge(2.2)
+
+
+def _propeller_guards_x4(builder):
+    """Four six-sided guard rings, each with a mounting arm."""
+    for x, y in print_shapes.grid(2, 2, 0.105, 0.1):
+        builder.shell(0.042, 0.01, 0.006, COLOUR, segments=6, centre=(x, y, 0), open_base=True)
+        builder.box((0.012, 0.016, 0.01), (x * 0.52, y * 0.52, 0.005), COLOUR, rotation=(0, 0, math.atan2(y, x)))
+
+
+def _rc_car_body_shell(builder):
+    """Car body: a long lower shell, a tapered cabin, a bonnet scoop and a rear wing on two posts."""
+    builder.box((0.27, 0.115, 0.045), (0, 0, 0.0225), COLOUR, bevel=0.01)
+    builder.box((0.13, 0.095, 0.04), (0.015, 0, 0.062), COLOUR, taper=(0.7, 0.85))
+    builder.box((0.04, 0.04, 0.01), (-0.085, 0, 0.049), COLOUR)
+    for side in (-1, 1):
+        builder.box((0.01, 0.01, 0.03), (0.115, side * 0.035, 0.058), COLOUR)
+    builder.box((0.03, 0.11, 0.006), (0.118, 0, 0.076), COLOUR)
+
+
+def _rc_crawler_tyres_x4(builder):
+    """Four chunky tyres lying flat, open through the middle for the wheel."""
+    for x, y in print_shapes.grid(2, 2, 0.095, 0.095):
+        builder.shell(0.044, 0.034, 0.014, COLOUR, segments=8, centre=(x, y, 0), open_base=True)
+
+
+def _battery_strap_holder(builder):
+    """Flat pad with a raised bridge at each end for a strap to thread under."""
+    builder.box((0.05, 0.03, 0.004), (0, 0, 0.002), COLOUR)
+    for side in (-1, 1):
+        builder.box((0.008, 0.03, 0.006), (side * 0.018, 0, 0.007), COLOUR)
+        for y in (-0.013, 0.013):
+            builder.box((0.008, 0.004, 0.006), (side * 0.018, y, 0.004), COLOUR)
+    builder.enlarge(2.0)
+
+
+def _antenna_mount(builder):
+    """Small base with two tubes angled up and apart in a V for a pair of antennas."""
+    builder.box((0.03, 0.02, 0.008), (0, 0, 0.004), COLOUR)
+    for side in (-1, 1):
+        print_shapes.limb(builder, (side * 0.006, 0, 0.006), (side * 0.024, 0, 0.036), 0.006, 0.005)
+    builder.enlarge(2.0)
+
+
+def _landing_gear_x4(builder):
+    """Four landing legs: a mounting pad, a leg that sweeps down and out, and a foot."""
+    for x, y in print_shapes.grid(2, 2, 0.06, 0.05):
+        builder.box((0.022, 0.016, 0.005), (x - 0.012, y, 0.0425), COLOUR)
+        print_shapes.strut(builder, (x - 0.012, y, 0.042), (x + 0.012, y, 0.006), 0.008)
+        builder.box((0.02, 0.016, 0.006), (x + 0.014, y, 0.003), COLOUR)
+
+
+def _servo_saver(builder):
+    """Servo horn: a round hub with a sprung collar and a tapering arm."""
+    builder.cylinder(0.014, 0.012, (0, 0, 0.006), COLOUR, segments=8)
+    builder.cylinder(0.01, 0.008, (0, 0, 0.016), COLOUR, segments=6)
+    builder.plate([(-0.008, 0.0), (0.008, 0.0), (0.004, 0.04), (-0.004, 0.04)], 0.006, COLOUR)
+    builder.enlarge(2.0)
+
+
+def _rc_boat_hull(builder):
+    """Open boat hull with a pointed bow, a foredeck and a motor mount inside at the stern."""
+    hull = [(-0.05, -0.14), (0.05, -0.14), (0.055, 0.04), (0.0, 0.15), (-0.055, 0.04)]
+    builder.plate(hull, 0.008, COLOUR)
+    builder.outline(hull, 0.055, 0.007, COLOUR)
+    builder.plate([(-0.048, 0.045), (0.048, 0.045), (0.0, 0.14)], 0.006, COLOUR, centre=(0, 0, 0.049))
+    builder.box((0.04, 0.03, 0.025), (0, -0.11, 0.02), COLOUR)
+
+
 VARIANTS = {
     "guitar_pick_holder": _guitar_pick_holder,
     "recorder": _recorder,
@@ -169,6 +247,15 @@ VARIANTS = {
     "diorama_base_hex": _diorama_base_hex,
     "model_railway_tunnel_portal": _model_railway_tunnel_portal,
     "bridge_girder_set": _bridge_girder_set,
+    "fpv_drone_camera_mount": _fpv_drone_camera_mount,
+    "propeller_guards_x4": _propeller_guards_x4,
+    "rc_car_body_shell": _rc_car_body_shell,
+    "rc_crawler_tyres_x4": _rc_crawler_tyres_x4,
+    "battery_strap_holder": _battery_strap_holder,
+    "antenna_mount": _antenna_mount,
+    "landing_gear_x4": _landing_gear_x4,
+    "servo_saver": _servo_saver,
+    "rc_boat_hull": _rc_boat_hull,
 }
 
 if __name__ == "__main__":
