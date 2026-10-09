@@ -287,34 +287,36 @@ func print_grams(product: StringName, preset: StringName) -> float:
 ## Chance (0 to 1) that printing a design this way goes wrong. `wear` and
 ## `mods` are the state of the printer's parts and its upgrades, if it has any.
 func fail_chance(printer: Dictionary, preset: StringName, filament: StringName, product: StringName,
-		wear: PrinterWear = null, mods: PrinterMods = null) -> float:
+		wear: PrinterWear = null, mods: PrinterMods = null, moisture := 0.0) -> float:
 	var spec := mods.apply(printer) if mods != null else printer
-	var chance := PrintRisk.fail_chance(spec, data.presets[preset], data.filaments[filament], data.products[product],
-		wear.extra_fail_chance() if wear != null else 0.0)
+	var extra := Moisture.extra_fail_chance(moisture, data.settings["moisture"]) + (wear.extra_fail_chance() if wear != null else 0.0)
+	var chance := PrintRisk.fail_chance(spec, data.presets[preset], data.filaments[filament], data.products[product], extra)
 	if mods == null:
 		return chance
-	var flags := _print_flags(spec, preset, product, wear)
+	var flags := _print_flags(spec, preset, product, wear, moisture)
 	return chance * PrintRisk.upgrade_scale(data.failures, flags, data.filaments[filament], mods.failure_multipliers())
 
 
 ## Decides the fate of a print as it starts. Returns {} if it will go well, or
 ## { failure, at } with the failure's row and the progress at which it strikes.
 func roll_print(printer: Dictionary, preset: StringName, filament: StringName, product: StringName,
-		wear: PrinterWear = null, mods: PrinterMods = null) -> Dictionary:
+		wear: PrinterWear = null, mods: PrinterMods = null, moisture := 0.0) -> Dictionary:
 	if data.failures.has(force_failure):
 		var forced: Dictionary = data.failures[force_failure]
 		force_failure = ""
 		return {"failure": forced, "at": PrintRisk.strike_point(forced, rng)}
 	var spec := mods.apply(printer) if mods != null else printer
-	return PrintRisk.roll(fail_chance(printer, preset, filament, product, wear, mods), data.failures,
-		_print_flags(spec, preset, product, wear), data.filaments[filament], rng,
+	return PrintRisk.roll(fail_chance(printer, preset, filament, product, wear, mods, moisture), data.failures,
+		_print_flags(spec, preset, product, wear, moisture), data.filaments[filament], rng,
 		mods.failure_multipliers() if mods != null else {})
 
 
 ## The condition flags for a print: from the printer, preset and design, plus
-## any worn parts.
-func _print_flags(spec: Dictionary, preset: StringName, product: StringName, wear: PrinterWear) -> Array[StringName]:
+## any worn parts and wet filament.
+func _print_flags(spec: Dictionary, preset: StringName, product: StringName, wear: PrinterWear, moisture := 0.0) -> Array[StringName]:
 	var flags := PrintRisk.conditions(spec, data.presets[preset], data.products[product])
+	if Moisture.is_wet(moisture, data.settings["moisture"]):
+		flags.append(&"wet_filament")
 	if wear != null:
 		flags.append_array(wear.flags())
 	return flags
@@ -354,6 +356,15 @@ func supplier_problem(basket: Dictionary) -> String:
 		part_ids.append_array(box.delivery.parts.keys())
 	if shelf != null and not basket.get("parts", {}).is_empty() and not shelf.can_store_parts(part_ids):
 		return "No shelf space for more spare parts"
+	if not basket.get("dryers", {}).is_empty():
+		var spot: DryerSpot = get_tree().get_first_node_in_group(&"dryer_spot")
+		var on_its_way := supplier.pending.any(func(delivery: Supplier.Delivery) -> bool: return delivery.dryer != &"")
+		if on_its_way or get_tree().get_nodes_in_group(&"delivery_box").any(func(box: DeliveryBox) -> bool: return box.delivery.dryer != &""):
+			return "A dryer is already on its way"
+		if spot != null and basket["dryers"].has(String(spot.dryer_id())):
+			return "You already have this one"
+		if spot != null and spot.problem() != "":
+			return spot.problem()
 	var bench: Workbench = get_tree().get_first_node_in_group(&"workbench")
 	if bench != null and Supplier.count_printers(basket) + incoming_printers > bench.free_spots() - _unpacked(&"printers"):
 		return "No bench space for another printer"

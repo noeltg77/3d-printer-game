@@ -238,7 +238,7 @@ func start_print(product: StringName, p_preset: StringName) -> void:
 	Interactable.attach(item, _plate)
 	item.scale.y = 0.02
 	job = PrintJob.new(GameClock.to_seconds(print_minutes(product, preset)))
-	var fate := Game.roll_print(spec, preset, spool.material, product, wear, mods)
+	var fate := Game.roll_print(spec, preset, spool.material, product, wear, mods, spool.moisture)
 	if not fate.is_empty():
 		job.fail(fate["failure"], fate["at"])
 	# A part that runs out before anything else goes wrong stops the print there.

@@ -14,6 +14,8 @@ from common import MeshBuilder
 
 SCREEN_COLOURS = ("orange", "yellow", "pink", "lime", "teal", "white")
 SCRAP_COLOURS = ("red", "orange", "yellow", "green", "sky", "purple", "pink")
+SIDEWAYS = (0.0, 0.0, math.pi / 2)
+_pending_markers = []
 
 
 def add_arguments(parser):
@@ -23,8 +25,11 @@ def add_arguments(parser):
 
 def build(args, rng):
     builder = MeshBuilder()
+    _pending_markers.clear()
     VARIANTS[args.variant](builder, args, rng)
-    builder.finish(args.out.stem)
+    obj = builder.finish(args.out.stem)
+    for name, position, rotation in _pending_markers:
+        common.marker(name, position, obj, rotation=rotation)
 
 
 def _pc(builder, args, rng):
@@ -114,7 +119,38 @@ def _desk_lamp(builder, args, rng):
     builder.cylinder(0.06, 0.004, (0, -0.16, 0.298), "white", segments=8)
 
 
-VARIANTS = {"pc": _pc, "bin": _bin, "plant": _plant, "rug": _rug, "desk_lamp": _desk_lamp, "floor_mat": _floor_mat}
+def _dryer(builder, args, rng):
+    """Filament dryer: a warm box on short legs with a cradle for two spools on top.
+
+    Markers `spool_slot_1` and `spool_slot_2` sit side by side in the cradle.
+    """
+    width, depth, top = 0.4, 0.32, 0.52
+    for x in (-1, 1):
+        for y in (-1, 1):
+            builder.box((0.04, 0.04, 0.12), (x * (width / 2 - 0.04), y * (depth / 2 - 0.04), 0.06), "charcoal")
+    builder.box((width, depth, top - 0.12), (0, 0, 0.12 + (top - 0.12) / 2), "cream", bevel=0.02, bevel_segments=2)
+    builder.box((width + 0.02, depth + 0.02, 0.03), (0, 0, 0.135), "charcoal", bevel=0.008)
+    # Front: vent slots, a dial and a little warm display.
+    front = -depth / 2 - 0.004
+    for index in range(4):
+        builder.box((0.16, 0.01, 0.014), (-0.08, front, 0.24 + index * 0.035), "charcoal")
+    builder.cylinder(0.035, 0.02, (0.1, front - 0.006, 0.3), args.colour, segments=10, axis="Y")
+    builder.box((0.012, 0.012, 0.03), (0.1, front - 0.018, 0.312), "white")
+    builder.box((0.09, 0.01, 0.04), (0.1, front, 0.4), "ink")
+    builder.box((0.06, 0.012, 0.018), (0.1, front - 0.002, 0.4), args.colour)
+    # Cradle on top: two end cheeks and a pair of rails the spools rest on.
+    for x in (-1, 1):
+        builder.box((0.02, 0.2, 0.07), (x * 0.115, 0, top + 0.035), "charcoal", bevel=0.006)
+    rail_gap, rail_radius, spool_radius = 0.06, 0.012, 0.1
+    for y in (-rail_gap, rail_gap):
+        builder.cylinder(rail_radius, 0.23, (0, y, top + 0.04), "charcoal", segments=6, axis="X")
+    rest = (spool_radius + rail_radius) ** 2 - rail_gap ** 2
+    drop = spool_radius - rest ** 0.5
+    for slot, x in enumerate((-0.045, 0.045), start=1):
+        _pending_markers.append((f"spool_slot_{slot}", (x, 0, top + 0.04 - drop), SIDEWAYS))
+
+
+VARIANTS = {"dryer": _dryer, "pc": _pc, "bin": _bin, "plant": _plant, "rug": _rug, "desk_lamp": _desk_lamp, "floor_mat": _floor_mat}
 
 if __name__ == "__main__":
     common.run(sys.modules[__name__])

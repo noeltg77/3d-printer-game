@@ -12,6 +12,10 @@ var material: StringName = &"pla"
 ## Palette colour name of the filament.
 var colour: StringName
 var grams := 1000.0
+## How damp it is, 0 (dry) to 1 (soaked). Rises in the open air (Moisture).
+var moisture := 0.0
+## True while it is somewhere moisture can't get at it, such as in a dryer.
+var sheltered := false
 
 
 static func create(p_colour: StringName, p_grams := 1000.0, p_material: StringName = &"pla") -> Spool:
@@ -24,6 +28,15 @@ static func create(p_colour: StringName, p_grams := 1000.0, p_material: StringNa
 	return spool
 
 
+func _process(delta: float) -> void:
+	if not sheltered:
+		moisture = Moisture.after(moisture, delta * GameClock.MINUTES_PER_SECOND, Game.data.filaments[material], Game.data.settings["moisture"])
+
+
+func is_wet() -> bool:
+	return Moisture.is_wet(moisture, Game.data.settings["moisture"])
+
+
 func is_empty() -> bool:
 	return grams < EMPTY_GRAMS
 
@@ -33,15 +46,18 @@ func title() -> String:
 	return "%s %s" % [Palette.display_name(colour), Game.data.filaments[material]["name"]]
 
 
-## "Red PLA, 880 g"
+## "Red PLA, 880 g" or "Red PLA, 880 g, wet"
 func describe() -> String:
-	return "%s, %d g" % [title(), roundi(grams)]
+	var state := Moisture.label(moisture, Game.data.settings["moisture"])
+	return "%s, %d g" % [title(), roundi(grams)] + ("" if state == "dry" else ", %s" % state)
 
 
 func save() -> Dictionary:
-	return {"colour": colour, "material": material, "grams": grams}
+	return {"colour": colour, "material": material, "grams": grams, "moisture": moisture}
 
 
 static func restored(data: Dictionary) -> Spool:
 	var saved_material := StringName(data["material"]) if Game.data.filaments.has(data["material"]) else &"pla"
-	return Spool.create(StringName(data["colour"]), float(data["grams"]), saved_material)
+	var spool := Spool.create(StringName(data["colour"]), float(data["grams"]), saved_material)
+	spool.moisture = clampf(float(data.get("moisture", 0.0)), 0.0, 1.0)
+	return spool

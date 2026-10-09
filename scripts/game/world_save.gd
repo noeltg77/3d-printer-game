@@ -16,6 +16,7 @@ const AUTOSAVE_GAP := 20.0
 const PARTS := {
 	"bench": &"workbench",
 	"rack": &"filament_rack",
+	"dryer": &"dryer_spot",
 	"shelf": &"print_storage",
 	"outbox": &"outbox",
 	"deliveries": &"delivery_zone",

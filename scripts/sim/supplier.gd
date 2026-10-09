@@ -3,9 +3,9 @@ extends RefCounted
 ## The supplier shop: prices a basket and turns it into deliveries that arrive
 ## after a lead time. A basket is
 ##   { printers: { printer_id: qty }, spools: { spool key: qty }, packaging: packs,
-##     parts: { part or upgrade id: packs } }
+##     parts: { part or upgrade id: packs }, dryers: { dryer_id: qty } }
 ## A spool key is "material:colour" (FilamentRules.spool_key); a bare colour
-## means PLA. Each printer ships in its own box; spools, packaging and spare parts share one.
+## means PLA. Each printer and each dryer ships in its own box; spools, packaging and spare parts share one.
 
 
 class Delivery:
@@ -15,6 +15,8 @@ class Delivery:
 	var shop := ""
 	## Empty unless this is a printer box.
 	var printer: StringName = &""
+	## Empty unless this is a filament dryer's box.
+	var dryer: StringName = &""
 	## One spool key per spool.
 	var spools: Array[StringName] = []
 	## Individual packaging units, not packs.
@@ -23,13 +25,15 @@ class Delivery:
 	var parts: Dictionary[StringName, int] = {}
 
 	func save() -> Dictionary:
-		return {"arrive_at": arrive_at, "shop": shop, "printer": printer, "spools": spools, "packaging": packaging, "parts": parts}
+		return {"arrive_at": arrive_at, "shop": shop, "printer": printer, "dryer": dryer, "spools": spools,
+			"packaging": packaging, "parts": parts}
 
 	static func restored(data: Dictionary) -> Delivery:
 		var delivery := Delivery.new()
 		delivery.arrive_at = float(data["arrive_at"])
 		delivery.shop = String(data["shop"])
 		delivery.printer = StringName(data["printer"])
+		delivery.dryer = StringName(data.get("dryer", ""))
 		for colour: String in data["spools"]:
 			delivery.spools.append(StringName(colour))
 		delivery.packaging = int(data["packaging"])
@@ -40,6 +44,8 @@ class Delivery:
 	func describe() -> String:
 		if printer != &"":
 			return "Printer"
+		if dryer != &"":
+			return "Filament dryer"
 		var lines: PackedStringArray = []
 		if not spools.is_empty():
 			lines.append("%d spool%s" % [spools.size(), "" if spools.size() == 1 else "s"])
@@ -71,6 +77,8 @@ func price_of(basket: Dictionary) -> int:
 	total += int(_config()["packaging_pack_pence"]) * int(basket.get("packaging", 0))
 	for part_id: String in basket.get("parts", {}):
 		total += int(data.kit(part_id)["price_pence"]) * int(basket["parts"][part_id])
+	for dryer_id: String in basket.get("dryers", {}):
+		total += int(data.dryers[dryer_id]["price_pence"]) * int(basket["dryers"][dryer_id])
 	return total
 
 
@@ -116,6 +124,13 @@ func place(basket: Dictionary, minute: float, shop := "") -> Array[Delivery]:
 			box.shop = shop
 			box.arrive_at = minute + float(_config()["printer_lead_minutes"])
 			box.printer = StringName(printer_id)
+			placed.append(box)
+	for dryer_id: String in basket.get("dryers", {}):
+		for i in int(basket["dryers"][dryer_id]):
+			var box := Delivery.new()
+			box.shop = shop
+			box.arrive_at = minute + float(_config()["printer_lead_minutes"])
+			box.dryer = StringName(dryer_id)
 			placed.append(box)
 	pending.append_array(placed)
 	pending.sort_custom(func(a: Delivery, b: Delivery) -> bool: return a.arrive_at < b.arrive_at)

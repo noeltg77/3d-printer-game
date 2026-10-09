@@ -57,7 +57,12 @@ static func items(tree: SceneTree) -> Array[Dictionary]:
 	if spools.is_empty() and not spools_coming and not boxes_waiting:
 		_add(found, "Order filament from %s" % shops["filament_shop"],
 			"Filament is the plastic a printer melts to build things. Click the computer, then open %s." % shops["filament_shop"])
+	var has_dryer := not tree.get_nodes_in_group(&"dryer").is_empty()
 	for spool in spools:
+		if spool.is_wet():
+			_add(found, "%s has got wet" % spool.title(), "Filament soaks up damp from the air and then prints badly. "
+				+ ("Buy a dryer at %s, under Dryers." % shops["hardware_shop"] if not has_dryer
+				else ("Click the dryer and choose Dry a spool." if rack.spools().has(spool) else "Unload it from the printer, then click the dryer and choose Dry a spool.")))
 		if spool.grams < LOW_SPOOL_GRAMS:
 			_add(found, "%s is nearly out" % spool.title(),
 				"A print needs enough on the spool to finish. Order another from %s on the computer." % shops["filament_shop"])

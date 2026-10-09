@@ -33,7 +33,7 @@ func save() -> Dictionary:
 func restore(data: Dictionary) -> void:
 	for entry: Dictionary in data["boxes"]:
 		var delivery := Supplier.Delivery.restored(entry["delivery"])
-		if delivery.printer == &"" or Game.data.printers.has(delivery.printer):
+		if (delivery.printer == &"" or Game.data.printers.has(delivery.printer)) and (delivery.dryer == &"" or Game.data.dryers.has(delivery.dryer)):
 			_put_down(delivery, int(entry["spot"]))
 
 
