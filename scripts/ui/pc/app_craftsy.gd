@@ -1,6 +1,7 @@
 extends VBoxContainer
 ## PC app: the marketplace seller dashboard. Headline numbers along the top,
-## orders to pack and the listings table on the left, recent sales on the right.
+## orders to pack and the listings table on the left, reviews and recent sales
+## on the right.
 ## "Pack & ship" queues the packing job for the character.
 
 const ROSE := Color("C9415F")
@@ -11,7 +12,9 @@ const LABEL := Color("6E5E62")
 const DONE_BG := Color("E7DEDB")
 const TIP_BG := Color("EAF3EE")
 const PRICE_STEP := 50
-const RECENT_SALES := 6
+const RECENT_SALES := 4
+const RECENT_REVIEWS := 4
+const STAR := Color("E0A526")
 ## Listings table column widths, as shares of the row.
 const COLUMNS: Array[float] = [2.2, 1.5, 1.0, 1.0, 0.7, 1.9]
 
@@ -31,7 +34,12 @@ func refresh() -> void:
 
 	var left := Ui.vbox([_orders_card(), _listings_card()], 20)
 	left.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var lower := Ui.hbox([Ui.scroll(left), _sales_card()], 20)
+	var right := Ui.vbox([_reviews_card(), _sales_card()], 20)
+	right.custom_minimum_size.x = 400
+	var side := Ui.scroll(right)
+	side.size_flags_horizontal = Control.SIZE_SHRINK_END
+	side.custom_minimum_size.x = 412
+	var lower := Ui.hbox([Ui.scroll(left), side], 20)
 	lower.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	var page := Ui.margin(Ui.vbox([header, _stats(), lower], 20), 40, 24, 40, 24)
 	page.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -44,7 +52,7 @@ func _stats() -> Control:
 	var sold_today := 0
 	var takings := 0
 	for order in market.orders:
-		if order.status == Marketplace.Status.SHIPPED and order.shipped_at >= today_start:
+		if order.shipped_at >= today_start and order.status != Marketplace.Status.REFUNDED:
 			sold_today += 1
 			takings += order.price
 	var open := market.open_orders()
@@ -54,9 +62,10 @@ func _stats() -> Control:
 	var low := Game.packaging <= Advice.LOW_PACKAGING
 
 	var grid := GridContainer.new()
-	grid.columns = 4
+	grid.columns = 5
 	grid.add_theme_constant_override(&"h_separation", 16)
 	grid.add_child(_stat("Sales today", Money.format(takings), "%d sold today" % sold_today, Ui.GREEN_DARK))
+	grid.add_child(_rating_stat())
 	grid.add_child(_stat("To ship", "%d order%s" % [open.size(), "" if open.size() == 1 else "s"],
 		"%d due today" % due_today if due_today > 0 else "Nothing due today", Ui.RED_DARK if due_today > 0 else Ui.GREEN_DARK))
 	grid.add_child(_stat("Mailer boxes", "%d left" % Game.packaging,
@@ -65,6 +74,23 @@ func _stats() -> Control:
 	grid.add_child(_stat("Courier", "%02d:%02d" % [courier / 60, courier % 60],
 		"%d parcel%s waiting to go" % [parcels, "" if parcels == 1 else "s"], Ui.GREEN_DARK if parcels > 0 else LABEL))
 	return grid
+
+
+## The seller rating, and what it is doing to how many orders come in.
+func _rating_stat() -> Control:
+	var market := Game.market
+	if market.reviews.is_empty():
+		return _stat("Seller rating", "New shop", "No reviews yet", LABEL)
+	var effect := market.rating_multiplier()
+	var note := "Not changing your orders"
+	var colour := LABEL
+	if effect > 1.005:
+		note = "Bringing %d%% more orders" % roundi((effect - 1.0) * 100.0)
+		colour = Ui.GREEN_DARK
+	elif effect < 0.995:
+		note = "Costing you %d%% of orders" % roundi((1.0 - effect) * 100.0)
+		colour = Ui.RED_DARK
+	return _stat("Seller rating", "%.1f out of 5" % market.rating(), note, colour)
 
 
 func _stat(label: String, value: String, note: String, note_colour: Color) -> Control:
@@ -169,25 +195,48 @@ func _table_row(cells: Array) -> Control:
 
 func _sales_card() -> Control:
 	var rows := Ui.vbox([], 10)
-	var shipped := Game.market.orders.filter(func(order: Marketplace.Order) -> bool: return order.status == Marketplace.Status.SHIPPED)
+	var shipped := Game.market.sold_orders()
 	shipped.reverse()
 	for order: Marketplace.Order in shipped.slice(0, RECENT_SALES):
 		var when := GameClock.new()
 		when.minutes = order.shipped_at
 		var net := Game.unit_profit(order.product, order.price)
+		var refunded := order.status == Marketplace.Status.REFUNDED
+		var note := "Day %d · about %s profit" % [when.day, Money.format(net)]
+		if refunded:
+			note = "Day %d · refunded: %s" % [when.day, "arrived broken" if order.refund_reason == "damaged" else "sent back"]
+		elif order.status == Marketplace.Status.SHIPPED:
+			note += " · on its way"
 		rows.add_child(Ui.panel(Ui.vbox([
-			Ui.hbox([Ui.text(Game.product_name(order.product), 14, Ui.INK, 800), null, Ui.text(Money.format(order.price), 14, Ui.GREEN_DARK, 800)]),
-			Ui.text("Day %d · about %s profit" % [when.day, Money.format(net)], 13, LABEL),
+			Ui.hbox([Ui.text(Game.product_name(order.product), 14, Ui.INK, 800), null,
+				Ui.text(Money.format(0 if refunded else order.price), 14, Ui.RED_DARK if refunded else Ui.GREEN_DARK, 800)]),
+			Ui.text(note, 13, Ui.RED_DARK if refunded else LABEL),
 		], 2), Ui.box(ROW, 16, 14, 12)))
 	if shipped.is_empty():
 		rows.add_child(Ui.panel(Ui.wrap(Ui.text("No sales yet. You are paid when the courier collects a packed order.", 14, LABEL)), Ui.box(ROW, 16, 14, 14)))
 	var tip := "Tip: price below the typical price for more orders, or above it for more profit on each one. Fees are %.1f%% + %s a sale." % [
 		float(Game.market.config["fee_pct"]) * 100.0, Money.format(int(Game.market.config["fee_fixed_pence"]))]
 	rows.add_child(Ui.panel(Ui.wrap(Ui.text(tip, 13, Ui.GREEN_DARK, 800)), Ui.box(TIP_BG, 16, 14, 14)))
-	var card := _section("Recent sales", rows)
-	card.custom_minimum_size.x = 400
-	card.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
-	return card
+	return _section("Recent sales", rows)
+
+
+## The latest reviews, newest first.
+func _reviews_card() -> Control:
+	var rows := Ui.vbox([], 10)
+	var latest := Game.market.reviews.duplicate()
+	latest.reverse()
+	for review: Dictionary in latest.slice(0, RECENT_REVIEWS):
+		var stars := int(review["stars"])
+		var lines := Ui.vbox([
+			Ui.hbox([Ui.pips(stars, Marketplace.MAX_STARS, STAR if stars >= 3 else Ui.RED), null,
+				Ui.text(Game.product_name(review["product"]), 13, LABEL, 800)]),
+		], 6)
+		if review["text"] != "":
+			lines.add_child(Ui.wrap(Ui.text("\"%s\"" % review["text"], 14, Ui.INK)))
+		rows.add_child(Ui.panel(lines, Ui.box(ROW, 16, 14, 12)))
+	if latest.is_empty():
+		rows.add_child(Ui.panel(Ui.wrap(Ui.text("No reviews yet. Buyers leave them a day or two after the courier collects. Weak or rough prints get refunds and bad ones.", 14, LABEL)), Ui.box(ROW, 16, 14, 14)))
+	return _section("Reviews", rows)
 
 
 func _section(heading: String, content: Control) -> PanelContainer:

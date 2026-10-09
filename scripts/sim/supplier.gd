@@ -2,8 +2,9 @@ class_name Supplier
 extends RefCounted
 ## The supplier shop: prices a basket and turns it into deliveries that arrive
 ## after a lead time. A basket is
-##   { printers: { printer_id: qty }, spools: { colour: qty }, packaging: packs }
-## Each printer ships in its own box; spools and packaging share one.
+##   { printers: { printer_id: qty }, spools: { colour: qty }, packaging: packs,
+##     parts: { part_id: packs } }
+## Each printer ships in its own box; spools, packaging and spare parts share one.
 
 
 class Delivery:
@@ -17,16 +18,38 @@ class Delivery:
 	var spools: Array[StringName] = []
 	## Individual packaging units, not packs.
 	var packaging := 0
+	## Spare parts, part id -> individual parts, not packs.
+	var parts: Dictionary[StringName, int] = {}
+
+	func save() -> Dictionary:
+		return {"arrive_at": arrive_at, "shop": shop, "printer": printer, "spools": spools, "packaging": packaging, "parts": parts}
+
+	static func restored(data: Dictionary) -> Delivery:
+		var delivery := Delivery.new()
+		delivery.arrive_at = float(data["arrive_at"])
+		delivery.shop = String(data["shop"])
+		delivery.printer = StringName(data["printer"])
+		for colour: String in data["spools"]:
+			delivery.spools.append(StringName(colour))
+		delivery.packaging = int(data["packaging"])
+		for part: String in data["parts"]:
+			delivery.parts[StringName(part)] = int(data["parts"][part])
+		return delivery
 
 	func describe() -> String:
 		if printer != &"":
 			return "Printer"
-		var parts: PackedStringArray = []
+		var lines: PackedStringArray = []
 		if not spools.is_empty():
-			parts.append("%d spool%s" % [spools.size(), "" if spools.size() == 1 else "s"])
+			lines.append("%d spool%s" % [spools.size(), "" if spools.size() == 1 else "s"])
 		if packaging > 0:
-			parts.append("%d mailer boxes" % packaging)
-		return ", ".join(parts)
+			lines.append("%d mailer boxes" % packaging)
+		var spares := 0
+		for count: int in parts.values():
+			spares += count
+		if spares > 0:
+			lines.append("%d spare part%s" % [spares, "" if spares == 1 else "s"])
+		return ", ".join(lines)
 
 
 var data: GameData
@@ -44,6 +67,8 @@ func price_of(basket: Dictionary) -> int:
 		total += int(data.printers[printer_id]["price_pence"]) * int(basket["printers"][printer_id])
 	total += spool_price() * count_spools(basket)
 	total += int(_config()["packaging_pack_pence"]) * int(basket.get("packaging", 0))
+	for part_id: String in basket.get("parts", {}):
+		total += int(data.parts[part_id]["price_pence"]) * int(basket["parts"][part_id])
 	return total
 
 
@@ -77,7 +102,11 @@ func place(basket: Dictionary, minute: float, shop := "") -> Array[Delivery]:
 		for i in int(basket["spools"][colour]):
 			supplies.spools.append(StringName(colour))
 	supplies.packaging = int(basket.get("packaging", 0)) * int(_config()["packaging_pack_size"])
-	if not supplies.spools.is_empty() or supplies.packaging > 0:
+	for part_id: String in basket.get("parts", {}):
+		supplies.parts[StringName(part_id)] = int(basket["parts"][part_id]) * int(data.parts[part_id]["pack_size"])
+	if supplies.spools.is_empty() and supplies.packaging == 0:
+		supplies.arrive_at = minute + float(_config()["parts_lead_minutes"])
+	if not supplies.spools.is_empty() or supplies.packaging > 0 or not supplies.parts.is_empty():
 		placed.append(supplies)
 	for printer_id: String in basket.get("printers", {}):
 		for i in int(basket["printers"][printer_id]):
@@ -101,3 +130,13 @@ func collect_due(minute: float) -> Array[Delivery]:
 
 func _config() -> Dictionary:
 	return data.settings["supplier"]
+
+
+func save() -> Dictionary:
+	return {"pending": pending.map(func(delivery: Delivery) -> Dictionary: return delivery.save())}
+
+
+func restore(data: Dictionary) -> void:
+	pending.clear()
+	for entry: Dictionary in data["pending"]:
+		pending.append(Delivery.restored(entry))

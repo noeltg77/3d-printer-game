@@ -10,6 +10,9 @@ var task_name := ""
 ## Coroutine taking the Agent that will do the task.
 var run: Callable
 var enabled := true
+## Runs the moment it is picked instead of joining the character's queue.
+## For entries that open a dialog rather than start a task.
+var immediate := false
 ## If not empty this entry opens a submenu instead of running.
 var children: Array[Action] = []
 

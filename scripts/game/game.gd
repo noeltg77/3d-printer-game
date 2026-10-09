@@ -6,8 +6,8 @@ extends Node
 
 ## Something the UI shows has changed (cash, orders, designs, stock).
 signal changed
-## A short message for the player.
-signal notified(text: String)
+## A short message for the player. `tone` is &"good", &"bad" or empty.
+signal notified(text: String, tone: StringName)
 signal delivery_arrived(delivery: Supplier.Delivery)
 ## The daily courier is here to take whatever is in the outbox.
 signal courier_arrived
@@ -15,6 +15,8 @@ signal courier_arrived
 const SPEEDS: Array[int] = [0, 1, 2, 4]
 ## Player preferences, kept apart from save games.
 const SETTINGS_FILE := "user://settings.cfg"
+## Bumped when a save from before can no longer be read.
+const SAVE_VERSION := 1
 
 var data: GameData
 var clock: GameClock
@@ -26,10 +28,23 @@ var owned_designs: Array[StringName] = []
 var packaging := 0
 var speed := 1
 var rng := RandomNumberGenerator.new()
+## Dev: id of a failure the next print is certain to hit. Cleared once used.
+var force_failure := ""
+## Where the game is saved. Empty turns saving and loading off, as it is for
+## dev runs driven from the command line unless they pass --save=<path>.
+var save_path := "user://save.json"
+## Game minute of the last save this session, or -1 if there hasn't been one.
+var saved_at := -1.0
 
 
 func _ready() -> void:
 	_load_settings()
+	for arg in OS.get_cmdline_user_args():
+		if arg.begins_with("--autoplay=") or arg.begins_with("--shot"):
+			save_path = ""
+	for arg in OS.get_cmdline_user_args():
+		if arg.begins_with("--save="):
+			save_path = arg.trim_prefix("--save=")
 	new_game()
 
 
@@ -44,8 +59,10 @@ func _process(delta: float) -> void:
 		notify("New order: %s for %s" % [product_name(order.product), Money.format(order.price)])
 		changed.emit()
 	for order in market.expire(clock.minutes):
-		notify("Order #%d was cancelled: not dispatched in time" % order.id)
+		notify("Order #%d was cancelled: not dispatched in time" % order.id, &"bad")
 		changed.emit()
+	for outcome in market.deliver(clock.minutes, rng, data.settings["courier"]):
+		_settle_delivery(outcome)
 	if clock.crossed(before, data.settings["courier_minute_of_day"]):
 		courier_arrived.emit()
 
@@ -57,11 +74,79 @@ func new_game() -> void:
 	clock.minutes = start["minute_of_day"]
 	bank = Bank.new(int(start["cash_pence"]))
 	market = Marketplace.new(data.marketplaces["craftsy"], data.products)
+	market.comments = data.review_comments
 	supplier = Supplier.new(data)
 	owned_designs.assign(start["designs"])
 	packaging = int(start["packaging"])
 	rng.randomize()
+	saved_at = -1.0
 	set_speed(1)
+
+
+func has_save() -> bool:
+	return save_path != "" and FileAccess.file_exists(save_path)
+
+
+## Writes the business, and the state of the world it is given, to the save
+## file. False if saving is off or the file couldn't be written.
+func save_game(world: Dictionary) -> bool:
+	if save_path == "":
+		return false
+	var content := JSON.stringify({"version": SAVE_VERSION, "business": save(), "world": world}, "\t")
+	# Written beside the save and swapped in, so a crash can't leave half a file.
+	var file := FileAccess.open(save_path + ".tmp", FileAccess.WRITE)
+	if file == null:
+		return false
+	file.store_string(content)
+	file.close()
+	if DirAccess.rename_absolute(save_path + ".tmp", save_path) != OK:
+		return false
+	saved_at = clock.minutes
+	return true
+
+
+## Reads the save file and restores the business from it. Returns the saved
+## state of the world for the scene to rebuild, or {} if there is no save or it
+## can't be read. An unreadable save is moved aside rather than overwritten.
+func load_game() -> Dictionary:
+	if not has_save():
+		return {}
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(save_path))
+	if parsed is Dictionary and int(parsed.get("version", 0)) == SAVE_VERSION and parsed.get("business") is Dictionary:
+		restore(parsed["business"])
+		saved_at = clock.minutes
+		return parsed.get("world", {})
+	DirAccess.rename_absolute(save_path, save_path + ".unreadable")
+	notify("The saved game couldn't be read, so this is a new one", &"bad")
+	return {}
+
+
+func delete_save() -> void:
+	if has_save():
+		DirAccess.remove_absolute(save_path)
+	saved_at = -1.0
+
+
+## The business as plain data: everything here that a save needs.
+func save() -> Dictionary:
+	return {
+		"clock": clock.save(), "bank": bank.save(), "market": market.save(), "supplier": supplier.save(),
+		"owned_designs": owned_designs, "packaging": packaging,
+	}
+
+
+## Puts the business back from save(). Designs the game no longer has are dropped.
+func restore(state: Dictionary) -> void:
+	clock.restore(state["clock"])
+	bank.restore(state["bank"])
+	market.restore(state["market"])
+	supplier.restore(state["supplier"])
+	owned_designs.clear()
+	for product: String in state["owned_designs"]:
+		if data.products.has(product):
+			owned_designs.append(StringName(product))
+	packaging = int(state["packaging"])
+	changed.emit()
 
 
 ## Changes the currency amounts are shown in and remembers it. Nothing in the
@@ -91,8 +176,8 @@ func set_speed(new_speed: float) -> void:
 	changed.emit()
 
 
-func notify(text: String) -> void:
-	notified.emit(text)
+func notify(text: String, tone: StringName = &"") -> void:
+	notified.emit(text, tone)
 
 
 func product_name(product: StringName) -> String:
@@ -101,6 +186,31 @@ func product_name(product: StringName) -> String:
 
 func owns(product: StringName) -> bool:
 	return owned_designs.has(product)
+
+
+## Filament a design uses at a preset, in grams.
+func print_grams(product: StringName, preset: StringName) -> float:
+	return float(data.products[product]["filament_grams"]) * float(data.presets[preset]["filament_multiplier"])
+
+
+## Chance (0 to 1) that printing a design this way goes wrong. `wear` is the
+## state of the printer's parts, if it has any to count.
+func fail_chance(printer: Dictionary, preset: StringName, filament: StringName, product: StringName, wear: PrinterWear = null) -> float:
+	return PrintRisk.fail_chance(printer, data.presets[preset], data.filaments[filament], data.products[product],
+		wear.extra_fail_chance() if wear != null else 0.0)
+
+
+## Decides the fate of a print as it starts. Returns {} if it will go well, or
+## { failure, at } with the failure's row and the progress at which it strikes.
+func roll_print(printer: Dictionary, preset: StringName, filament: StringName, product: StringName, wear: PrinterWear = null) -> Dictionary:
+	if data.failures.has(force_failure):
+		var forced: Dictionary = data.failures[force_failure]
+		force_failure = ""
+		return {"failure": forced, "at": PrintRisk.strike_point(forced, rng)}
+	var flags := PrintRisk.conditions(printer, data.presets[preset], data.products[product])
+	if wear != null:
+		flags.append_array(wear.flags())
+	return PrintRisk.roll(fail_chance(printer, preset, filament, product, wear), data.failures, flags, data.filaments[filament], rng)
 
 
 ## Buys a design licence. False if it can't be afforded or is already owned.
@@ -129,6 +239,14 @@ func supplier_problem(basket: Dictionary) -> String:
 	var rack: FilamentRack = get_tree().get_first_node_in_group(&"filament_rack")
 	if rack != null and Supplier.count_spools(basket) + incoming_spools > rack.free_slots() - _unpacked(&"spools"):
 		return "Not enough room on the filament rack"
+	var shelf: StorageShelf = get_tree().get_first_node_in_group(&"print_storage")
+	var part_ids: Array = basket.get("parts", {}).keys()
+	for delivery in supplier.pending:
+		part_ids.append_array(delivery.parts.keys())
+	for box: DeliveryBox in get_tree().get_nodes_in_group(&"delivery_box"):
+		part_ids.append_array(box.delivery.parts.keys())
+	if shelf != null and not basket.get("parts", {}).is_empty() and not shelf.can_store_parts(part_ids):
+		return "No shelf space for more spare parts"
 	var bench: Workbench = get_tree().get_first_node_in_group(&"workbench")
 	if bench != null and Supplier.count_printers(basket) + incoming_printers > bench.free_spots() - _unpacked(&"printers"):
 		return "No bench space for another printer"
@@ -175,11 +293,39 @@ func stock_of(product: StringName) -> int:
 
 ## Takes payment for a dispatched order, less the marketplace's cut.
 func complete_sale(order: Marketplace.Order) -> void:
-	var sale := market.ship(order, clock.minutes)
+	var transit: Array = data.settings["courier"]["delivery_minutes"]
+	var sale := market.ship(order, clock.minutes, clock.minutes + rng.randf_range(transit[0], transit[1]))
 	var market_name: String = market.config["name"]
 	bank.earn(sale["price"], "Sale: %s (%s)" % [product_name(order.product), market_name], clock.minutes)
 	bank.charge(sale["fee"], "%s fees" % market_name, clock.minutes)
 	bank.charge(sale["royalty"], "Design royalty: %s" % product_name(order.product), clock.minutes)
+	changed.emit()
+
+
+## Chance (0 to 1) that an item of this strength arrives broken, in the
+## packaging and with the courier the business uses.
+func damage_chance(durability: int) -> float:
+	return Marketplace.damage_chance(durability, data.settings["courier"])
+
+
+## Puts a delivered order's refund through the bank and announces how it went.
+func _settle_delivery(outcome: Dictionary) -> void:
+	var order: Marketplace.Order = outcome["order"]
+	var title := product_name(order.product)
+	var review: Dictionary = outcome["review"]
+	if not outcome["refund"].is_empty():
+		var refund: Dictionary = outcome["refund"]
+		var market_name: String = market.config["name"]
+		var why := "arrived broken" if order.refund_reason == "damaged" else "sent back"
+		bank.charge(refund["price"], "Refund: %s (%s)" % [title, why], clock.minutes)
+		if refund["fee"] > 0:
+			bank.earn(refund["fee"], "%s fees returned" % market_name, clock.minutes)
+		if refund["royalty"] > 0:
+			bank.earn(refund["royalty"], "Design royalty returned: %s" % title, clock.minutes)
+		notify("Order #%d %s: %s refunded. \"%s\"" % [order.id, why, Money.format(refund["price"]), review["text"]], &"bad")
+	elif not review.is_empty():
+		var stars := int(review["stars"])
+		notify("%d star review for %s: \"%s\"" % [stars, title, review["text"]], &"good" if stars >= 4 else (&"bad" if stars <= 2 else &""))
 	changed.emit()
 
 

@@ -1,18 +1,26 @@
 class_name Hud
 extends CanvasLayer
 ## On-screen status while in the garage: what the character is doing and has
-## queued, the speed, cash and clock chips, the name of the object under the
+## queued, the to-do note beneath it, the speed, cash and clock chips, the name of the object under the
 ## mouse, and short messages. Styled to match the PlateOS taskbar.
 
 const CONTROLS := "Left click: choose a task, or walk   ·   Mouse wheel: zoom   ·   Right drag: pan"
 const TOAST_SECONDS := 4.0
 const MAX_TOASTS := 4
+## Toasts wider than this wrap onto more lines.
+const TOAST_WIDTH := 760.0
+const TOAST_COLOURS := {
+	&"": [Ui.CREAM, Ui.INK],
+	&"good": [Ui.GREEN_SOFT, Ui.GREEN_DARK],
+	&"bad": [Ui.RED_SOFT, Ui.RED_DARK],
+}
 
 @export var agent_path: NodePath
 
 var _task: Label
 var _queue: Label
 var _task_panel: PanelContainer
+var _todo: TodoNote
 var _hover: PanelContainer
 var _orders: Label
 var _toasts: VBoxContainer
@@ -24,7 +32,10 @@ func _ready() -> void:
 	_task = Ui.text("", 15, Ui.PAPER, 800)
 	_queue = Ui.text("", 13, Ui.CHIP_TEXT)
 	_task_panel = Ui.panel(Ui.vbox([_task, _queue], 2), Ui.box(Ui.TASKBAR, 16, 16, 12))
-	_place(_task_panel, Control.PRESET_TOP_LEFT, Vector2(16, 16))
+	_task_panel.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	_todo = TodoNote.new()
+	_todo.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	_place(Ui.vbox([_task_panel, Ui.margin(_todo, 6, 0, 0, 0)], 18), Control.PRESET_TOP_LEFT, Vector2(16, 16))
 
 	_orders = Ui.text("", 14, Ui.CHIP_TEXT, 800)
 	_orders.size_flags_vertical = Control.SIZE_SHRINK_CENTER
@@ -34,6 +45,11 @@ func _ready() -> void:
 
 	_place(Ui.panel(Ui.text(CONTROLS, 13, Ui.CHIP_TEXT), Ui.box(Color(Ui.TASKBAR, 0.85), 14, 14, 8)),
 		Control.PRESET_BOTTOM_LEFT, Vector2(16, -16))
+
+	var badges := PrinterBadges.new()
+	badges.theme = Ui.theme()
+	add_child(badges)
+	move_child(badges, 0)
 
 	_hover = Ui.panel(Ui.text("", 14, Ui.INK, 800), Ui.box(Ui.CREAM, 12, 12, 7, Ui.SHADE, 4))
 	_hover.visible = false
@@ -80,8 +96,8 @@ func _refresh() -> void:
 	if _agent.is_busy() and _agent.current_label != "":
 		_task.text = "Doing: %s" % _agent.current_label
 	else:
-		var todo := Advice.todo(get_tree())
-		_task.text = "To do: %s" % todo[0] if not todo.is_empty() else "All caught up. Click something to give a task."
+		_task.text = "Ready. Click something to give a task."
+	_todo.refresh()
 	var queued := _agent.get_queued_labels()
 	_queue.text = "Next: " + ", ".join(queued)
 	_queue.visible = not queued.is_empty()
@@ -90,8 +106,14 @@ func _refresh() -> void:
 	_orders.text = "%d order%s to pack" % [open, "" if open == 1 else "s"]
 
 
-func _show_toast(text: String) -> void:
-	var toast := Ui.panel(Ui.text(text, 15, Ui.INK, 800), Ui.box(Ui.CREAM, 16, 18, 10, Ui.SHADE, 5))
+## Shows a message for a few seconds. `tone` tints it: &"good", &"bad" or plain.
+func _show_toast(text: String, tone: StringName = &"") -> void:
+	var colours: Array = TOAST_COLOURS.get(tone, TOAST_COLOURS[&""])
+	var label := Ui.text(text, 15, colours[1], 800)
+	if label.get_minimum_size().x > TOAST_WIDTH:
+		Ui.wrap(label)
+		label.custom_minimum_size.x = TOAST_WIDTH
+	var toast := Ui.panel(label, Ui.box(colours[0], 16, 18, 10, Ui.SHADE, 5))
 	toast.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	toast.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	_toasts.add_child(toast)

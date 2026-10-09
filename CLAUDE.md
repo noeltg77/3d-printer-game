@@ -44,24 +44,36 @@ Checking gameplay without clicking: the `DevAutoplay` autoload (`scripts/dev/dev
 
 ```
 godot --headless --path . --script res://scripts/dev/run_tests.gd    # unit tests for simulation classes
-godot --path . res://scenes/garage/garage.tscn -- --time-scale=2 "--autoplay=call>place_supplier_order({\"printers\":{\"plodder_mini\":1},\"spools\":{\"red\":1}});wait>80;Delivery: 1 spool>Unpack;Delivery: Printer>Unpack;Plodder Mini>Load filament>Red;Plodder Mini>Print>Cable;shot>tools/previews/play.png;quit"
+godot --headless --path . --script res://scripts/dev/balance_report.gd   # play the garage 200 times and report the economy (see docs/balance_notes.md)
+godot --path . res://scenes/garage/garage.tscn -- --time-scale=2 "--autoplay=call>place_supplier_order({\"printers\":{\"plodder_mini\":1},\"spools\":{\"red\":1}});wait>80;Delivery: 1 spool>Unpack;Delivery: Printer>Unpack;Plodder Mini>Load filament>Red;Plodder Mini>Print...;on>print_dialog>choose(\"cable_management_clips_x12\",\"standard\");shot>tools/previews/play.png;quit"
 ```
+
+Runs with `--autoplay` or `--shot` neither load nor write the save game, so they always start fresh and never touch a real one. Add `--save=user://some_test.json` to a run to have it load and save that file instead; `on>world_save>save_now()` saves on the spot.
+
+To wear a part without printing for hours, use `on>printer>wear.damage(\"nozzle\",0.9)`. To see a particular failure, put `call>set(\"force_failure\",\"spaghetti\")` before the print step: the next print is certain to hit it.
 
 ## Gameplay architecture
 
 Control is semi-autonomous: the player clicks an object, picks from its action list, and the character does the whole task. Tasks queue.
 
 - `Interactable` (`scripts/interaction/`) is the base for anything clickable. Subclasses override `get_actions(agent)` to return `Action`s; each Action's `run` is a coroutine that drives the character. The script goes straight on the instanced model node in the scene, with `display_name` and `stand_offset` set there. It builds its own click collider from its meshes.
-- `Agent` (`scripts/character/agent.gd`, `scenes/characters/player.tscn`) owns the task queue. Task code is a plain sequence of awaits: `go_to()`, `reach(callable)`, `carry()`, `release()`, `sit()`. A task must re-check its preconditions when it starts, because the world may have changed while it was queued.
-- `InteractionController` handles hover, the popup menu and floor clicks. `Hud` shows the current task and queue.
+- An Action with `immediate` set runs when picked instead of being queued. It is for opening a dialog (the printer's "Print..." opens `PrintDialog`, which then queues the real task).
+- A print's fate is decided when it starts: `Game.roll_print` uses `PrintRisk` (`scripts/sim/`) with `data/presets.json` and `data/failures.json`. A ruined print leaves a `FailedPrint` on the plate until the character clears it; a spoiled one finishes as a flawed `PrintedItem`.
+- What is in a parcel follows the order: packing records the item's durability, quality and whether it is flawed on the `Marketplace.Order`. `Marketplace.deliver` later decides if it arrives broken, is sent back or is reviewed, and `Game` puts refunds through the bank. The seller rating scales demand.
+- Each printer has a `PrinterWear` (`scripts/sim/`): part health drops with print hours, worn parts add risk, and a part that runs out stops the print and the printer. Spares are `SparePart` boxes on the shelving, bought from the shop's Spare parts tab and fitted from the printer's Parts menu.
+- `Agent` (`scripts/character/agent.gd`, `scenes/characters/player.tscn`) owns the task queue. Task code is a plain sequence of awaits: `go_to()`, `reach(callable)`, `work(game_minutes)`, `carry()`, `release()`, `sit()`. A task must re-check its preconditions when it starts, because the world may have changed while it was queued.
+- `InteractionController` handles hover, the popup menu and floor clicks. `Hud` shows the current task and queue, with the to-do note (`TodoNote`, also on the PC desktop) beneath. `Advice` (`scripts/game/advice.gd`) decides what is on it; give each new thing to do a hint a non printer owner could follow.
+- `PrinterBadges` (in the HUD) floats a status badge over each printer. Messages go through `Game.notify(text, tone)`; give bad news `&"bad"` and good news `&"good"` so the toast is tinted.
+- `DayNight` (`scripts/world/day_night.gd`, a node in the scene) sets the sun, ambient light, backdrop, lamps and window light from the game clock. It is only for looks. To see a time of day in a dev run: `call>clock.set(\"minutes\",1380.0)`.
 - `FloorGrid` is the navigation: an A* grid, with every node in the `obstacle` group blocking the cells under it. Add floor-standing furniture to that group. No baking.
-- Items are nodes that get reparented between slot markers, the character's `carry_socket` and printer mounts (`Spool`, `PrintedItem` in `scripts/items/`). Printed items use the tint material and take their filament's colour.
+- Items are nodes that get reparented between slot markers, the character's `carry_socket` and printer mounts (`Spool`, `PrintedItem`, `SparePart` in `scripts/items/`). Printed items use the tint material and take their filament's colour.
 - Objects find each other through groups (`filament_rack`, `print_storage`, `floor_grid`, `player`), not hard-wired paths.
 - The rules of the business live in `scripts/sim/` as plain classes with no node dependencies (`GameClock`, `Bank`, `Marketplace`, `Supplier`, plus `PrintJob`). Every one has tests in `scripts/dev/run_tests.gd`; add tests when adding rules.
 - The `Game` autoload (`scripts/game/game.gd`) owns those objects, advances them each frame and emits `changed`, `notified`, `delivery_arrived` and `courier_arrived`. Scene nodes and UI read from `Game` and call its methods; they don't keep their own copies of cash, orders or designs.
+- Saving: anything with state has `save()` returning plain data and `restore(data)` (or a static `restored(data)` for things created from a save). `Game.save()` covers the business; `WorldSave` (`scripts/game/world_save.gd`, a node in the scene) gathers the world from the nodes in its `PARTS` groups, loads the save when the scene starts and saves whenever the character is between tasks. Give new stateful things both methods and, for a new kind of scene node, an entry in `PARTS`. Saves are JSON, so restore with explicit `int()`, `float()` and `StringName()` and skip ids the data tables no longer have. Bump `Game.SAVE_VERSION` when an old save can't be read.
 - Game speed is `Engine.time_scale` (set through `Game.set_speed`), so walking, animation, prints and timers all follow it. Durations in data are game minutes; convert with `GameClock.to_seconds`.
 - Money is GBP pence (integers) in all data, simulation and saves. Show it only through `Money.format(pence)` in `scripts/sim/money.gd`, which converts every amount the same exact way so a price shown always equals the amount charged; don't add rounding to tidy price endings. Never write a currency symbol in UI code. The player picks GBP, USD or EUR in the Settings app; `Game.set_currency` saves it to `user://settings.cfg` and emits `changed`.
-- Physical stock is nodes, not counters: spools on the rack carry their own grams, finished prints sit in shelf slots, parcels sit on the outbox. Mailer boxes are the one counted stock (`Game.packaging`).
+- Physical stock is nodes, not counters: spools on the rack carry their own grams, finished prints and boxes of spare parts share the shelf slots, parcels sit on the outbox. Mailer boxes are the one counted stock (`Game.packaging`).
 - The PC is `PcScreen` (`scripts/ui/pc/`), a full-screen "PlateOS" desktop. Each app is one script (`app_*.gd`) that rebuilds itself in `refresh()` from `Game`; register new apps in `PcScreen.APPS`. While the PC is open the character is held (`Agent.held`), so jobs queued from an app start when the player leaves the desk.
 
 ## UI look and feel

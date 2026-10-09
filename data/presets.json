@@ -1,0 +1,51 @@
+{
+	"schema_version": 1,
+	"presets": [
+		{
+			"id": "draft",
+			"name": "Draft",
+			"description": "Quick and cheap. Fine for test prints and stuff nobody looks at closely.",
+			"settings_hint": "0.28 mm layers, 2 walls, 10% infill",
+			"unlock_tier": 1,
+			"time_multiplier": 0.6,
+			"filament_multiplier": 0.75,
+			"failure_multiplier": 1.5,
+			"wear_multiplier": 1.15,
+			"durability": 2,
+			"quality": 1
+		},
+		{
+			"id": "standard",
+			"name": "Standard",
+			"description": "The sensible default. Good looks, decent strength.",
+			"settings_hint": "0.20 mm layers, 3 walls, 15% infill",
+			"unlock_tier": 1,
+			"time_multiplier": 1.0,
+			"filament_multiplier": 1.0,
+			"failure_multiplier": 1.0,
+			"wear_multiplier": 1.0,
+			"durability": 3,
+			"quality": 3
+		},
+		{
+			"id": "strong",
+			"name": "Strong",
+			"description": "Built like a brick. Takes longer and uses more filament, but survives the post.",
+			"settings_hint": "0.20 mm layers, 5 walls, 40% gyroid infill",
+			"unlock_tier": 1,
+			"time_multiplier": 1.45,
+			"filament_multiplier": 1.4,
+			"failure_multiplier": 0.9,
+			"wear_multiplier": 0.95,
+			"durability": 5,
+			"quality": 3
+		}
+	],
+	"durability_labels": {
+		"1": "Fragile. Snaps easily, high chance of damage in the post.",
+		"2": "Light duty. Fine for decor, risky for anything handled.",
+		"3": "Normal. Survives everyday use and most deliveries.",
+		"4": "Tough. Good for functional parts.",
+		"5": "Very tough. Almost never breaks in the post."
+	}
+}

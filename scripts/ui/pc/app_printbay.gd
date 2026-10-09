@@ -1,6 +1,6 @@
 extends VBoxContainer
 ## PC app: Printbay, for printers and other hardware. A card per printer with
-## stat bars, plus tabs for packaging and (later) upgrades and spare parts.
+## stat bars, plus tabs for packaging, spare parts and (later) upgrades.
 
 const NAVY := Color("1F3E7A")
 const NAVY_SOFT := Color("2C5096")
@@ -34,6 +34,8 @@ func refresh() -> void:
 			page = _printers()
 		"packaging":
 			page = _packaging()
+		"parts":
+			page = _parts()
 		_:
 			page = _coming_later()
 	var body := Ui.panel(Ui.margin(page, 40, 28, 40, 28), Ui.box(PAGE, 0, 0, 0))
@@ -143,10 +145,54 @@ func _packaging() -> Control:
 	return column
 
 
+## A row per wear part, with how many spares are on the shelving.
+func _parts() -> Control:
+	var shelf: StorageShelf = get_tree().get_first_node_in_group(&"print_storage")
+	var lead := GameClock.duration_label(Game.data.settings["supplier"]["parts_lead_minutes"])
+	var rows := Ui.vbox([
+		Ui.wrap(Ui.text("Spares wait on your shelving until a printer needs one. Check a printer's Parts menu to see what is wearing. Arrives in %s." % lead, 14, Ui.MUTED)),
+	], 12)
+	for part_id: String in Game.data.parts:
+		var part: Dictionary = Game.data.parts[part_id]
+		var order := {"parts": {part_id: 1}}
+		var problem := Game.supplier_problem(order)
+		var pack := int(part["pack_size"])
+		var words := Ui.vbox([
+			Ui.text(part["name"] if pack == 1 else "%s, pack of %d" % [part["name"], pack], 16, Ui.INK, 800),
+			Ui.text(part["description"], 13, Ui.MUTED),
+		], 0)
+		words.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var spare := shelf.spare_count(StringName(part_id))
+		var buy := _disabled_if(Ui.button("Buy", _buy.bind(order), BLUE, Ui.WHITE, 44, 14), problem != "")
+		buy.tooltip_text = problem
+		rows.add_child(Ui.panel(Ui.hbox([
+			Ui.icon_tile("wrench", 52, 26, TILE, NAVY),
+			words,
+			Ui.width(_worn_note(StringName(part["slot"])), 150),
+			Ui.pill("On the shelf: %d" % spare, Ui.GREEN_DARK if spare > 0 else Ui.MUTED, Ui.GREEN_SOFT if spare > 0 else TILE),
+			Ui.width(Ui.text(Money.format(int(part["price_pence"])), 17, Ui.INK, 800), 70),
+			buy,
+		], 18), Ui.box(Ui.WHITE, 18, 18, 14, SHADOW, 3)))
+	return Ui.scroll(rows)
+
+
+## The worst state of this kind of part across the printers, if any is worn.
+func _worn_note(slot: StringName) -> Control:
+	var worst := 1.0
+	for station: PrinterStation in get_tree().get_nodes_in_group(&"printer"):
+		if station.wear.health.has(slot):
+			worst = minf(worst, station.wear.health[slot])
+	if worst <= PrinterWear.BROKEN_AT:
+		return Ui.pill("Worn out", Ui.RED_DARK, Ui.RED_SOFT)
+	if worst < PrinterWear.WORN_BELOW:
+		return Ui.pill("Worn: %d%% left" % maxi(roundi(worst * 100.0), 1), Ui.AMBER_DARK, Ui.AMBER_SOFT)
+	return Ui.spacer()
+
+
 func _coming_later() -> Control:
 	var words := Ui.vbox([
 		Ui.title("Nothing on these shelves yet", 20),
-		Ui.wrap(Ui.text("Nozzles, belts, build plates and upgrades arrive once printers start wearing out and breaking down.", 14, Ui.MUTED)),
+		Ui.wrap(Ui.text("Upgrades that make a printer faster, tougher or less fussy arrive when you outgrow the garage.", 14, Ui.MUTED)),
 	], 4)
 	words.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var row := Ui.panel(Ui.hbox([Ui.icon_tile("wrench", 52, 26, TILE, NAVY), words], 18), Ui.box(Ui.WHITE, 18, 18, 14, SHADOW, 3))

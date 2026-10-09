@@ -7,11 +7,15 @@ var _failures := 0
 
 func _init() -> void:
 	_test_print_job()
+	_test_print_risk()
+	_test_printer_wear()
 	_test_clock()
 	_test_bank()
 	_test_money()
 	_test_marketplace()
+	_test_deliveries()
 	_test_supplier()
+	_test_saving()
 	print("Tests passed" if _failures == 0 else "%d test(s) FAILED" % _failures)
 	quit(1 if _failures > 0 else 0)
 
@@ -31,6 +35,130 @@ func _test_print_job() -> void:
 	_check(job.is_finished() and is_equal_approx(job.progress, 1.0), "a finished job is at full progress")
 	_check(not job.advance(1.0), "a finished job does not finish twice")
 	_check(is_equal_approx(job.progress, 1.0), "progress never goes past 1")
+	_check(not job.ruined, "a job with no failure is not ruined")
+
+	var scrapped := PrintJob.new(10.0)
+	scrapped.fail({"id": "spaghetti", "outcome": "scrap"}, 0.4)
+	_check(not scrapped.advance(3.0), "a doomed print runs normally until the failure strikes")
+	_check(scrapped.advance(3.0) and scrapped.is_finished(), "a ruined print ends when the failure strikes")
+	_check(scrapped.ruined and is_equal_approx(scrapped.progress, 0.4), "a ruined print stops at the point it failed")
+	_check(not scrapped.advance(5.0) and is_equal_approx(scrapped.elapsed, 4.0), "a ruined print does not carry on")
+
+	var spoiled := PrintJob.new(10.0)
+	spoiled.fail({"id": "warping", "outcome": "degraded"}, 0.4)
+	_check(not spoiled.advance(6.0), "a spoiled print keeps going past the point it went wrong")
+	_check(spoiled.advance(4.0) and not spoiled.ruined and is_equal_approx(spoiled.progress, 1.0), "a spoiled print runs to the end")
+
+
+func _test_print_risk() -> void:
+	var data := GameData.load_all()
+	var plodder: Dictionary = data.printers["plodder_mini"]
+	var zippy: Dictionary = data.printers["zippy_x1"]
+	var pla: Dictionary = data.filaments["pla"]
+	var clips: Dictionary = data.products["cable_management_clips_x12"]
+	var dragon: Dictionary = data.products["flexi_dragon"]
+	var draft: Dictionary = data.presets["draft"]
+	var standard: Dictionary = data.presets["standard"]
+	var strong: Dictionary = data.presets["strong"]
+
+	var base := PrintRisk.fail_chance(plodder, standard, pla, clips)
+	_check(base > 0.02 and base < 0.08, "a simple PLA print on the starter printer fails a few times in a hundred (got %.3f)" % base)
+	_check(is_equal_approx(PrintRisk.fail_chance(plodder, draft, pla, clips), base * 1.5), "Draft is half as risky again as Standard")
+	_check(PrintRisk.fail_chance(plodder, strong, pla, clips) < base, "Strong is a little safer than Standard")
+	_check(PrintRisk.fail_chance(plodder, standard, pla, dragon) > base, "a harder design is riskier")
+	_check(PrintRisk.fail_chance(plodder, standard, data.filaments["petg"], clips) > base, "a fussier filament is riskier")
+	_check(PrintRisk.fail_chance(zippy, standard, pla, clips) < base * 0.5, "a more reliable printer clearly cuts the risk")
+	_check(is_equal_approx(PrintRisk.fail_chance(plodder, standard, pla, clips, 0.1), base + 0.1), "extra risk is added on top")
+	_check(is_equal_approx(PrintRisk.fail_chance(plodder, standard, pla, clips, 5.0), PrintRisk.MAX_CHANCE), "the chance is capped")
+	_check(PrintRisk.band(0.03) == "Low" and PrintRisk.band(0.08) == "Medium" and PrintRisk.band(0.2) == "High", "risk bands")
+
+	var flags := PrintRisk.conditions(plodder, draft, clips)
+	_check(flags.has(&"draft_preset") and flags.has(&"no_auto_level"), "conditions note the preset and the missing bed levelling")
+	_check(not PrintRisk.conditions(zippy, standard, clips).has(&"no_auto_level"), "a printer with bed levelling does not get that flag")
+	_check(PrintRisk.conditions(plodder, standard, dragon).has(&"large_part"), "a part that nearly fills the bed is large")
+	var tower := {"size_mm": [40, 40, 160]}
+	var tall := PrintRisk.conditions(plodder, standard, tower)
+	_check(tall.has(&"tall_thin_part") and tall.has(&"bedslinger_tall_part"), "a tower is tall and thin, and shaken by a bed slinger")
+	_check(not PrintRisk.conditions(zippy, standard, tower).has(&"bedslinger_tall_part"), "a core XY does not shake tall parts")
+
+	var first_layer: Dictionary = data.failures["first_layer"]
+	_check(is_equal_approx(PrintRisk.weight_of(first_layer, [], pla), first_layer["weight"]), "with no causes a failure has its plain weight")
+	_check(is_equal_approx(PrintRisk.weight_of(first_layer, flags, pla), float(first_layer["weight"]) * 2.0 * 1.2), "causes that apply multiply the weight")
+	var stringing: Dictionary = data.failures["stringing"]
+	_check(is_equal_approx(PrintRisk.weight_of(stringing, [], data.filaments["petg"]), float(stringing["weight"]) * 1.5), "a filament's own modifier multiplies the weight")
+
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 11
+	_check(PrintRisk.roll(0.0, data.failures, flags, pla, rng).is_empty(), "a print with no risk never fails")
+	var counts := {}
+	for attempt in 4000:
+		var fate := PrintRisk.roll(1.0, data.failures, [], pla, rng)
+		var failure: Dictionary = fate["failure"]
+		counts[failure["id"]] = counts.get(failure["id"], 0) + 1
+		var span: Array = PrintRisk.WHEN[failure["happens"]]
+		if fate["at"] < span[0] or fate["at"] > span[1]:
+			_check(false, "%s struck at %.2f, outside when it happens" % [failure["id"], fate["at"]])
+			break
+	var rollable := data.failures.values().filter(func(row: Dictionary) -> bool: return float(row["weight"]) > 0.0).size()
+	_check(counts.size() == rollable and not counts.has("breakdown"), "every failure with a weight can happen, and only those")
+	_check(counts["first_layer"] > counts["tangled_spool"] * 2, "heavier failures happen more often")
+	var failed := 0
+	for attempt in 4000:
+		failed += 0 if PrintRisk.roll(0.25, data.failures, [], pla, rng).is_empty() else 1
+	_check(absi(failed - 1000) < 120, "prints fail about as often as their chance says (got %d of 4000)" % failed)
+
+
+func _test_printer_wear() -> void:
+	var data := GameData.load_all()
+	var plodder: Dictionary = data.printers["plodder_mini"]
+	var pla: Dictionary = data.filaments["pla"]
+	var standard: Dictionary = data.presets["standard"]
+	var wear := PrinterWear.new(data.parts, plodder, 1.0)
+	_check(wear.slots().size() == plodder["parts"].size() and wear.slots().has(&"nozzle"), "a new printer has a part in every slot it ships with")
+	_check(is_equal_approx(wear.health[&"nozzle"], 1.0) and is_zero_approx(wear.extra_fail_chance()), "new parts are at full health and add no risk")
+	_check(wear.flags().is_empty() and wear.broken().is_empty(), "new parts are neither worn nor broken")
+
+	var life := float(data.parts["brass_nozzle_0_4mm"]["lifespan_print_hours"]) / float(plodder["wear_multiplier"])
+	wear.apply(life * 0.5, standard, pla)
+	_check(is_equal_approx(wear.health[&"nozzle"], 0.5), "half a part's life in print hours takes half its health")
+	_check(wear.health[&"belts"] > wear.health[&"nozzle"], "longer lived parts wear more slowly")
+	_check(is_zero_approx(wear.extra_fail_chance()), "a part above 30% adds no risk")
+	_check(wear.worst() == &"nozzle", "the nozzle is the first part to go")
+
+	wear.apply(life * 0.35, standard, pla)
+	_check(wear.is_worn(&"nozzle") and wear.flags().has(&"worn_nozzle"), "below 30% a part is worn and raises its flag")
+	var half_way := float(data.parts["brass_nozzle_0_4mm"]["max_extra_fail"]) * 0.5
+	_check(is_equal_approx(wear.extra_fail_chance(), half_way), "at 15% health a part adds half its extra risk")
+	var base := PrintRisk.fail_chance(plodder, standard, pla, data.products["cable_management_clips_x12"])
+	_check(PrintRisk.fail_chance(plodder, standard, pla, data.products["cable_management_clips_x12"], wear.extra_fail_chance()) > base * 1.5, "a worn nozzle clearly raises the chance of failure")
+	var clog: Dictionary = data.failures["clog"]
+	_check(PrintRisk.weight_of(clog, wear.flags(), pla) > float(clog["weight"]) * 2.0, "a worn nozzle makes clogs the likely failure")
+
+	var breaks := wear.breaks_during(life * 0.3, standard, pla)
+	_check(breaks.get("slot") == &"nozzle" and is_equal_approx(breaks["at"], 0.5), "a print longer than the part has left breaks it part way")
+	_check(wear.breaks_during(life * 0.1, standard, pla).is_empty(), "a print the part can survive breaks nothing")
+	wear.apply(life * 0.3 * breaks["at"], standard, pla)
+	_check(wear.is_broken(&"nozzle") and wear.broken() == ([&"nozzle"] as Array[StringName]), "running a part to nothing breaks it")
+
+	wear.replace(&"nozzle", &"brass_nozzle_0_4mm")
+	_check(is_equal_approx(wear.health[&"nozzle"], 1.0) and wear.broken().is_empty(), "fitting a spare restores the slot")
+	wear.damage(&"nozzle", 0.2)
+	_check(is_equal_approx(wear.health[&"nozzle"], 0.8), "a failure can take health straight off a part")
+	wear.damage(&"nozzle", 5.0)
+	_check(is_zero_approx(wear.health[&"nozzle"]), "health never goes below nothing")
+
+	var fast := PrinterWear.new(data.parts, plodder, 4.0)
+	fast.apply(life * 0.125, standard, pla)
+	_check(is_equal_approx(fast.health[&"nozzle"], 0.5), "the game's wear rate scales all wear")
+	var draft_wear := PrinterWear.new(data.parts, plodder, 1.0)
+	draft_wear.apply(10.0, data.presets["draft"], pla)
+	var strong_wear := PrinterWear.new(data.parts, plodder, 1.0)
+	strong_wear.apply(10.0, data.presets["strong"], pla)
+	_check(draft_wear.health[&"nozzle"] < strong_wear.health[&"nozzle"], "Draft wears parts faster than Strong, hour for hour")
+	var gritty := pla.duplicate()
+	gritty["abrasive"] = true
+	_check(is_equal_approx(wear.wear_per_hour(&"nozzle", standard, gritty), wear.wear_per_hour(&"nozzle", standard, pla) * 10.0), "abrasive filament eats a brass nozzle ten times faster")
+	_check(is_equal_approx(wear.wear_per_hour(&"belts", standard, gritty), wear.wear_per_hour(&"belts", standard, pla)), "abrasive filament does not wear the belts any faster")
 
 
 func _test_clock() -> void:
@@ -130,6 +258,161 @@ func _test_marketplace() -> void:
 	_check(order.status == Marketplace.Status.SHIPPED, "shipped orders are not cancelled")
 
 
+func _test_deliveries() -> void:
+	var data := GameData.load_all()
+	var courier: Dictionary = data.settings["courier"]
+	_check(is_equal_approx(Marketplace.damage_chance(3, courier), 0.04), "a Standard print breaks in the post 4 times in 100")
+	_check(is_equal_approx(Marketplace.damage_chance(2, courier), 0.06), "a Draft print breaks more often")
+	_check(is_zero_approx(Marketplace.damage_chance(5, courier)), "a Strong print never breaks in the post")
+	var rough := {"protection": 1, "damage_multiplier": 1.8}
+	_check(is_equal_approx(Marketplace.damage_chance(3, rough), 0.04 * (5.0 / 3.0) * 1.8), "poor packaging and a rough courier both add to the damage")
+
+	var market := Marketplace.new(data.marketplaces["craftsy"].duplicate(), data.products)
+	market.comments = data.review_comments
+	market.config["max_open_orders"] = 100000
+	market.config["review_chance"] = 1.0
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 5
+	_check(is_zero_approx(market.rating()) and is_equal_approx(market.rating_multiplier(), 1.0), "a shop with no reviews has no rating and normal demand")
+	_check(is_zero_approx(market.return_chance(3, false)), "nobody sends back a good print")
+	_check(market.return_chance(1, false) > 0.0 and market.return_chance(3, true) > market.return_chance(1, false), "rough prints come back sometimes, flawed ones often")
+
+	var total_good := 0
+	var total_flawed := 0
+	for attempt in 300:
+		total_good += Marketplace.stars_for(3, false, rng)
+		total_flawed += Marketplace.stars_for(2, true, rng)
+	_check(total_good / 300.0 > 4.4, "good prints average well over four stars (got %.2f)" % (total_good / 300.0))
+	_check(total_flawed / 300.0 < 3.6, "flawed prints average clearly lower (got %.2f)" % (total_flawed / 300.0))
+
+	market.set_listing(&"desk_organiser", true, 1200)
+	for step in 3000:
+		market.tick(step, step + 1.0, rng)
+	var sent := market.orders.duplicate()
+	_check(sent.size() >= 4, "enough orders arrived to test with")
+
+	# A strong, good print: always arrives, is kept and is reviewed.
+	var good: Marketplace.Order = sent[0]
+	market.mark_packed(good, 5, 3, false)
+	market.ship(good, 100.0, 500.0)
+	_check(market.deliver(499.0, rng, courier).is_empty(), "nothing is delivered before it arrives")
+	var arrived := market.deliver(500.0, rng, courier)
+	_check(arrived.size() == 1 and arrived[0]["order"] == good, "a parcel is delivered when its time comes")
+	_check(arrived[0]["refund"].is_empty() and good.status == Marketplace.Status.DELIVERED, "a strong, good print is delivered and kept")
+	_check(arrived[0]["review"]["stars"] >= 4 and arrived[0]["review"]["text"] != "", "and earns a good review with something to say")
+	_check(market.deliver(9999.0, rng, courier).is_empty(), "an order is only delivered once")
+	_check(market.sold_orders().has(good), "a delivered order still counts as sold")
+
+	# Packaging that can't protect anything: the parcel always arrives broken.
+	var doomed: Marketplace.Order = sent[1]
+	market.mark_packed(doomed, 1, 3, false)
+	market.ship(doomed, 100.0, 200.0)
+	var sold_before: int = market.listing(&"desk_organiser")["sold"]
+	var broken := market.deliver(200.0, rng, {"protection": 1, "damage_multiplier": 100.0})
+	_check(doomed.status == Marketplace.Status.REFUNDED and doomed.refund_reason == "damaged", "a parcel that breaks is refunded")
+	_check(broken[0]["refund"]["price"] == doomed.price and broken[0]["refund"]["fee"] == market.fee_for(doomed.price), "the refund gives back the price, and the fee comes back to the seller")
+	_check(broken[0]["review"]["stars"] == 1, "a broken parcel earns a one star review")
+	_check(market.listing(&"desk_organiser")["sold"] == sold_before - 1, "a refunded order no longer counts as sold on the listing")
+
+	# A flawed print that is certain to be sent back.
+	market.config["return_chance_flawed"] = 1.0
+	var flawed: Marketplace.Order = sent[2]
+	market.mark_packed(flawed, 5, 2, true)
+	market.ship(flawed, 100.0, 300.0)
+	var back := market.deliver(300.0, rng, courier)
+	_check(flawed.refund_reason == "returned" and back[0]["review"]["stars"] == 2, "a returned print is refunded and earns two stars")
+
+	_check(is_equal_approx(market.rating(), (float(arrived[0]["review"]["stars"]) + 1.0 + 2.0) / 3.0), "the rating is the average of the reviews")
+	_check(market.rating_multiplier() < 0.7, "a poor rating cuts demand")
+	var few := market.rating_multiplier()
+	market.config["rating_confidence_reviews"] = 30
+	_check(market.rating_multiplier() > few and market.rating_multiplier() < 1.0, "the first few reviews count for less")
+	market.config["rating_confidence_reviews"] = 5
+	var poor := market.orders_per_day(&"desk_organiser", 1200)
+	for count in 20:
+		market.reviews.append({"stars": 5})
+	_check(is_equal_approx(market.rating(), 5.0), "only the most recent reviews count towards the rating")
+	_check(market.rating_multiplier() > 1.0 and market.orders_per_day(&"desk_organiser", 1200) > poor * 1.5, "a great rating brings the orders back, and a few more")
+	_check(market.rating_multiplier() <= float(market.config["max_rating_multiplier"]), "the boost from a great rating is capped")
+
+
+## What a save file does to state: written as JSON text and read back.
+func _through_file(state: Dictionary) -> Dictionary:
+	return JSON.parse_string(JSON.stringify(state))
+
+
+func _test_saving() -> void:
+	var data := GameData.load_all()
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 3
+
+	var clock := GameClock.new()
+	clock.minutes = 3456.5
+	var clock_again := GameClock.new()
+	clock_again.restore(_through_file(clock.save()))
+	_check(is_equal_approx(clock_again.minutes, 3456.5) and clock_again.label() == clock.label(), "the clock comes back at the same time")
+
+	var bank := Bank.new(30000)
+	bank.spend(1599, "Spoolhouse order", 10.0)
+	bank.earn(449, "Sale", 20.0)
+	var bank_again := Bank.new()
+	bank_again.restore(_through_file(bank.save()))
+	_check(bank_again.cash == bank.cash and bank_again.entries == bank.entries, "the bank comes back with its cash and every entry")
+	_check(typeof(bank_again.cash) == TYPE_INT and typeof(bank_again.entries[0]["amount"]) == TYPE_INT, "money is still whole pence after loading")
+
+	var market := Marketplace.new(data.marketplaces["craftsy"].duplicate(), data.products)
+	market.comments = data.review_comments
+	market.config["review_chance"] = 1.0
+	market.set_listing(&"cable_management_clips_x12", true, 399)
+	for step in 2000:
+		market.tick(step, step + 1.0, rng)
+	var first := market.orders[0]
+	var second := market.orders[1]
+	market.mark_packed(first, 5, 3, false)
+	market.ship(first, 100.0, 200.0)
+	market.deliver(200.0, rng, data.settings["courier"])
+	market.mark_packed(second, 2, 1, true)
+	market.ship(second, 100.0, 9000.0)
+	var saved_market := _through_file(market.save())
+	saved_market["listings"]["gone_design"] = {"listed": true, "price": 100, "sold": 0}
+	var market_again := Marketplace.new(market.config, data.products)
+	market_again.restore(saved_market)
+	_check(market_again.listing(&"cable_management_clips_x12") == market.listing(&"cable_management_clips_x12"), "listings come back with their price and sales")
+	_check(not market_again.listings.has(&"gone_design"), "a listing for a design the game no longer has is dropped")
+	_check(market_again.orders.size() == market.orders.size() and market_again.open_orders().size() == market.open_orders().size(), "every order comes back in the state it was in")
+	var second_again := market_again.order_by_id(second.id)
+	_check(second_again.status == Marketplace.Status.SHIPPED and second_again.durability == 2 and second_again.flawed and is_equal_approx(second_again.deliver_at, 9000.0), "a parcel in the post comes back with what is inside it")
+	_check(market_again.reviews.size() == 1 and is_equal_approx(market_again.rating(), market.rating()), "reviews and the rating come back")
+	var next_before := market.tick(0.0, 1440.0 * 50.0, rng)
+	var next_after := market_again.tick(0.0, 1440.0 * 50.0, rng)
+	_check(not next_before.is_empty() and not next_after.is_empty() and next_after[0].id == next_before[0].id, "new orders carry on numbering from where they left off")
+	_check(market_again.deliver(9000.0, rng, data.settings["courier"]).size() == 1, "a loaded parcel is still delivered when its time comes")
+
+	var supplier := Supplier.new(data)
+	supplier.place({"printers": {"plodder_mini": 1}, "spools": {"red": 2}, "packaging": 1, "parts": {"brass_nozzle_0_4mm": 1}}, 50.0, "Printbay")
+	var supplier_again := Supplier.new(data)
+	supplier_again.restore(_through_file(supplier.save()))
+	_check(supplier_again.pending.size() == 2 and supplier_again.pending[0].describe() == supplier.pending[0].describe(), "deliveries on their way come back")
+	var due := supplier_again.collect_due(50.0 + 180.0)
+	_check(due.size() == 2 and due[0].parts[&"brass_nozzle_0_4mm"] == 3 and due[1].printer == &"plodder_mini" and due[0].shop == "Printbay", "and arrive with everything that was ordered")
+
+	var wear := PrinterWear.new(data.parts, data.printers["plodder_mini"], 4.0)
+	wear.apply(30.0, data.presets["standard"], data.filaments["pla"])
+	var saved_wear := _through_file(wear.save())
+	saved_wear["fitted"]["belts"] = "gone_part"
+	var wear_again := PrinterWear.new(data.parts, data.printers["plodder_mini"], 4.0)
+	wear_again.restore(saved_wear)
+	_check(is_equal_approx(wear_again.health[&"nozzle"], wear.health[&"nozzle"]) and wear_again.worst() == &"nozzle", "a printer's parts come back as worn as they were")
+	_check(wear_again.fitted[&"belts"] == &"gt2_timing_belt" and is_equal_approx(wear_again.health[&"belts"], 1.0), "a part the game no longer has is swapped for the standard one")
+
+	var job := PrintJob.new(120.0)
+	job.fail(data.failures["spaghetti"], 0.6)
+	job.advance(30.0)
+	var job_again := PrintJob.restored(_through_file(job.save()))
+	_check(is_equal_approx(job_again.progress, 0.25) and job_again.ruined, "a print in progress comes back part way through, still doomed")
+	_check(not job_again.advance(30.0) and job_again.advance(30.0) and is_equal_approx(job_again.progress, 0.6), "and fails at the same point it would have")
+
+
 func _test_supplier() -> void:
 	var data := GameData.load_all()
 	var supplier := Supplier.new(data)
@@ -143,3 +426,10 @@ func _test_supplier() -> void:
 	var second := supplier.collect_due(100.0 + 180.0)
 	_check(second.size() == 1 and second[0].printer == &"plodder_mini", "the printer arrives after its longer lead time")
 	_check(supplier.pending.is_empty(), "collected deliveries are no longer pending")
+
+	var spares := {"parts": {"brass_nozzle_0_4mm": 2, "ptfe_tube": 1}}
+	_check(supplier.price_of(spares) == 2 * 699 + 449, "spare parts are priced by the pack")
+	var parts_box := supplier.place(spares, 0.0)
+	_check(parts_box.size() == 1 and parts_box[0].parts[&"brass_nozzle_0_4mm"] == 6 and parts_box[0].parts[&"ptfe_tube"] == 1, "a delivery holds every part in each pack")
+	_check(parts_box[0].describe() == "7 spare parts", "a parts delivery says how many parts it holds")
+	_check(supplier.collect_due(120.0).size() == 1, "spare parts arrive after the parts lead time")

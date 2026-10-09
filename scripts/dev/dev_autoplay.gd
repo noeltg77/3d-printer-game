@@ -7,7 +7,9 @@ extends Node
 ##       labels to pick (matched by prefix), `wait>seconds`, `click>x,y` for
 ##       a real left click at a screen position, or `call>expression` to run
 ##       an expression on the Game autoload (what the PC screens would do),
-##       e.g. call>buy_design("phone_stand"). `shot>file.png` saves a
+##       e.g. call>buy_design("phone_stand"), or `on>group>expression` to
+##       run one on the first node in a group, e.g.
+##       on>print_dialog>choose("cable_management_clips_x12","draft"). `shot>file.png` saves a
 ##       screenshot at that point and `quit` exits. A step starts once the
 ##       character has finished the one before.
 ##   --time-scale=8   run the whole game faster
@@ -25,6 +27,9 @@ func _play(steps: PackedStringArray) -> void:
 	await get_tree().create_timer(0.5).timeout
 	var agent: Agent = get_tree().get_first_node_in_group(&"player")
 	for step in steps:
+		# The scene may have been reloaded by the last step (starting a new game).
+		if not is_instance_valid(agent):
+			agent = get_tree().get_first_node_in_group(&"player")
 		# A character held at the PC has jobs queued but won't start them, so
 		# there is nothing to wait for.
 		if agent.is_busy() and not agent.held:
@@ -51,12 +56,23 @@ func _play(steps: PackedStringArray) -> void:
 		if parts[0] == "click":
 			await _click(Vector2(parts[1].get_slice(",", 0).to_float(), parts[1].get_slice(",", 1).to_float()))
 			continue
+		if parts[0] == "on":
+			var expression := Expression.new()
+			var target := get_tree().get_first_node_in_group(parts[1])
+			var result: Variant = null
+			if target != null and expression.parse(parts[2]) == OK:
+				result = expression.execute([], target)
+			print("Autoplay: %s.%s -> %s" % [parts[1], parts[2], result])
+			continue
 		var action := _find_action(agent, parts)
 		if action == null or not action.enabled:
 			push_error("Autoplay: can't do '%s'" % step)
 			continue
 		print("Autoplay: %s" % step)
-		agent.enqueue(action)
+		if action.immediate:
+			action.run.call(agent)
+		else:
+			agent.enqueue(action)
 	if agent.is_busy():
 		await agent.became_idle
 	print("Autoplay: finished")

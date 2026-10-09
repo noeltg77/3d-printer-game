@@ -199,6 +199,29 @@ static func pill(content: String, fg: Color, bg: Color, size := 12) -> PanelCont
 	return node
 
 
+## Makes any control act as a button: a left click on it calls `on_pressed`.
+static func clickable(node: Control, on_pressed: Callable) -> Control:
+	node.mouse_filter = Control.MOUSE_FILTER_STOP
+	node.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	node.gui_input.connect(func(event: InputEvent) -> void:
+		if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+			on_pressed.call())
+	return node
+
+
+## A score out of `total` as a row of dots, `value` of them filled in.
+static func pips(value: int, total: int, colour: Color, track := TRACK, dot := 12) -> HBoxContainer:
+	var row := hbox([], 4)
+	row.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	for index in total:
+		var pip := Panel.new()
+		pip.custom_minimum_size = Vector2(dot, dot)
+		pip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		pip.add_theme_stylebox_override(&"panel", box(colour if index < value else track, dot / 2, 0, 0))
+		row.add_child(pip)
+	return row
+
+
 ## A rounded progress or stat bar. `value` is 0 to 1.
 static func bar(value: float, colour: Color, track := TRACK, height := 10) -> ProgressBar:
 	var node := ProgressBar.new()

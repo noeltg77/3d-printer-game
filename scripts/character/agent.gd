@@ -65,6 +65,22 @@ func is_busy() -> bool:
 	return _busy
 
 
+## True when nothing is half done: no task under way and nothing in hand. Held
+## at the PC counts, though jobs lined up from the screen haven't started.
+func is_between_tasks() -> bool:
+	return carried == null and current_label == "" and _path.is_empty()
+
+
+func save() -> Dictionary:
+	var spot := _seat_return if seated else global_position
+	return {"x": spot.x, "z": spot.z, "facing": rotation.y}
+
+
+func restore(data: Dictionary) -> void:
+	global_position = Vector3(float(data["x"]), 0.0, float(data["z"]))
+	rotation.y = float(data["facing"])
+
+
 func get_queued_labels() -> PackedStringArray:
 	var labels: PackedStringArray = []
 	for action in _queue:
@@ -122,6 +138,13 @@ func reach(at_peak := Callable()) -> void:
 	if at_peak.is_valid():
 		at_peak.call()
 	await get_tree().create_timer(CharacterRig.REACH_TIME / 2.0).timeout
+
+
+## Stays put, working with the hands, for a span of game minutes.
+func work(game_minutes: float) -> void:
+	var until := Game.clock.minutes + game_minutes
+	while Game.clock.minutes < until:
+		await reach()
 
 
 ## Takes hold of an item. Does nothing if given null.

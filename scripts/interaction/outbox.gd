@@ -37,5 +37,16 @@ func _on_courier_arrived() -> void:
 		total += parcel.order.price
 		Game.complete_sale(parcel.order)
 		parcel.queue_free()
-	Game.notify("Courier collected %d parcel%s: %s in sales" % [_parcels.size(), "" if _parcels.size() == 1 else "s", Money.format(total)])
+	Game.notify("Courier collected %d parcel%s: %s in sales" % [_parcels.size(), "" if _parcels.size() == 1 else "s", Money.format(total)], &"good")
 	_parcels.clear()
+
+
+func save() -> Dictionary:
+	return {"orders": _parcels.map(func(parcel: Parcel) -> int: return parcel.order.id)}
+
+
+func restore(data: Dictionary) -> void:
+	for id: float in data["orders"]:
+		var order := Game.market.order_by_id(int(id))
+		if order != null:
+			add(Parcel.create(order))

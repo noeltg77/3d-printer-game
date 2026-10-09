@@ -259,19 +259,19 @@ Build small and prove each step before moving on: assets and garage first, then 
 
 ### Phase 4: Things go wrong
 
-- [ ] Print presets (Draft / Standard / Strong) with risk meter
-- [ ] Print failures with visible results
-- [ ] Part wear, breakdowns, replacements, spares on shelves
-- [ ] Durability stat, delivery damage, returns, refunds, reviews, seller rating
+- [x] Print presets (Draft / Standard / Strong) with risk meter
+- [x] Print failures with visible results
+- [x] Part wear, breakdowns, replacements, spares on shelves
+- [x] Durability stat, delivery damage, returns, refunds, reviews, seller rating
 
 **Done when:** problems feel fair and funny, not frustrating, and upgrades clearly reduce them.
 
 ### Phase 5: Vertical slice polish
 
-- [ ] Save and load
+- [x] Save and load
 - [ ] UI polish, sound effects, music, lighting pass
-- [ ] Light onboarding hints for non printer owners
-- [ ] Balance pass on the garage tier
+- [x] Light onboarding hints for non printer owners
+- [x] Balance pass on the garage tier
 - [ ] Playtest with printer owners and complete beginners
 
 **Done when:** the garage tier is a shareable demo you'd be happy to show people.

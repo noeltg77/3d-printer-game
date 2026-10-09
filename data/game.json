@@ -10,11 +10,20 @@
 	"business_name": "Garage Prints",
 	"electricity_pence_per_kwh": 30,
 	"courier_minute_of_day": 1020,
+	"courier": {
+		"name": "Postie",
+		"damage_multiplier": 1.0,
+		"delivery_minutes": [1440, 2880],
+		"protection": 3
+	},
+	"default_preset": "standard",
+	"wear_rate": 4.0,
 	"supplier": {
 		"filament_shop": "Spoolhouse",
 		"hardware_shop": "Printbay",
 		"filament_lead_minutes": 120,
 		"printer_lead_minutes": 180,
+		"parts_lead_minutes": 120,
 		"packaging_name": "Mailer boxes",
 		"packaging_pack_size": 10,
 		"packaging_pack_pence": 499

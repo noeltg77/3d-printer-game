@@ -11,7 +11,16 @@
 			"dispatch_minutes": 2880,
 			"max_open_orders": 6,
 			"price_sensitivity": 2.5,
-			"max_demand_multiplier": 2.0
+			"max_demand_multiplier": 2.0,
+			"review_chance": 0.6,
+			"return_chance_flawed": 0.3,
+			"return_chance_per_quality_point": 0.04,
+			"rating_window": 20,
+			"rating_confidence_reviews": 5,
+			"rating_neutral": 4.2,
+			"rating_demand_per_star": 0.55,
+			"min_rating_multiplier": 0.3,
+			"max_rating_multiplier": 1.2
 		}
 	]
 }

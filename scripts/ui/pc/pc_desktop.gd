@@ -5,10 +5,7 @@ extends Control
 ## sticky note of things to do.
 
 const WEEKDAYS: PackedStringArray = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-const NOTE := Color("FFE58A")
-const NOTE_INK := Color("4A3B12")
 const DELIVERY_TINT := Color("FBE3CC")
-const NOTE_WIDTH := 240.0
 
 var screen: PcScreen
 
@@ -16,6 +13,7 @@ var _widgets: VBoxContainer
 ## App id -> the count bubble on its icon.
 var _badges: Dictionary[String, PanelContainer] = {}
 var _built := false
+var _widgets_note: TodoNote = null
 
 
 func refresh() -> void:
@@ -27,6 +25,7 @@ func refresh() -> void:
 	if delivery != null:
 		_widgets.add_child(delivery)
 	_widgets.add_child(_sticky_note())
+	_widgets_note.refresh()
 	_set_badge("craftsy", Game.market.open_orders().size())
 
 
@@ -130,12 +129,21 @@ func _printer_row(number: int, printer: PrinterStation) -> Control:
 		PrinterStation.Status.DONE:
 			status = "Needs you"
 			colour = Ui.RED
-			detail = "%s is finished. Collect it to free the printer." % Game.product_name(printer.item.product)
+			detail = "%s is finished. Collect it to free the printer." % printer.item.describe()
+		PrinterStation.Status.FAILED:
+			status = "Failed"
+			colour = Ui.RED
+			detail = "%s: %s. %s." % [Game.product_name(printer.scrap.product), printer.scrap.failure["name"], printer.scrap.failure["fix"]]
 	column.add_child(Ui.hbox([
 		Ui.text("Printer %d · %s" % [number, printer.display_name], 14, Ui.INK, 800), null,
 		Ui.text(status, 14, colour, 800),
 	]))
 	column.add_child(Ui.wrap(Ui.text(detail, 13, Ui.MUTED)))
+	var worst := printer.wear.worst()
+	if worst != &"" and printer.wear.is_worn(worst):
+		var broken := printer.wear.is_broken(worst)
+		column.add_child(Ui.margin(Ui.pill("%s: %s" % [printer.wear.part(worst)["slot_name"], printer.health_label(worst)],
+			Ui.RED_DARK if broken else Ui.AMBER_DARK, Ui.RED_SOFT if broken else Ui.AMBER_SOFT), 0, 6, 0, 0))
 	if printer.status == PrinterStation.Status.PRINTING:
 		var job := printer.job
 		var left := GameClock.duration_label((job.duration - job.elapsed) * GameClock.MINUTES_PER_SECOND)
@@ -172,18 +180,7 @@ func _delivery_card() -> Control:
 
 
 func _sticky_note() -> Control:
-	var lines := Advice.todo(get_tree())
-	var content := "To do:\n" + ("\n".join(lines) if not lines.is_empty() else "All caught up. Nice!")
-	var label := Ui.wrap(Ui.title(content, 17, NOTE_INK, 500))
-	label.add_theme_constant_override(&"line_spacing", 4)
-	var note := Ui.panel(label, Ui.box(NOTE, 6, 20, 18, Ui.SHADE, 6))
-	note.custom_minimum_size.x = NOTE_WIDTH
-	note.rotation_degrees = -2.0
-	# Containers straighten their children, so the tilted note sits in a plain
-	# holder that reserves the space it needs.
-	var holder := Control.new()
-	holder.custom_minimum_size = Vector2(NOTE_WIDTH, 0)
-	holder.size_flags_horizontal = Control.SIZE_SHRINK_END
-	holder.add_child(note)
-	note.resized.connect(func() -> void: holder.custom_minimum_size.y = note.size.y + 12.0)
-	return Ui.margin(holder, 0, 8, 12, 0)
+	var note := TodoNote.new()
+	note.size_flags_horizontal = Control.SIZE_SHRINK_END
+	_widgets_note = note
+	return Ui.margin(note, 0, 8, 12, 0)

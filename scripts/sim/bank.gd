@@ -48,3 +48,14 @@ func totals_since(minute: float) -> Dictionary:
 func _record(amount: int, text: String, minute: float) -> void:
 	cash += amount
 	entries.append({"minute": minute, "text": text, "amount": amount})
+
+
+func save() -> Dictionary:
+	return {"cash": cash, "entries": entries}
+
+
+func restore(data: Dictionary) -> void:
+	cash = int(data["cash"])
+	entries.clear()
+	for entry: Dictionary in data["entries"]:
+		entries.append({"minute": float(entry["minute"]), "text": String(entry["text"]), "amount": int(entry["amount"])})
