@@ -28,6 +28,8 @@ var market: Marketplace
 var trends: Trends
 var supplier: Supplier
 var studio: DesignStudio
+## The rules for reordering what runs low (the Stockroom app).
+var stock: Stockroom
 var owned_designs: Array[StringName] = []
 ## Mailer boxes in stock, one used per packed order.
 var packaging := 0
@@ -54,6 +56,8 @@ var force_failure := ""
 var save_path := "user://save.json"
 ## Game minute of the last save this session, or -1 if there hasn't been one.
 var saved_at := -1.0
+## Stock key -> why its last reorder couldn't be placed, so the player is told once.
+var _stock_blocked: Dictionary[String, String] = {}
 
 
 func _ready() -> void:
@@ -100,6 +104,9 @@ func _process(delta: float) -> void:
 		bank.charge(rent, "Rent: %s" % premises_row()["name"], clock.minutes)
 		notify("Rent paid on the %s: %s" % [String(premises_row()["name"]).to_lower(), Money.format(rent)])
 		changed.emit()
+	var stock_check := float(data.settings["stock"]["check_minutes"])
+	if stock_unlocked() and floorf(clock.minutes / stock_check) != floorf(before / stock_check):
+		restock()
 
 
 func new_game() -> void:
@@ -118,6 +125,8 @@ func new_game() -> void:
 	trends = Trends.new(data.products, data.settings["trends"])
 	supplier = Supplier.new(data)
 	studio = DesignStudio.new(data.products, data.settings["design"])
+	stock = Stockroom.new(data)
+	_stock_blocked.clear()
 	owned_designs.assign(start["designs"])
 	packaging = int(start["packaging"])
 	premises = StringName(start_premises if data.premises.has(start_premises) else start["premises"])
@@ -177,6 +186,7 @@ func save() -> Dictionary:
 		"clock": clock.save(), "bank": bank.save(), "markets": _save_markets(), "supplier": supplier.save(),
 		"trends": trends.save(),
 		"studio": studio.save(),
+		"stock": stock.save(),
 		"owned_designs": owned_designs, "packaging": packaging, "tier": tier, "premises": premises,
 	}
 
@@ -197,6 +207,8 @@ func restore(state: Dictionary) -> void:
 	supplier.restore(state["supplier"])
 	if state.has("studio"):
 		studio.restore(state["studio"])
+	if state.has("stock"):
+		stock.restore(state["stock"])
 	_share_own_designs()
 	owned_designs.clear()
 	for product: String in state["owned_designs"]:
@@ -506,17 +518,105 @@ func supplier_problem(basket: Dictionary) -> String:
 
 
 ## Pays for a basket and schedules its deliveries. `shop` is the name of the
-## shop it was bought from. False if it can't be ordered.
-func place_supplier_order(basket: Dictionary, shop := "") -> bool:
+## shop it was bought from. `quiet` leaves the announcing to the caller.
+## False if it can't be ordered.
+func place_supplier_order(basket: Dictionary, shop := "", quiet := false) -> bool:
 	if supplier_problem(basket) != "":
 		return false
 	if shop == "":
 		shop = data.settings["supplier"]["hardware_shop"]
 	bank.spend(supplier.price_of(basket), "%s order" % shop, clock.minutes)
 	supplier.place(basket, clock.minutes, shop)
-	notify("Order placed with %s" % shop)
+	if not quiet:
+		notify("Order placed with %s" % shop)
 	changed.emit()
 	return true
+
+
+## True once the business is big enough for stock to reorder itself.
+func stock_unlocked() -> bool:
+	return tier >= int(data.settings["stock"]["unlock_tier"])
+
+
+## Sets the reorder rule for a stock (see Stockroom).
+func set_stock_rule(key: String, on: bool, point: int, quantity: int) -> void:
+	stock.set_rule(key, on, point, quantity)
+	_stock_blocked.erase(key)
+	changed.emit()
+
+
+## What is in stock and on its way, by Stockroom key, as { have, coming }.
+## Spools count if they are on the rack or in a printer and not nearly empty;
+## spare parts if they are on the shelving. What is coming is whatever has been
+## ordered or is sitting in a box by the door.
+func stock_levels() -> Dictionary:
+	var levels := {}
+	var loaded: Array[Spool] = []
+	var rack: FilamentRack = get_tree().get_first_node_in_group(&"filament_rack")
+	if rack != null:
+		loaded.append_array(rack.spools())
+	for printer: PrinterStation in get_tree().get_nodes_in_group(&"printer"):
+		loaded.append_array(printer.spools.filter(func(spool: Spool) -> bool: return spool != null))
+	for spool in loaded:
+		_stock_add(levels, Stockroom.spool_key(spool.material, spool.colour), "have", 1 if spool.grams >= Advice.LOW_SPOOL_GRAMS else 0)
+	var shelf: StorageShelf = get_tree().get_first_node_in_group(&"print_storage")
+	for box in (shelf.spares() if shelf != null else ([] as Array[SparePart])):
+		if data.parts.has(box.part):
+			_stock_add(levels, Stockroom.part_key(box.part), "have", box.count)
+	_stock_add(levels, Stockroom.PACKAGING, "have", packaging)
+	var coming: Array[Supplier.Delivery] = supplier.pending.duplicate()
+	for box: DeliveryBox in get_tree().get_nodes_in_group(&"delivery_box"):
+		coming.append(box.delivery)
+	for delivery in coming:
+		for spool in delivery.spools:
+			_stock_add(levels, Stockroom.spool_key(FilamentRules.material_of(spool), FilamentRules.colour_of(spool)), "coming", 1)
+		for part in delivery.parts:
+			if data.parts.has(part):
+				_stock_add(levels, Stockroom.part_key(part), "coming", delivery.parts[part])
+		if delivery.packaging > 0:
+			_stock_add(levels, Stockroom.PACKAGING, "coming", delivery.packaging)
+	return levels
+
+
+func _stock_add(levels: Dictionary, key: String, field: String, amount: int) -> void:
+	if not levels.has(key):
+		levels[key] = {"have": 0, "coming": 0}
+	levels[key][field] += amount
+
+
+## Orders whatever the stockroom's rules say has run low. Anything there is no
+## cash or room for is left out, and the player told why, once.
+func restock() -> void:
+	var due := stock.due(stock_levels())
+	var basket := {}
+	var ordered: PackedStringArray = []
+	for key in due:
+		var with_it := Stockroom.add_to_basket(basket, key, due[key])
+		var problem := supplier_problem(with_it)
+		if problem == "":
+			basket = with_it
+			ordered.append(stock_name(key))
+			_stock_blocked.erase(key)
+		elif _stock_blocked.get(key, "") != problem:
+			_stock_blocked[key] = problem
+			notify("The stockroom couldn't reorder %s: %s" % [stock_name(key), problem.to_lower()], &"bad")
+	if ordered.is_empty():
+		return
+	for spools: bool in [true, false]:
+		var part := Stockroom.shop_part(basket, spools)
+		if not part.is_empty():
+			place_supplier_order(part, data.settings["supplier"]["filament_shop" if spools else "hardware_shop"], true)
+	notify("The stockroom reordered: %s" % ", ".join(ordered))
+
+
+## What a Stockroom key is called: "Red PLA", "Brass nozzle 0.4mm", "Mailer boxes".
+func stock_name(key: String) -> String:
+	if key == Stockroom.PACKAGING:
+		return data.settings["supplier"]["packaging_name"]
+	if not Stockroom.is_spool(key):
+		return data.parts[key.trim_prefix(Stockroom.PART)]["name"]
+	var spool := key.trim_prefix(Stockroom.SPOOL)
+	return "%s %s" % [Palette.display_name(FilamentRules.colour_of(spool)), data.filaments[FilamentRules.material_of(spool)]["name"]]
 
 
 ## What one unit of a design costs to make and send: filament, electricity on

@@ -48,6 +48,10 @@
 		"step": 0.2,
 		"extra_fail_per_step": 0.03
 	},
+	"stock": {
+		"unlock_tier": 3,
+		"check_minutes": 10
+	},
 	"multicolour": {
 		"main_colour_share": 0.6,
 		"contrast_purge": 1.0,

@@ -102,6 +102,8 @@ static func items(tree: SceneTree) -> Array[Dictionary]:
 		var row: Dictionary = Game.data.premises[place]
 		if int(row["tier"]) == Game.tier + 1 and bench != null and bench.free_spots() == 0 and Game.bank.can_afford(int(row["move_cost_pence"])):
 			_add(found, "You can afford a bigger space", "The bench is full. Click the computer and open Roomier to move, for more printers, shelving and new things to sell.")
+	if Game.stock_unlocked() and Game.stock.rules.is_empty():
+		_add(found, "Let the stockroom do the ordering", "With this many printers something is always running out. Click the computer, open Stockroom and switch on a rule for the filament, spares and boxes you use most.")
 	if Game.packaging <= LOW_PACKAGING:
 		_add(found, "Mailer boxes are nearly out", "Every order goes out in one. Buy a pack at %s, under Packaging." % shops["hardware_shop"])
 	return found

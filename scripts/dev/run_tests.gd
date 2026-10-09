@@ -16,6 +16,7 @@ func _init() -> void:
 	_test_design_studio()
 	_test_markets_and_trends()
 	_test_premises()
+	_test_stockroom()
 	_test_clock()
 	_test_bank()
 	_test_money()
@@ -561,6 +562,45 @@ func _test_premises() -> void:
 				_check(int(place[room]) >= int(before[room]), "a bigger place has at least as much room as the one before (%s %s)" % [place["id"], room])
 		before = place
 	_check(int(before["tier"]) <= data.settings["tier_names"].size(), "every tier a place can be has a name")
+
+
+func _test_stockroom() -> void:
+	var data := GameData.load_all()
+	var stock := Stockroom.new(data)
+	var red := Stockroom.spool_key("pla", "red")
+	var nozzle := Stockroom.part_key("brass_nozzle_0_4mm")
+	_check(red == "spool:pla:red" and Stockroom.is_spool(red) and not Stockroom.is_spool(nozzle), "stock is named by kind and id")
+	_check(not stock.rule(red)["on"] and not stock.any_on() and stock.due({}).is_empty(), "nothing reorders itself until a rule is switched on")
+	stock.set_rule(red, true, 1, 2)
+	stock.set_rule(nozzle, false, 2, 1)
+	stock.set_rule(Stockroom.PACKAGING, true, 5, 1)
+	_check(stock.any_on(), "a rule can be switched on")
+	var plenty := {red: {"have": 3, "coming": 0}, nozzle: {"have": 0, "coming": 0}, Stockroom.PACKAGING: {"have": 12, "coming": 0}}
+	_check(stock.due(plenty).is_empty(), "nothing is due while there is more than the reorder point, or the rule is off")
+	var low := {red: {"have": 1, "coming": 0}, Stockroom.PACKAGING: {"have": 6, "coming": 0}}
+	_check(stock.due(low) == ({red: 2} as Dictionary[String, int]), "stock at its reorder point is due, in the amount set")
+	_check(stock.due({red: {"have": 0, "coming": 2}}).has(Stockroom.PACKAGING) and not stock.due({red: {"have": 0, "coming": 2}}).has(red), "what is already on its way counts, so nothing is ordered twice")
+	_check(stock.due({}).size() == 2, "a stock there is none of at all is due")
+	stock.set_rule(red, true, -3, 0)
+	_check(int(stock.rule(red)["point"]) == 0 and int(stock.rule(red)["quantity"]) == 1, "a rule can't go below zero stock or order nothing")
+
+	var basket := Stockroom.add_to_basket({}, red, 2)
+	basket = Stockroom.add_to_basket(basket, red, 1)
+	basket = Stockroom.add_to_basket(basket, nozzle, 1)
+	basket = Stockroom.add_to_basket(basket, Stockroom.PACKAGING, 2)
+	_check(basket == {"spools": {"pla:red": 3}, "parts": {"brass_nozzle_0_4mm": 1}, "packaging": 2}, "what is due becomes a supplier basket")
+	var supplier := Supplier.new(data)
+	_check(supplier.price_of(basket) == supplier.spool_price("pla") * 3 + int(data.parts["brass_nozzle_0_4mm"]["price_pence"]) + int(data.settings["supplier"]["packaging_pack_pence"]) * 2, "which the supplier prices like any other")
+	_check(Stockroom.shop_part(basket, true) == {"spools": {"pla:red": 3}} and not Stockroom.shop_part(basket, false).has("spools"), "filament and hardware go to their own shops")
+
+	stock.set_rule(red, true, 1, 2)
+	var saved := _through_file(stock.save())
+	saved["rules"]["spool:pla:no_such_colour"] = {"on": true, "point": 1, "quantity": 1}
+	saved["rules"]["part:gone_part"] = {"on": true, "point": 1, "quantity": 1}
+	var again := Stockroom.new(data)
+	again.restore(saved)
+	_check(again.rules.size() == 3 and again.rule(red) == stock.rule(red) and typeof(again.rule(red)["point"]) == TYPE_INT, "rules come back from a save, without those for things the game no longer has")
+	_check(int(data.settings["stock"]["unlock_tier"]) <= data.settings["tier_names"].size(), "reordering unlocks at a tier that exists")
 
 
 func _test_clock() -> void:

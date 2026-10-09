@@ -295,7 +295,7 @@ Build small and prove each step before moving on: assets and garage first, then 
 
 - [x] Rented unit, print farm layout
 - [ ] Staff: hiring, wages, roles, simple scheduling
-- [ ] Stock management, reorder points, supplier lead times
+- [x] Stock management, reorder points, supplier lead times
 - [ ] B2B contract inbox, specs, deadlines, penalties
 
 ### Phase 9: Tier 4 factory
