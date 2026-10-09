@@ -10,6 +10,7 @@ func _init() -> void:
 	_test_print_risk()
 	_test_printer_wear()
 	_test_printer_mods()
+	_test_multicolour()
 	_test_filaments()
 	_test_moisture()
 	_test_design_studio()
@@ -109,8 +110,9 @@ func _test_print_risk() -> void:
 		if fate["at"] < span[0] or fate["at"] > span[1]:
 			_check(false, "%s struck at %.2f, outside when it happens" % [failure["id"], fate["at"]])
 			break
-	var rollable := data.failures.values().filter(func(row: Dictionary) -> bool: return float(row["weight"]) > 0.0).size()
+	var rollable := data.failures.values().filter(func(row: Dictionary) -> bool: return float(row["weight"]) > 0.0 and not row.has("requires")).size()
 	_check(counts.size() == rollable and not counts.has("breakdown"), "every failure with a weight can happen, and only those")
+	_check(not counts.has("filament_jam_feeder"), "a failure that requires a condition never happens without it")
 	_check(counts["first_layer"] > counts["tangled_spool"] * 2, "heavier failures happen more often")
 	var failed := 0
 	for attempt in 4000:
@@ -219,6 +221,94 @@ func _test_printer_mods() -> void:
 	var again := PrinterMods.new(data.upgrades)
 	again.restore(saved)
 	_check(again.fitted == mods.fitted, "upgrades come back from a save, without any the game no longer has")
+
+
+func _test_multicolour() -> void:
+	var data := GameData.load_all()
+	var rules: Dictionary = data.settings["multicolour"]
+	var pla: Dictionary = data.filaments["pla"]
+	var tpu: Dictionary = data.filaments["tpu"]
+	var a1: Dictionary = data.printers["zippy_a1_mini"]
+	var two := {"colour_count": 2, "colour_swaps": 3}
+	var mods := PrinterMods.new(data.upgrades)
+	_check(mods.unit().is_empty(), "a printer starts without a multicolour unit")
+	_check(mods.problem(&"zippy_colourhub_lite", a1) == "", "a unit fits the printer it is made for")
+	_check(mods.problem(&"zippy_colourhub_lite", data.printers["plodder_mini"]) != "", "and not one it isn't")
+	mods.fit(&"zippy_colourhub_lite")
+	var lite := mods.unit()
+	_check(int(lite["slots"]) == 4, "a fitted unit gives the printer its slots")
+	_check(mods.problem(&"zippy_colourhub", a1) != "", "a printer takes only one multicolour unit")
+	for upgrade: Dictionary in data.upgrades.values():
+		if upgrade.has("multicolour"):
+			_check(not upgrade["fits_printers"].is_empty() and int(upgrade["multicolour"]["slots"]) <= 4, "every unit names its printers and fits the unit model's four slots (%s)" % upgrade["id"])
+
+	_check(Multicolour.colours_of({}) == 1 and Multicolour.colours_of(two) == 2, "a design is one colour unless it says otherwise")
+	_check(Multicolour.shares(1, rules) == ([1.0] as Array[float]), "one colour takes all the filament")
+	var three := Multicolour.shares(3, rules)
+	_check(is_equal_approx(three[0], 0.6) and is_equal_approx(three[1], 0.2) and is_equal_approx(three[0] + three[1] + three[2], 1.0), "the main colour takes most and the rest share what is left")
+	_check(Multicolour.swaps(two, 2) == 3 and Multicolour.swaps(two, 1) == 0, "a print in one colour never changes colour")
+
+	var dark_light: Array[float] = [0.1, 0.9]
+	var close: Array[float] = [0.5, 0.6]
+	_check(is_zero_approx(Multicolour.contrast([0.5] as Array[float])) and is_equal_approx(Multicolour.contrast(dark_light), 0.4), "contrast is the average step up in lightness going round the colours")
+	var plain_purge := Multicolour.purge_grams(lite, 3, close, rules)
+	_check(is_equal_approx(Multicolour.purge_grams(lite, 3, [0.5, 0.5] as Array[float], rules), 12.0), "each colour change purges the unit's amount")
+	_check(Multicolour.purge_grams(lite, 3, dark_light, rules) > plain_purge * 1.2, "dark next to light wastes clearly more than two close shades")
+	_check(is_zero_approx(Multicolour.purge_grams({}, 3, dark_light, rules)) and is_zero_approx(Multicolour.purge_grams(lite, 0, dark_light, rules)), "no unit or no changes means no waste")
+	var grams := Multicolour.grams_by_colour(100.0, 2, 12.0, rules)
+	_check(is_equal_approx(grams[0], 66.0) and is_equal_approx(grams[1], 46.0), "each spool gives its share of the print and of the waste")
+	_check(is_equal_approx(Multicolour.swap_minutes(lite, 3), 2.5), "colour changes add their time")
+	_check(Multicolour.purge_grams(data.upgrades["zippy_colourhub_2_pro"]["multicolour"], 3, close, rules) < plain_purge, "a better unit wastes less")
+
+	_check(Multicolour.flags({}, pla, 3, rules).is_empty(), "no unit, no multicolour conditions")
+	_check(Multicolour.flags(lite, pla, 3, rules) == ([Multicolour.UNIT_FLAG] as Array[StringName]), "a print fed through a unit is flagged as such")
+	_check(Multicolour.flags(lite, tpu, 0, rules).has(&"tpu_in_multicolour"), "soft filament in a unit not built for it is flagged")
+	_check(Multicolour.flags(lite, pla, int(rules["many_swaps"]), rules).has(&"many_colour_swaps"), "and so is a print with a lot of changes")
+	var jam: Dictionary = data.failures["filament_jam_feeder"]
+	_check(is_zero_approx(PrintRisk.weight_of(jam, [], pla)), "the unit can't jam on a printer without one")
+	var with_unit := Multicolour.flags(lite, pla, 3, rules)
+	_check(is_equal_approx(PrintRisk.weight_of(jam, with_unit, pla), float(jam["weight"])), "but can on one with")
+	_check(PrintRisk.weight_of(jam, Multicolour.flags(lite, tpu, 3, rules), tpu) > PrintRisk.weight_of(jam, with_unit, tpu) * 4.0, "and soft filament makes it far more likely")
+	var cheap: Dictionary = data.upgrades["spoolsmith_quad"]["multicolour"]
+	_check(float(Multicolour.failure_multipliers(cheap, rules)[Multicolour.JAM_FAILURE]) > float(Multicolour.failure_multipliers(lite, rules)[Multicolour.JAM_FAILURE]), "a cheap unit jams more than a good one")
+	_check(Multicolour.jam_chance(cheap, 6) > Multicolour.jam_chance(lite, 3) and is_zero_approx(Multicolour.jam_chance({}, 6)), "more changes on a worse unit add more risk")
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 5
+	var jams := 0
+	for attempt in 2000:
+		jams += 1 if PrintRisk.pick(data.failures, with_unit, pla, rng)["id"] == "filament_jam_feeder" else 0
+	_check(jams > 40 and jams < 400, "with a unit, some failures are jams (%d of 2000)" % jams)
+	var wear := PrinterWear.new(data.parts, a1, 1.0)
+	for part_id: String in lite["parts"]:
+		wear.replace(StringName(data.parts[part_id]["slot"]), StringName(part_id))
+	wear.damage(&"mc_rollers", 0.9)
+	_check(wear.flags().has(&"worn_mc_rollers") and wear.extra_fail_chance() > 0.0, "worn feeder rollers add risk and make jams likelier")
+
+	_check(Multicolour.pick_slots(["pla", "", "pla", "petg"] as Array[String], 2) == ([0, 2] as Array[int]), "a two colour print takes the first two spools of one filament")
+	_check(Multicolour.pick_slots(["pla", "petg", "petg", ""] as Array[String], 2) == ([1, 2] as Array[int]), "passing over a filament there isn't enough of")
+	_check(Multicolour.pick_slots(["pla", "petg", "", ""] as Array[String], 2) == ([0] as Array[int]), "with too few spools alike it falls back to one colour")
+	_check(Multicolour.pick_slots(["", "pla", "pla", ""] as Array[String], 1) == ([1] as Array[int]), "one colour takes the first usable spool")
+	_check(Multicolour.pick_slots(["", ""] as Array[String], 2).is_empty(), "and nothing loaded gives nothing")
+
+	var market := Marketplace.new(data.marketplaces["craftsy"], data.products)
+	var toggle: Dictionary = data.toggles["multicolour"]
+	market.plain_star_penalty = float(toggle["off_star_penalty"])
+	market.set_listing(&"cable_management_clips_x12", true, 1000)
+	var order := Marketplace.Order.new()
+	order.product = &"cable_management_clips_x12"
+	order.price = 1000
+	market.mark_packed(order, 3, 3, false, float(toggle["off_price_multiplier"]), true)
+	_check(order.price == 700 and order.plain, "a multicolour design sent out in one colour sells for less")
+	_check(Marketplace.Order.restored(_through_file(order.save())).plain, "and the order remembers it through a save")
+	var full_stars := 0
+	var plain_stars := 0
+	for attempt in 2000:
+		full_stars += Marketplace.stars_for(3, false, rng)
+		plain_stars += Marketplace.stars_for(3, false, rng, market.plain_star_penalty)
+	_check(plain_stars < full_stars - 400, "and earns lower reviews (%d against %d over 2000)" % [plain_stars, full_stars])
+	for product: Dictionary in data.products.values():
+		if Multicolour.colours_of(product) > 1:
+			_check(Multicolour.swaps(product, Multicolour.colours_of(product)) > 0, "every multicolour design changes colour (%s)" % product["id"])
 
 
 func _test_filaments() -> void:

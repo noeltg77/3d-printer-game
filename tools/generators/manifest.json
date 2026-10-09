@@ -220,6 +220,13 @@
 
 		{ "generator": "boxes", "out": "assets/models/props/parts_box.glb", "args": { "variant": "closed", "seed": 5, "size": [0.22, 0.16, 0.12], "colour": "white" } },
 
+		{ "generator": "prints_multicolour", "out": "assets/models/prints/desk_nameplate.glb", "args": { "variant": "desk_nameplate" } },
+		{ "generator": "prints_multicolour", "out": "assets/models/prints/coasters_x4.glb", "args": { "variant": "coasters_x4" } },
+		{ "generator": "prints_multicolour", "out": "assets/models/prints/key_holder_wall_rack.glb", "args": { "variant": "key_holder_wall_rack" } },
+		{ "generator": "prints_multicolour", "out": "assets/models/prints/fridge_magnets_x6.glb", "args": { "variant": "fridge_magnets_x6" } },
+		{ "generator": "prints_multicolour", "out": "assets/models/prints/garden_gnome_low_poly.glb", "args": { "variant": "garden_gnome_low_poly" } },
+		{ "generator": "prints_multicolour", "out": "assets/models/prints/stacking_rings.glb", "args": { "variant": "stacking_rings" } },
+
 		{ "generator": "print_fails", "out": "assets/models/fails/spaghetti.glb", "args": { "variant": "spaghetti", "seed": 3 } },
 		{ "generator": "print_fails", "out": "assets/models/fails/noodles.glb", "args": { "variant": "noodles", "seed": 2 } }
 	]

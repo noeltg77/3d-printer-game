@@ -12,6 +12,11 @@ extends Interactable
 ## Every print wears the printer's parts (PrinterWear). Worn parts make failures
 ## more likely, and one that runs out mid-print stops it: the printer then can't
 ## print until the character fits a spare from the shelving.
+##
+## A printer holds one spool, on its own mount. Fitting a multicolour unit (an
+## upgrade with a `multicolour` block) puts the unit's model on the printer and
+## gives it a slot per spool instead; a print then draws on one slot for each
+## colour of the design, and wastes a little filament on every colour change.
 
 enum Status { IDLE, PRINTING, DONE, FAILED }
 
@@ -25,7 +30,16 @@ const GANTRY_DROP := 0.175
 ## Row from data/printers.json.
 var spec: Dictionary
 var status := Status.IDLE
-var spool: Spool = null
+## What is loaded, one entry per place a spool can go: the printer's own mount,
+## or each slot of its multicolour unit. Null where there is nothing.
+var spools: Array[Spool] = [null]
+## The first spool loaded, or null. All there is on a printer with no unit.
+var spool: Spool:
+	get:
+		for loaded in spools:
+			if loaded != null:
+				return loaded
+		return null
 var job: PrintJob = null
 var item: PrintedItem = null
 ## What a ruined print left on the plate, while status is FAILED.
@@ -37,10 +51,17 @@ var wear: PrinterWear
 ## The upgrades fitted to it.
 var mods: PrinterMods
 
-## Filament the current print was set to use.
-var _grams := 0.0
+## The slots the current print draws on, one per colour, and the grams it was
+## set to take from each (its share of the print and of the purged filament).
+var _slots_used: Array[int] = []
+var _grams_used: Array[float] = []
+## Game minutes the current print takes from start to finish.
+var _minutes := 0.0
 var _time := 0.0
 var _spool_mount: Node3D
+## Where the spool in each entry of `spools` sits.
+var _mounts: Array[Node3D] = []
+var _unit_model: Node3D = null
 var _plate: Node3D
 var _bed: Node3D
 var _gantry: Node3D
@@ -66,6 +87,7 @@ func _ready() -> void:
 	super()
 	add_to_group(&"printer")
 	_spool_mount = find_child("spool_mount", true, false)
+	_mounts = [_spool_mount]
 	_plate = find_child("plate", true, false)
 	_bed = find_child("bed", true, false)
 	_gantry = find_child("gantry", true, false)
@@ -115,10 +137,43 @@ func get_actions(_agent: Agent) -> Array[Action]:
 			var fix := Action.new("%s (%s)" % [failure["fix"], GameClock.duration_label(failure["clear_minutes"])], _clear)
 			fix.task_name = "Sort out the %s" % display_name
 			return [Action.info("%s: %s" % [failure["name"], Game.product_name(scrap.product)]), fix]
-	if spool == null:
-		return [_load_menu(), _parts_menu(), _upgrades_menu()]
-	return [Action.info("Loaded: %s" % spool.describe()), _print_menu(), Action.new("Unload filament", _unload),
-		_parts_menu(), _upgrades_menu()]
+	var actions: Array[Action] = []
+	for slot in spools.size():
+		if not has_unit():
+			if spools[slot] != null:
+				actions.append(Action.info("Loaded: %s" % spools[slot].describe()))
+		else:
+			actions.append(Action.info("%s: %s" % [slot_name(slot), spools[slot].describe() if spools[slot] != null else "empty"]))
+	if free_slot() >= 0:
+		actions.append(_load_menu())
+	if spool != null:
+		actions.append(_print_menu())
+		actions.append(_unload_menu())
+	actions.append(_parts_menu())
+	actions.append(_upgrades_menu())
+	return actions
+
+
+func has_unit() -> bool:
+	return not mods.unit().is_empty()
+
+
+## "Slot 2", for the second entry of `spools`.
+func slot_name(slot: int) -> String:
+	return "Slot %d" % (slot + 1)
+
+
+## The first place a spool could go, or -1 if they are all taken.
+func free_slot() -> int:
+	return spools.find(null)
+
+
+## "Red PLA", or "Red + White PLA" for a print in several colours.
+func printing_in() -> String:
+	var names: PackedStringArray = []
+	for colour in item.colours:
+		names.append(Palette.display_name(colour))
+	return "%s %s" % [" + ".join(names), Game.data.filaments[item.material]["name"]]
 
 
 func _load_menu() -> Action:
@@ -136,6 +191,18 @@ func _load_menu() -> Action:
 	if kinds.is_empty():
 		return Action.info("Load filament (the rack is empty: order some at the PC)")
 	return Action.submenu("Load filament", kinds)
+
+
+func _unload_menu() -> Action:
+	if not has_unit():
+		return Action.new("Unload filament", _unload.bind(spools.find(spool)))
+	var lines: Array[Action] = []
+	for slot in spools.size():
+		if spools[slot] != null:
+			var action := Action.new("%s: %s" % [slot_name(slot), spools[slot].describe()], _unload.bind(slot))
+			action.task_name = "Unload %s" % spools[slot].title().to_lower()
+			lines.append(action)
+	return Action.submenu("Unload filament", lines)
 
 
 func _print_menu() -> Action:
@@ -178,14 +245,28 @@ func _upgrades_menu() -> Action:
 		if not Game.data.upgrades.has(box.part):
 			continue
 		var row: Dictionary = Game.data.upgrades[box.part]
-		var problem := mods.problem(box.part, spec)
-		var label := "Fit %s (%s)" % [String(row["name"]).to_lower(), GameClock.duration_label(row["install_minutes"])]
+		var problem := upgrade_problem(box.part)
+		var label := "Fit %s (%s)" % [_kit_name(row), GameClock.duration_label(row["install_minutes"])]
 		var action := Action.new(label if problem == "" else "%s: %s" % [row["name"], problem.to_lower()], _fit_upgrade.bind(box.part), problem == "")
-		action.task_name = "Fit the %s to the %s" % [String(row["name"]).to_lower(), display_name]
+		action.task_name = "Fit the %s to the %s" % [_kit_name(row), display_name]
 		lines.append(action)
 	if lines.is_empty():
 		return Action.info("Upgrades (none fitted: buy kits at the PC)")
 	return Action.submenu("Upgrades", lines)
+
+
+## A kit's name as it reads mid-sentence: "auto bed levelling kit", but a
+## multicolour unit keeps the capitals of its brand, "Zippy ColourHub Lite".
+func _kit_name(row: Dictionary) -> String:
+	return row["name"] if row.has("multicolour") else String(row["name"]).to_lower()
+
+
+## Why a kit can't go on this printer right now, or "" if it can.
+func upgrade_problem(upgrade: StringName) -> String:
+	var problem := mods.problem(upgrade, spec)
+	if problem == "" and Game.data.upgrades[upgrade].has("multicolour") and spool != null:
+		return "Unload the filament first"
+	return problem
 
 
 ## "84%", "24%, worn" or "worn out"
@@ -197,63 +278,140 @@ func health_label(slot: StringName) -> String:
 
 
 ## The task of printing a design at a preset, as set up in the print dialog.
-func print_action(product: StringName, p_preset: StringName) -> Action:
-	return Action.new("Print %s" % Game.product_name(product), _start.bind(product, p_preset),
-		print_problem(product, p_preset) == "")
+## `slots` are the spools to print it from, one per colour; left empty, the
+## printer picks (default_slots).
+func print_action(product: StringName, p_preset: StringName, slots: Array[int] = []) -> Action:
+	return Action.new("Print %s" % Game.product_name(product), _start.bind(product, p_preset, slots),
+		print_problem(product, p_preset, slots) == "")
+
+
+## The slots to print a design from when the player hasn't said: a spool for
+## each of its colours if the unit has them loaded in one filament the design
+## and the printer can take, or else one spool for the lot.
+func default_slots(product: StringName) -> Array[int]:
+	var usable: Array[String] = []
+	for loaded in spools:
+		var suits := loaded != null and FilamentRules.suits(Game.data.products[product], Game.data.filaments[loaded.material]) \
+			and FilamentRules.problem(mods.apply(spec), Game.data.filaments[loaded.material]) == ""
+		usable.append(String(loaded.material) if suits else "")
+	var picked := Multicolour.pick_slots(usable, Multicolour.colours_of(Game.data.products[product]))
+	# With nothing suitable, offer what is there, so the player is told why not.
+	if picked.is_empty() and spool != null:
+		picked.append(spools.find(spool))
+	return picked
+
+
+## How a design would print here from the spools in `slots`, one per colour (or
+## the default ones): { slots, material, swaps, purged, grams, minutes }. `grams`
+## is what each slot gives up, `purged` the part of that wasted on colour
+## changes. {} if any of the slots has no spool in it.
+func print_plan(product: StringName, p_preset: StringName, slots: Array[int] = []) -> Dictionary:
+	if slots.is_empty():
+		slots = default_slots(product)
+	if slots.is_empty() or slots.any(func(slot: int) -> bool: return slot < 0 or slot >= spools.size() or spools[slot] == null):
+		return {}
+	var row: Dictionary = Game.data.products[product]
+	var rules: Dictionary = Game.data.settings["multicolour"]
+	var material := spools[slots[0]].material
+	var changes := Multicolour.swaps(row, slots.size())
+	var lightness: Array[float] = []
+	for slot in slots:
+		lightness.append(Palette.colour(spools[slot].colour).get_luminance())
+	var purged := Multicolour.purge_grams(mods.unit(), changes, lightness, rules)
+	return {
+		"slots": slots, "material": material, "swaps": changes, "purged": purged,
+		"grams": Multicolour.grams_by_colour(Game.print_grams(product, p_preset), slots.size(), purged, rules),
+		"minutes": _base_minutes(product, p_preset, float(Game.data.filaments[material]["speed_multiplier"]))
+			+ Multicolour.swap_minutes(mods.unit(), changes),
+	}
 
 
 ## Why a design can't be printed here right now, or "" if it can.
-func print_problem(product: StringName, p_preset: StringName) -> String:
+func print_problem(product: StringName, p_preset: StringName, slots: Array[int] = []) -> String:
 	if spool == null:
 		return "No filament loaded"
 	if status != Status.IDLE:
 		return "The printer is busy"
 	for slot in wear.broken():
 		return "The %s is worn out. Fit a new one first" % String(wear.part(slot)["slot_name"]).to_lower()
-	if not PrintRisk.fits(spec, Game.data.products[product]):
+	var row: Dictionary = Game.data.products[product]
+	if not PrintRisk.fits(spec, row):
 		return "Too big for this printer"
-	var filament: Dictionary = Game.data.filaments[spool.material]
-	if not FilamentRules.suits(Game.data.products[product], filament):
+	var plan := print_plan(product, p_preset, slots)
+	if plan.is_empty():
+		return "Pick a loaded spool for each colour"
+	var used: Array[int] = plan["slots"]
+	if used.size() != 1 and used.size() != Multicolour.colours_of(row):
+		return "Pick a spool for each of its %d colours" % Multicolour.colours_of(row)
+	var filament: Dictionary = Game.data.filaments[plan["material"]]
+	if not FilamentRules.suits(row, filament):
 		return "This design can't be printed in %s" % filament["name"]
 	if FilamentRules.problem(mods.apply(spec), filament) != "":
 		return FilamentRules.problem(mods.apply(spec), filament)
-	if spool.grams < Game.print_grams(product, p_preset):
-		return "Not enough filament on the spool"
+	for index in used.size():
+		var loaded := spools[used[index]]
+		if used.find(used[index]) != index:
+			return "Each colour needs a spool of its own"
+		if loaded.material != plan["material"]:
+			return "Every colour has to be the same kind of filament"
+		if loaded.grams < float(plan["grams"][index]):
+			return "Not enough filament on the spool" if used.size() == 1 else "Not enough %s left" % loaded.title()
 	return ""
 
 
 ## Game minutes this printer takes to print a design at a preset, in the
-## filament that is loaded (some print slower than others).
-func print_minutes(product: StringName, p_preset: StringName) -> float:
-	var filament_speed := float(Game.data.filaments[spool.material]["speed_multiplier"]) if spool != null else 1.0
+## filament that is loaded (some print slower than others), colour changes included.
+func print_minutes(product: StringName, p_preset: StringName, slots: Array[int] = []) -> float:
+	var plan := print_plan(product, p_preset, slots)
+	return float(plan["minutes"]) if not plan.is_empty() else _base_minutes(product, p_preset, 1.0)
+
+
+func _base_minutes(product: StringName, p_preset: StringName, filament_speed: float) -> float:
 	return (float(Game.data.products[product]["print_minutes"]) * float(Game.data.presets[p_preset]["time_multiplier"])
 		* mods.time_multiplier() / float(spec["speed_multiplier"]) / filament_speed)
 
 
-func load_spool(p_spool: Spool) -> void:
-	spool = p_spool
-	Interactable.attach(spool, _spool_mount)
+## Puts a spool in a slot: the first free one unless told which.
+func load_spool(p_spool: Spool, slot := -1) -> void:
+	if slot < 0:
+		slot = free_slot()
+	spools[slot] = p_spool
+	p_spool.sheltered = bool(mods.unit().get("keeps_dry", false))
+	Interactable.attach(p_spool, _mounts[slot])
+	Game.changed.emit()
 
 
-func unload_spool() -> Spool:
-	var removed := spool
-	spool = null
+func unload_spool(slot: int) -> Spool:
+	var removed := spools[slot]
+	spools[slot] = null
+	removed.sheltered = false
+	Game.changed.emit()
 	return removed
 
 
-func start_print(product: StringName, p_preset: StringName) -> void:
+func start_print(product: StringName, p_preset: StringName, slots: Array[int] = []) -> void:
+	var plan := print_plan(product, p_preset, slots)
 	preset = p_preset
-	_grams = Game.print_grams(product, preset)
-	spool.grams -= _grams
-	item = PrintedItem.create(product, spool.colour, preset, spool.material)
+	_slots_used.assign(plan["slots"])
+	_grams_used.assign(plan["grams"])
+	_minutes = plan["minutes"]
+	var colours: Array[StringName] = []
+	var moisture := 0.0
+	for index in _slots_used.size():
+		var loaded := spools[_slots_used[index]]
+		loaded.grams -= _grams_used[index]
+		colours.append(loaded.colour)
+		moisture = maxf(moisture, loaded.moisture)
+	var material: StringName = plan["material"]
+	item = PrintedItem.create(product, colours, preset, material)
 	Interactable.attach(item, _plate)
 	item.scale.y = 0.02
-	job = PrintJob.new(GameClock.to_seconds(print_minutes(product, preset)))
-	var fate := Game.roll_print(spec, preset, spool.material, product, wear, mods, spool.moisture)
+	job = PrintJob.new(GameClock.to_seconds(_minutes))
+	var fate := Game.roll_print(spec, preset, material, product, wear, mods, moisture, int(plan["swaps"]))
 	if not fate.is_empty():
 		job.fail(fate["failure"], fate["at"])
 	# A part that runs out before anything else goes wrong stops the print there.
-	var breakdown := wear.breaks_during(print_minutes(product, preset) / 60.0, Game.data.presets[preset], Game.data.filaments[spool.material])
+	var breakdown := wear.breaks_during(_minutes / 60.0, Game.data.presets[preset], Game.data.filaments[material])
 	if not breakdown.is_empty() and breakdown["at"] < job.stop_at:
 		job.fail(_breakdown(breakdown["slot"]), breakdown["at"])
 	status = Status.PRINTING
@@ -289,9 +447,9 @@ func _breakdown(slot: StringName) -> Dictionary:
 
 func _end_print() -> void:
 	var title := Game.product_name(item.product)
-	var minutes_run := print_minutes(item.product, preset) * job.progress
+	var minutes_run := _minutes * job.progress
 	Game.charge_electricity(spec["power_watts"], minutes_run, title)
-	wear.apply(minutes_run / 60.0, Game.data.presets[preset], Game.data.filaments[spool.material])
+	wear.apply(minutes_run / 60.0, Game.data.presets[preset], Game.data.filaments[item.material])
 	for slot: String in job.failure.get("damages", {}):
 		wear.damage(StringName(slot), float(job.failure["damages"][slot]))
 	if not job.ruined:
@@ -302,8 +460,9 @@ func _end_print() -> void:
 		elif news == "sound":
 			Game.notify("The test print passed: your %s design is sound" % title, &"good")
 	if job.ruined:
-		# Filament the print never got to is still on the spool.
-		spool.grams += _grams * (1.0 - job.progress)
+		# Filament the print never got to is still on the spools.
+		for index in _slots_used.size():
+			spools[_slots_used[index]].grams += _grams_used[index] * (1.0 - job.progress)
 		scrap = FailedPrint.create(item, job.failure)
 		Interactable.attach(scrap, _plate)
 		item = null
@@ -325,7 +484,7 @@ func _end_print() -> void:
 
 func _load(agent: Agent, material: StringName, colour: StringName) -> void:
 	var rack := _rack()
-	if spool != null or not rack.has(material, colour) or FilamentRules.problem(mods.apply(spec), Game.data.filaments[material]) != "":
+	if free_slot() < 0 or not rack.has(material, colour) or FilamentRules.problem(mods.apply(spec), Game.data.filaments[material]) != "":
 		agent.say("Can't load that filament right now")
 		return
 	await agent.go_to(rack)
@@ -336,12 +495,12 @@ func _load(agent: Agent, material: StringName, colour: StringName) -> void:
 	await agent.reach(func() -> void: load_spool(agent.release() as Spool))
 
 
-func _unload(agent: Agent) -> void:
-	if spool == null or status == Status.PRINTING:
+func _unload(agent: Agent, slot: int) -> void:
+	if slot < 0 or slot >= spools.size() or spools[slot] == null or status == Status.PRINTING:
 		agent.say("Can't unload the printer right now")
 		return
 	await agent.go_to(self)
-	await agent.reach(func() -> void: agent.carry(unload_spool()))
+	await agent.reach(func() -> void: agent.carry(unload_spool(slot)))
 	var removed := agent.carried as Spool
 	if removed.is_empty():
 		await agent.walk_to(get_tree().get_first_node_in_group(&"bin").global_position)
@@ -353,12 +512,12 @@ func _unload(agent: Agent) -> void:
 	await agent.reach(func() -> void: rack.store(agent.release() as Spool))
 
 
-func _start(agent: Agent, product: StringName, p_preset: StringName) -> void:
-	if print_problem(product, p_preset) != "":
+func _start(agent: Agent, product: StringName, p_preset: StringName, slots: Array[int]) -> void:
+	if print_problem(product, p_preset, slots) != "":
 		agent.say("The printer isn't ready to print that")
 		return
 	await agent.go_to(self)
-	await agent.reach(start_print.bind(product, p_preset))
+	await agent.reach(start_print.bind(product, p_preset, slots))
 
 
 ## Not a task: opens the print set-up card, which queues the print itself.
@@ -410,7 +569,7 @@ func _replace(agent: Agent, slot: StringName, part: StringName) -> void:
 
 func _fit_upgrade(agent: Agent, upgrade: StringName) -> void:
 	var shelf := _shelf()
-	if status == Status.PRINTING or shelf.spare_count(upgrade) == 0 or mods.problem(upgrade, spec) != "":
+	if status == Status.PRINTING or shelf.spare_count(upgrade) == 0 or upgrade_problem(upgrade) != "":
 		agent.say("Can't fit that to the %s right now" % display_name)
 		return
 	await agent.go_to(shelf)
@@ -423,8 +582,33 @@ func _fit_upgrade(agent: Agent, upgrade: StringName) -> void:
 		agent.release().queue_free()
 		mods.fit(upgrade)
 		wear.upgrade_multiplier = mods.wear_multiplier()
+		_mount_unit()
 		Game.changed.emit())
-	agent.say("Fitted the %s" % String(Game.data.upgrades[upgrade]["name"]).to_lower())
+	agent.say("Fitted the %s" % _kit_name(Game.data.upgrades[upgrade]))
+
+
+## Sets up the multicolour unit among the upgrades, if there is one and it
+## isn't up already: its model on the printer, a slot for each spool in place of
+## the printer's own mount, and its wear parts alongside the printer's.
+func _mount_unit() -> void:
+	var unit := mods.unit()
+	if unit.is_empty() or _unit_model != null:
+		return
+	_unit_model = (load(GameData.UNIT_MODEL % unit["model"]) as PackedScene).instantiate()
+	var mount: Node3D = find_child("unit_mount", true, false)
+	(mount if mount != null else _spool_mount).add_child(_unit_model)
+	_mounts.assign(_unit_model.find_children("spool_slot_*", "Node3D", true, false))
+	_mounts.sort_custom(func(a: Node3D, b: Node3D) -> bool: return String(a.name).naturalnocasecmp_to(b.name) < 0)
+	_mounts.resize(mini(int(unit["slots"]), _mounts.size()))
+	spools.clear()
+	spools.resize(_mounts.size())
+	for part_id: String in unit["parts"]:
+		var slot := StringName(Game.data.parts[part_id]["slot"])
+		if not wear.fitted.has(slot):
+			wear.replace(slot, StringName(part_id))
+	# The unit is part of what gets clicked.
+	remove_collider()
+	_build_collider.call_deferred()
 
 
 func _rack() -> FilamentRack:
@@ -436,9 +620,10 @@ func _shelf() -> StorageShelf:
 
 
 func save() -> Dictionary:
-	var state := {"id": spec["id"], "status": status, "preset": preset, "grams": _grams, "wear": wear.save(), "mods": mods.save()}
-	if spool != null:
-		state["spool"] = spool.save()
+	var state := {"id": spec["id"], "status": status, "preset": preset, "grams": _grams_used, "slots": _slots_used,
+		"minutes": _minutes, "wear": wear.save(), "mods": mods.save()}
+	# One entry per slot, null where it is empty.
+	state["spools"] = spools.map(func(loaded: Spool) -> Variant: return loaded.save() if loaded != null else null)
 	if job != null:
 		state["job"] = job.save()
 	if item != null:
@@ -451,18 +636,32 @@ func save() -> Dictionary:
 ## Puts a newly installed printer back as it was saved, mid-print included.
 ## A print of a design the game no longer has is dropped, leaving it idle.
 func restore(state: Dictionary) -> void:
-	wear.restore(state["wear"])
 	if state.has("mods"):
 		mods.restore(state["mods"])
 		wear.upgrade_multiplier = mods.wear_multiplier()
-	if state.has("spool"):
-		load_spool(Spool.restored(state["spool"]))
+		_mount_unit()
+	wear.restore(state["wear"])
+	# Saves from before multicolour units hold the one spool, and one figure for its grams.
+	var saved_spools: Array = state.get("spools", [state.get("spool")])
+	for slot in mini(saved_spools.size(), spools.size()):
+		if saved_spools[slot] is Dictionary:
+			load_spool(Spool.restored(saved_spools[slot]), slot)
 	preset = StringName(state["preset"]) if Game.data.presets.has(state["preset"]) else preset
-	_grams = float(state["grams"])
+	_slots_used.clear()
+	_grams_used.clear()
+	for slot: Variant in state.get("slots", [0]):
+		_slots_used.append(int(slot))
+	for grams: Variant in (state["grams"] if state["grams"] is Array else [state["grams"]]):
+		_grams_used.append(float(grams))
 	var saved_status := int(state["status"]) as Status
 	var on_plate: PrintedItem = PrintedItem.restored(state["scrap"]["item"] if state.has("scrap") else state.get("item", {"product": "", "preset": ""}))
-	if saved_status == Status.IDLE or on_plate == null or not state.has("job") or spool == null:
+	var spools_gone := _slots_used.size() != _grams_used.size() or _slots_used.any(
+		func(slot: int) -> bool: return slot < 0 or slot >= spools.size() or spools[slot] == null)
+	if saved_status == Status.IDLE or on_plate == null or not state.has("job") or spools_gone:
 		return
+	_minutes = float(state.get("minutes", 0.0))
+	if _minutes <= 0.0:
+		_minutes = print_minutes(on_plate.product, preset, _slots_used)
 	job = PrintJob.restored(state["job"])
 	Interactable.attach(on_plate, _plate)
 	on_plate.scale.y = maxf(job.progress, 0.02)

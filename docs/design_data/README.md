@@ -13,9 +13,9 @@ Stored exactly as supplied on 2026-10-09. Don't edit them to match the game; cha
 | `parts.json` | Wear parts with lifespans, upgrades with effects, wear modifiers | Phase 4 (Garage wear parts and spares), upgrades in Phase 6 |
 | `shipping.json` | Parcel bands, packaging, fillers and extras, 7 couriers, 22 services, damage and review rules | Phase 4 for delivery damage (Garage packaging and couriers), rest as tiers unlock |
 | `filaments.json` | 25 materials, 8 brands, 197 colour and material combinations | Garage PLA colours can come in any time; other materials in Phase 6 |
-| `accessories.json` | Multicolour units, dryers and dry boxes, moisture rules | Dryers in Phase 6, multicolour units in Phase 7 |
+| `accessories.json` | Multicolour units, dryers and dry boxes, moisture rules | Dryers in Phase 6, multicolour units in Phase 7 (the four slot Spare room ones so far, as rows in `data/upgrades.json`) |
 | `printers.json` | 12 form factors, 10 brands, 38 printers | Garage printers any time; others as tiers unlock (Phases 6, 8, 9) |
-| `products.json` | 660 products: 160 Garage, 474 Spare room, 19 Workshop, 7 Factory | Garage imported (158; the two contract only ones wait for contracts); others as tiers unlock |
+| `products.json` | 660 products: 160 Garage, 474 Spare room, 19 Workshop, 7 Factory | Garage imported (158; the two contract only ones wait for contracts). Spare room products come in one at a time as their models are built; others as tiers unlock |
 
 ## Differences from the live game to resolve on import
 
@@ -34,6 +34,7 @@ Stored exactly as supplied on 2026-10-09. Don't edit them to match the game; cha
 - `demand_per_day` comes from the size band (XS 3, S 2.5, M 2, L 1.5 for the cheapest design in the band) and falls for dearer designs, by the square root of the price ratio. Seasons and demand patterns are not applied yet, so seasonal products sell all year.
 - `licence` is a one-off fee of twice the typical price.
 - `description` is written by hand in `data/import/product_descriptions.json`, one line per product id. A product with nothing there shows its category name, and the import lists it.
+- `colour_swaps`, for a design in more than one colour, is the catalogue's `purge_waste_g` divided by 4 g: the number of colour changes, which the game prices by the unit fitted.
 - `OVERRIDES` in the script sets these per product where a rule is not good enough (the free starting design).
 
 These rules were set with `scripts/dev/balance_report.gd`; see `docs/balance_notes.md` before changing them.
@@ -55,5 +56,6 @@ Each product needs a small model that grows on the print bed and then sits on a 
 - To review a batch, `tools/generators/preview_prints.py -- --generator prints_home` renders every item from one generator on a single sheet, from the front and from above, and prints each triangle count and size.
 - Keep models light: most should be under about 200 triangles. A row of small bevelled boxes to fake a curve adds up fast.
 - Before calling a model done, check the preview against what the code comments claim, and look from above as well as from the game angle (`common.render_preview(path, direction=(0.15, -0.5, 1.0))`), since the game camera looks down into open shapes.
-- **Start with the 160 Garage products**, all single-colour PLA. The 178 multicolour products (all Spare room or later) need a way to colour parts separately that doesn't exist yet; leave them until Phase 7 decides it.
+- **Multicolour products** (178, all Spare room or later) are built by `tools/generators/prints_multicolour.py`. Each colour of the design is a mesh of its own: the main mesh holds everything in the first colour, and each further colour is a child mesh named `colour_2`, `colour_3` and so on. The game tints each mesh with the spool that printed it, so the model only decides which parts share a colour. Put the bulk of the item in the first colour, which takes most of the filament. Six are built so far.
+- A Spare room product is imported as soon as its model exists; the import leaves out the ones without and says how many.
 - Prefer a few parameterised shapes per category (bins, stands, clips, hooks, pots, trays) over 660 one-offs. Many products are variations on the same form.

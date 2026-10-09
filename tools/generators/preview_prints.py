@@ -41,13 +41,20 @@ def main():
     common.tint_material().node_tree.nodes["Principled BSDF"].inputs["Base Color"].default_value = TINT
     for index, entry in enumerate(entries):
         variant = entry["args"]["variant"]
-        builder = common.MeshBuilder(material=common.TINT_MATERIAL_NAME)
-        importlib.import_module(entry["generator"]).VARIANTS[variant](builder)
-        obj = builder.finish(variant)
+        module = importlib.import_module(entry["generator"])
+        if hasattr(module, "build_item"):
+            # Items in several colours come as a main mesh with a child for each further colour.
+            obj = module.build_item(variant, variant, preview=True)
+        else:
+            builder = common.MeshBuilder(material=common.TINT_MATERIAL_NAME)
+            module.VARIANTS[variant](builder)
+            obj = builder.finish(variant)
         obj.location = ((index % options.columns) * PITCH, -(index // options.columns) * PITCH, 0.0)
-        triangles = sum(len(polygon.vertices) - 2 for polygon in obj.data.polygons)
-        low = min(vertex.co.z for vertex in obj.data.vertices)
-        size = " x ".join(f"{value:.3f}" for value in obj.dimensions)
+        meshes = [obj, *obj.children]
+        triangles = sum(len(polygon.vertices) - 2 for mesh in meshes for polygon in mesh.data.polygons)
+        corners = [vertex.co for mesh in meshes for vertex in mesh.data.vertices]
+        low = min(corner.z for corner in corners)
+        size = " x ".join(f"{max(corner[axis] for corner in corners) - min(corner[axis] for corner in corners):.3f}" for axis in range(3))
         print(f"{index + 1:3} {variant:40} {triangles:4} tris  {size} m  base z {low:.3f}")
     for name, direction in VIEWS.items():
         common.render_preview(common.PREVIEW_DIR / f"prints_sheet_{name}.png", resolution=1536, direction=direction, margin=0.85)

@@ -18,6 +18,8 @@ const TABLES := {
 const FAILURE_HAPPENS: PackedStringArray = ["start", "mid", "end"]
 const FAILURE_OUTCOMES: PackedStringArray = ["scrap", "stop", "degraded"]
 const SETTINGS := "res://data/game.json"
+## Where the model of a multicolour unit is found.
+const UNIT_MODEL := "res://assets/models/printers/%s.glb"
 const REVIEWS := "res://data/reviews.json"
 
 var printers: Dictionary = {}
@@ -35,6 +37,8 @@ var upgrades: Dictionary = {}
 var premises: Dictionary = {}
 ## Filament dryers, by id.
 var dryers: Dictionary = {}
+## Print toggles such as multicolour, by id (the `toggles` list in data/presets.json).
+var toggles: Dictionary = {}
 ## What each durability score (1 to 5) means, keyed by the score as text.
 var durability_labels: Dictionary = {}
 ## Lines buyers write in reviews, by kind (data/reviews.json).
@@ -57,6 +61,8 @@ static func load_all() -> GameData:
 	var presets_file: Variant = JSON.parse_string(FileAccess.get_file_as_string(TABLES["presets"]))
 	if presets_file is Dictionary:
 		data.durability_labels = presets_file.get("durability_labels", {})
+		for toggle: Dictionary in presets_file.get("toggles", []):
+			data.toggles[toggle["id"]] = toggle
 	var reviews_file: Variant = JSON.parse_string(FileAccess.get_file_as_string(REVIEWS))
 	if reviews_file is Dictionary and reviews_file.get("comments") is Dictionary:
 		data.review_comments = reviews_file["comments"]
@@ -99,6 +105,16 @@ func _check_references() -> void:
 		for failure_id: String in upgrade.get("failure_multipliers", {}):
 			if not failures.has(failure_id):
 				errors.append("upgrade %s: unknown failure \"%s\"" % [upgrade["id"], failure_id])
+		for printer_id: String in upgrade.get("fits_printers", []):
+			if not printers.has(printer_id):
+				errors.append("upgrade %s: unknown printer \"%s\"" % [upgrade["id"], printer_id])
+		if upgrade.has("multicolour"):
+			var unit: Dictionary = upgrade["multicolour"]
+			for part_id: String in unit.get("parts", []):
+				if not parts.has(part_id):
+					errors.append("upgrade %s: unknown part \"%s\"" % [upgrade["id"], part_id])
+			if not ResourceLoader.exists(UNIT_MODEL % unit.get("model", "")):
+				errors.append("upgrade %s: no model \"%s\"" % [upgrade["id"], unit.get("model", "")])
 	for printer: Dictionary in printers.values():
 		var fitted := {}
 		for part_id: String in printer.get("parts", []):
@@ -115,7 +131,11 @@ func _check_references() -> void:
 		for family: String in dryer.get("dries", []):
 			if not families.has(family):
 				errors.append("dryer %s: unknown filament family \"%s\"" % [dryer["id"], family])
+	if not toggles.has("multicolour"):
+		errors.append("presets.json: no \"multicolour\" toggle")
 	for product: Dictionary in products.values():
+		if int(product.get("colour_count", 1)) > 1 and int(product.get("colour_swaps", 0)) < 1:
+			errors.append("product %s: more than one colour but no colour_swaps" % product["id"])
 		for filament_id: String in product.get("allowed_filaments", []):
 			if not filaments.has(filament_id) and not families.has(filament_id):
 				errors.append("product %s: unknown filament \"%s\"" % [product["id"], filament_id])

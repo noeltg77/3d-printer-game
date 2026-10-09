@@ -4,6 +4,10 @@ extends CanvasLayer
 ## picks a design and a preset; a risk meter shows the chance of the print
 ## failing and how strong the result will be. "Start print" queues the job for
 ## the character. The game keeps running while it is open.
+##
+## On a printer with a multicolour unit the player also picks which spool
+## prints each colour, and whether a design made for several colours is printed
+## in all of them or just one.
 
 const SHADOW := Color("E4DACA")
 const BACKDROP := Color(0.118, 0.165, 0.188, 0.55)
@@ -16,6 +20,8 @@ const SCALE := 5
 var _printer: PrinterStation = null
 var _product: StringName
 var _preset: StringName
+## The slots picked to print from, one per colour. Empty leaves it to the printer.
+var _slots: Array[int] = []
 var _holder: CenterContainer
 
 
@@ -44,6 +50,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
 
 func open(printer: PrinterStation) -> void:
 	_printer = printer
+	_slots = []
 	_preset = StringName(Game.data.settings["default_preset"])
 	_product = Game.owned_designs[0]
 	# Start on something that can actually be printed, if anything can.
@@ -61,10 +68,20 @@ func close() -> void:
 
 
 ## Picks a design and preset and starts the print, as the buttons would.
-func choose(product: String, preset: String) -> void:
+## `slots` are the spools to use, one per colour, counting from 0; empty leaves
+## the choice to the printer.
+func choose(product: String, preset: String, slots: Array = []) -> void:
 	_product = StringName(product)
 	_preset = StringName(preset)
+	_slots.assign(slots)
 	_confirm()
+
+
+## The slots the print will use: the player's pick while it still holds, or the printer's.
+func _used_slots() -> Array[int]:
+	if _slots.any(func(slot: int) -> bool: return slot < 0 or slot >= _printer.spools.size() or _printer.spools[slot] == null):
+		_slots = []
+	return _slots if not _slots.is_empty() else _printer.default_slots(_product)
 
 
 func _rebuild() -> void:
@@ -75,11 +92,12 @@ func _rebuild() -> void:
 		close()
 		return
 	Ui.clear(_holder)
-	var spool := _printer.spool
+	var loaded := _printer.spools.filter(func(spool: Spool) -> bool: return spool != null)
 	var close_button := Ui.button("Cancel", close, Ui.SOFT, Ui.INK, 40, 12, Ui.CLEAR, 14)
 	var header := Ui.hbox([
 		Ui.title("Print on the %s" % _printer.display_name, 26), null,
-		Ui.pill("Loaded: %s" % spool.describe(), Ui.GREEN_DARK, Ui.GREEN_SOFT, 13),
+		Ui.pill("%d of %d slots loaded" % [loaded.size(), _printer.spools.size()] if _printer.has_unit()
+			else "Loaded: %s" % _printer.spool.describe(), Ui.GREEN_DARK, Ui.GREEN_SOFT, 13),
 	], 16)
 
 	var designs := Ui.vbox([], 8)
@@ -92,10 +110,13 @@ func _rebuild() -> void:
 	var presets := Ui.hbox([], 12)
 	for preset_id: String in Game.data.presets:
 		presets.add_child(_preset_card(StringName(preset_id)))
-	var right := Ui.vbox([Ui.text("How to print it", 13, Ui.MUTED, 800), presets, _meter()], 8)
+	var right := Ui.vbox([Ui.text("How to print it", 13, Ui.MUTED, 800), presets], 8)
+	if _printer.has_unit() or Multicolour.colours_of(Game.data.products[_product]) > 1:
+		right.add_child(_colours())
+	right.add_child(_meter())
 	right.custom_minimum_size.x = 600
 
-	var problem := _printer.print_problem(_product, _preset)
+	var problem := _printer.print_problem(_product, _preset, _used_slots())
 	var start := Ui.button("Start print", _confirm, Ui.ORANGE, Ui.WHITE, 48, 14, Ui.ORANGE_DARK, 16)
 	start.disabled = problem != ""
 	var footer := Ui.hbox([
@@ -130,7 +151,7 @@ func _preset_card(preset_id: StringName) -> Control:
 		Ui.title(preset["name"], 19),
 		Ui.wrap(Ui.text(preset["description"], 13, Ui.MUTED)),
 		null,
-		Ui.text("%s · %d g" % [GameClock.duration_label(_printer.print_minutes(_product, preset_id)),
+		Ui.text("%s · %d g" % [GameClock.duration_label(_printer.print_minutes(_product, preset_id, _used_slots())),
 			roundi(Game.print_grams(_product, preset_id))], 14, Ui.INK, 800),
 	], 6), Ui.outlined(Ui.PAPER if chosen else Ui.WHITE, Ui.ORANGE if chosen else SHADOW, 16, 14, 12, 3))
 	card.custom_minimum_size.y = 150
@@ -139,11 +160,82 @@ func _preset_card(preset_id: StringName) -> Control:
 	return Ui.clickable(card, _pick.bind(_product, preset_id))
 
 
+## Which spool prints each colour, and for a design made for several, whether
+## to print them all. Without a unit it only says what the player is missing.
+func _colours() -> Control:
+	var wanted := Multicolour.colours_of(Game.data.products[_product])
+	var toggle: Dictionary = Game.data.toggles["multicolour"]
+	var used := _used_slots()
+	var rows := Ui.vbox([], 10)
+	if not _printer.has_unit():
+		rows.add_child(Ui.wrap(Ui.text("This design is made for %d colours. Without a multicolour unit on the printer it comes out in one: it sells for %d%% less and buyers like it less." % [
+			wanted, roundi((1.0 - float(toggle["off_price_multiplier"])) * 100.0)], 13, Ui.MUTED)))
+		return Ui.panel(rows, Ui.box(Ui.INSET, 16, 16, 14))
+	if wanted > 1:
+		var full := used.size() == wanted
+		var can_be_full := _full_colour_slots().size() == wanted
+		var full_button := Ui.button(toggle["name"], _set_full_colour.bind(true), Ui.INK if full else Ui.WHITE, Ui.PAPER if full else Ui.INK, 36, 12, Ui.CLEAR, 14)
+		full_button.disabled = not can_be_full
+		var note: String = toggle["description"] if full else toggle["off_description"]
+		if not can_be_full:
+			note = "Load %d spools of one kind of filament into the unit to print this in full colour. In one colour it sells for less." % wanted
+		rows.add_child(Ui.hbox([
+			full_button,
+			Ui.button(toggle["off_name"], _set_full_colour.bind(false), Ui.WHITE if full else Ui.INK, Ui.INK if full else Ui.PAPER, 36, 12, Ui.CLEAR, 14),
+			Ui.grow(Ui.wrap(Ui.text(note, 13, Ui.MUTED))),
+		], 10))
+	for index in used.size():
+		var chips := Ui.hbox([Ui.width(Ui.text("Colour %d" % (index + 1) if used.size() > 1 else "Colour", 14, Ui.INK, 800), 76)], 8)
+		for slot in _printer.spools.size():
+			var spool := _printer.spools[slot]
+			if spool == null:
+				continue
+			var chosen := used[index] == slot
+			var chip := Ui.panel(Ui.hbox([
+				SpoolIcon.create(Palette.colour(spool.colour), 24, Ui.PAPER if chosen else Ui.WHITE),
+				Ui.text(Palette.display_name(spool.colour), 13, Ui.INK, 800),
+			], 6), Ui.outlined(Ui.PAPER if chosen else Ui.WHITE, Ui.ORANGE if chosen else SHADOW, 12, 10, 6, 3))
+			chip.tooltip_text = "%s: %s" % [_printer.slot_name(slot), spool.describe()]
+			chips.add_child(Ui.clickable(chip, _pick_slot.bind(index, slot)))
+		rows.add_child(chips)
+	return Ui.panel(rows, Ui.box(Ui.INSET, 16, 16, 14))
+
+
+## The slots a full colour print of the design would use by default, or fewer
+## if the unit doesn't hold enough spools for it.
+func _full_colour_slots() -> Array[int]:
+	return _printer.default_slots(_product)
+
+
+func _set_full_colour(full: bool) -> void:
+	var used := _used_slots()
+	_slots = _full_colour_slots() if full else ([used[0]] as Array[int])
+	_rebuild.call_deferred()
+
+
+## Gives a colour of the design to a slot. If another colour had it, they swap.
+func _pick_slot(index: int, slot: int) -> void:
+	var used := _used_slots().duplicate()
+	var other := used.find(slot)
+	if other >= 0:
+		used[other] = used[index]
+	used[index] = slot
+	_slots = used
+	_rebuild.call_deferred()
+
+
 ## The risk meter: chance of failure as a bar, strength and finish as dots.
 func _meter() -> Control:
 	var preset: Dictionary = Game.data.presets[_preset]
-	var chance := Game.fail_chance(_printer.spec, _preset, _printer.spool.material, _product, _printer.wear, _printer.mods,
-		_printer.spool.moisture)
+	var plan := _printer.print_plan(_product, _preset, _used_slots())
+	var material: StringName = plan["material"]
+	var used: Array[Spool] = []
+	var moisture := 0.0
+	for slot: int in plan["slots"]:
+		used.append(_printer.spools[slot])
+		moisture = maxf(moisture, _printer.spools[slot].moisture)
+	var chance := Game.fail_chance(_printer.spec, _preset, material, _product, _printer.wear, _printer.mods,
+		moisture, int(plan["swaps"]))
 	var band := PrintRisk.band(chance)
 	var colour: Color = BAND_COLOURS[band]
 	var durability := int(preset["durability"])
@@ -173,13 +265,20 @@ func _meter() -> Control:
 			worn.append(String(_printer.wear.part(slot)["slot_name"]).to_lower())
 	if not worn.is_empty():
 		rows.add_child(Ui.text("Worn parts are adding to the risk: %s." % ", ".join(worn), 13, Ui.RED_DARK, 800))
-	var filament: Dictionary = Game.data.filaments[_printer.spool.material]
+	var filament: Dictionary = Game.data.filaments[material]
 	var nozzle: Dictionary = _printer.wear.part(&"nozzle") if _printer.wear.fitted.has(&"nozzle") else {}
 	if not nozzle.is_empty() and FilamentRules.wears_nozzle(filament, nozzle):
 		rows.add_child(Ui.wrap(Ui.text("%s is gritty: it wears this %s %d times faster. A hardened nozzle shrugs it off." % [
 			filament["name"], String(nozzle["name"]).to_lower(), roundi(float(nozzle["abrasive_wear_multiplier"]))], 13, Ui.RED_DARK, 800)))
-	if _printer.spool.is_wet():
-		rows.add_child(Ui.wrap(Ui.text("This spool is wet, which is adding to the risk and makes prints stringy. A spell in a filament dryer sorts it out.", 13, Ui.RED_DARK, 800)))
+	if used.any(func(spool: Spool) -> bool: return spool.is_wet()):
+		rows.add_child(Ui.wrap(Ui.text("%s wet, which is adding to the risk and makes prints stringy. A spell in a filament dryer sorts it out." % (
+			"This spool is" if used.size() == 1 else "One of these spools is"), 13, Ui.RED_DARK, 800)))
+	var unit := _printer.mods.unit()
+	if int(plan["swaps"]) > 0:
+		rows.add_child(Ui.wrap(Ui.text("The unit changes colour %d times: %d g of filament is purged and thrown away, and it adds %s. Colours close in shade waste less than dark next to light." % [
+			int(plan["swaps"]), roundi(float(plan["purged"])), GameClock.duration_label(Multicolour.swap_minutes(unit, int(plan["swaps"])))], 13, Ui.MUTED)))
+	if Multicolour.flags(unit, filament, 0, Game.data.settings["multicolour"]).has(&"tpu_in_multicolour"):
+		rows.add_child(Ui.wrap(Ui.text("%s is soft and bendy, and this unit isn't built for it: it is far more likely to jam." % filament["name"], 13, Ui.RED_DARK, 800)))
 	var helping: PackedStringArray = []
 	for upgrade in _printer.mods.fitted:
 		if not Game.data.upgrades[upgrade]["failure_multipliers"].is_empty():
@@ -189,19 +288,30 @@ func _meter() -> Control:
 	return Ui.panel(rows, Ui.box(Ui.INSET, 16, 16, 14))
 
 
-## "Uses 25 g of Red PLA and about £0.43 to make."
+## "Uses 25 g of Red PLA, about £0.43 in filament and power."
 func _summary() -> String:
-	var spool := _printer.spool
-	var grams := Game.print_grams(_product, _preset)
-	var filament: Dictionary = Game.data.filaments[spool.material]
-	var kwh := float(_printer.spec["power_watts"]) / 1000.0 * _printer.print_minutes(_product, _preset) / 60.0
+	var plan := _printer.print_plan(_product, _preset, _used_slots())
+	var slots: Array[int] = plan["slots"]
+	var grams := 0.0
+	for each: float in plan["grams"]:
+		grams += each
+	var filament: Dictionary = Game.data.filaments[plan["material"]]
+	var kwh := float(_printer.spec["power_watts"]) / 1000.0 * float(plan["minutes"]) / 60.0
 	var cost := roundi(grams / 1000.0 * float(filament["price_pence_per_kg"]) + kwh * float(Game.data.settings["electricity_pence_per_kwh"]))
-	var summary := "Uses %d g of %s, about %s in filament and power." % [roundi(grams), spool.title(), Money.format(cost)]
+	var what := _printer.spools[slots[0]].title() if slots.size() == 1 else "%s from %d spools" % [filament["name"], slots.size()]
+	var summary := "Uses %d g of %s, about %s in filament and power." % [roundi(grams), what, Money.format(cost)]
 	var premium := roundi((float(filament["value_multiplier"]) - 1.0) * 100.0)
-	return summary if premium <= 0 else "%s Sells for %d%% more in %s." % [summary, premium, filament["name"]]
+	if premium > 0:
+		summary = "%s Sells for %d%% more in %s." % [summary, premium, filament["name"]]
+	if slots.size() < Multicolour.colours_of(Game.data.products[_product]):
+		summary = "%s Sells for %d%% less in one colour." % [summary, roundi((1.0 - float(Game.data.toggles["multicolour"]["off_price_multiplier"])) * 100.0)]
+	return summary
 
 
 func _pick(product: StringName, preset: StringName) -> void:
+	# A different design starts again from the printer's own choice of spools.
+	if product != _product:
+		_slots = []
 	_product = product
 	_preset = preset
 	_rebuild.call_deferred()
@@ -210,7 +320,7 @@ func _pick(product: StringName, preset: StringName) -> void:
 func _confirm() -> void:
 	if _printer == null:
 		return
-	var action := _printer.print_action(_product, _preset)
+	var action := _printer.print_action(_product, _preset, _used_slots())
 	if action.enabled:
 		(get_tree().get_first_node_in_group(&"player") as Agent).enqueue(action)
 	close()

@@ -48,6 +48,12 @@
 		"step": 0.2,
 		"extra_fail_per_step": 0.03
 	},
+	"multicolour": {
+		"main_colour_share": 0.6,
+		"contrast_purge": 1.0,
+		"many_swaps": 6,
+		"reference_jam_chance": 0.001
+	},
 	"supplier": {
 		"filament_shop": "Spoolhouse",
 		"hardware_shop": "Printbay",

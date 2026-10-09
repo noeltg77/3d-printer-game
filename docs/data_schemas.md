@@ -75,7 +75,7 @@ Imported from `docs/design_data/filaments.json` (`materials`): PLA, three specia
 
 ## products.json
 
-Generated from `docs/design_data/products.json` by `scripts/dev/import_products.gd`. Don't edit it by hand: change the rules or per product overrides in that script and run it again. Every product needs a model at `assets/models/prints/<id>.glb`; the validator checks.
+Generated from `docs/design_data/products.json` by `scripts/dev/import_products.gd`. Don't edit it by hand: change the rules or per product overrides in that script and run it again. Every product needs a model at `assets/models/prints/<id>.glb`; the validator checks. Every Garage product is in. Spare room products come in as their models are built: one without a model is left out.
 
 | Field | Meaning |
 | --- | --- |
@@ -86,7 +86,8 @@ Generated from `docs/design_data/products.json` by `scripts/dev/import_products.
 | `size_mm` | `[x, y, z]`, checked against printer build volume |
 | `difficulty` | Adds to failure chance |
 | `needs_supports` | Adds post-processing time and waste |
-| `colour_count` | Above 1 needs a multicolour unit (Phase 7) |
+| `colour_count` | How many colours the design is made for. Above 1 it needs a printer with a multicolour unit and a spool for each; without, it prints in one colour and sells for less (the `multicolour` toggle in `presets.json`). The model has a mesh for each colour (see the art pipeline in `CLAUDE.md`) |
+| `colour_swaps` | Only on designs with more than one colour: how many times the printer changes colour in a full colour print. From the catalogue's `purge_waste_g`, divided by the 4 g a reference unit purges each time |
 | `allowed_filaments` | Filament ids or families the design works in |
 | `base_price_pence` | Typical marketplace price before demand and rating effects |
 | `demand_per_day` | Orders per game day when listed at the typical price |
@@ -134,6 +135,15 @@ Print presets, offered in file order. Imported from `docs/design_data/presets.js
 
 `durability_labels`, beside the table, gives the sentence shown for each durability score.
 
+`toggles`, also beside the table, holds print options that are on or off, by `id`. Imported from the design's `toggles`; only `multicolour` so far.
+
+| Field | Meaning |
+| --- | --- |
+| `name`, `description` | The option when on, as the print dialog offers it |
+| `off_name`, `off_description` | The same when it is off |
+| `off_price_multiplier` | A multicolour design printed in one colour sells for the listed price times this |
+| `off_star_penalty` | Stars such a print loses in its review (`Marketplace.plain_star_penalty`) |
+
 ## failures.json
 
 Ways a print can go wrong. Imported from `docs/design_data/failures.json`: the FDM failures that don't depend on worn parts, upgrades or multicolour units, which come in as those systems do.
@@ -145,7 +155,8 @@ The chance that a print fails at all is `(1 - printer reliability) x preset fail
 | `happens` | `start` (first 5% of the print), `mid` (anywhere from 10% to 90%) or `end` (found on completion) |
 | `outcome` | `scrap`: the print stops and is binned. `stop`: the same, but the fix is to the printer rather than the bed. `degraded`: the print finishes as a flawed item |
 | `weight` | How often it is the failure picked, relative to the others |
-| `causes` | Condition flag to multiplier on `weight`. Flags so far: `draft_preset`, `no_auto_level`, `large_part`, `tall_thin_part`, `bedslinger_tall_part` (`PrintRisk.conditions`), and `worn_<slot>` for each part below 30% health (`PrinterWear.flags`) |
+| `causes` | Condition flag to multiplier on `weight`. Flags so far: `draft_preset`, `no_auto_level`, `large_part`, `tall_thin_part`, `bedslinger_tall_part` (`PrintRisk.conditions`), `worn_<slot>` for each part below 30% health (`PrinterWear.flags`), `wet_filament`, and from a multicolour unit `multicolour_unit`, `tpu_in_multicolour` and `many_colour_swaps` (`Multicolour.flags`) |
+| `requires` | Optional. A condition flag the failure can't happen without: `multicolour_unit` for the unit's own jam |
 | `damages` | Part slot to health (0 to 1) the failure knocks off that part |
 | `clear_minutes` | Scrap and stop only. Character time to put the printer right |
 | `visual` | Scrap and stop only. What is left on the plate: `noodles`, `toppled`, `spaghetti` or `stalled` |
@@ -165,14 +176,33 @@ Kits fitted to a printer for good. Imported from `docs/design_data/parts.json` (
 | `description` | Plain-words pitch on its shop row |
 | `price_pence`, `install_minutes` | Shop price, and character time to fit it |
 | `fits_motion` | Printer `motion` values it fits. Empty for any printer |
+| `fits_printers` | Optional. Printer ids it fits, for a kit made for particular machines |
+| `multicolour` | Optional. Makes the kit a multicolour unit; see below |
 | `grants` | Printer capability fields it switches on, e.g. `auto_bed_levelling`. It can't be fitted to a printer that already has one of them |
 | `failure_multipliers` | Failure id to multiplier on that failure's weight. The chance of a print failing at all shrinks by the share of weight removed (`PrintRisk.upgrade_scale`) |
 | `time_multiplier` | Applied to print time |
 | `wear_multiplier` | Applied to the wear of every part |
 
+### Multicolour units
+
+A unit is an upgrade with `grants: ["multicolour"]` (so a printer takes only one) and a `multicolour` block. Imported from `docs/design_data/accessories.json` (`multicolour_units`): the four slot Spare room units that fit a printer the game has. Linking units together, the five slot Kestrel unit and the Workshop and Factory units are not in yet. The printer has to be empty of filament to have one fitted.
+
+| Field | Meaning |
+| --- | --- |
+| `slots` | Spools it holds. No more than the unit model has `spool_slot_*` markers |
+| `swap_seconds` | Real seconds a colour change takes, added to the print as game minutes |
+| `purge_grams_per_swap` | Filament thrown away on each colour change, before the extra for contrast |
+| `jam_chance_per_swap` | Added to the chance of the print failing, for each colour change. Against the game's `multicolour.reference_jam_chance` it also scales how often the failure is a jam |
+| `soft_filament` | True if it is built for TPU. Otherwise TPU through it raises `tpu_in_multicolour` |
+| `keeps_dry` | True if spools in it take up no moisture |
+| `parts` | Ids from `parts.json` that come with it and wear alongside the printer's own |
+| `model` | Its model file in `assets/models/printers/` |
+
+A full colour print of a design changes colour `colour_swaps` times. Each change purges `purge_grams_per_swap x (1 + contrast_purge x contrast)`, where contrast is the average step up in lightness from one colour to the next, going round them in order (`Multicolour.contrast`): dark next to light wastes more than two close shades. The first colour takes `main_colour_share` of the design's filament and the others share the rest; the purged filament is split evenly between the spools.
+
 ## parts.json
 
-Wear parts. Imported from `docs/design_data/parts.json`: one part for each slot in the GDD's list (nozzle, hotend, build plate, belts, PTFE tube, fans). The other Garage parts, alternative parts for a slot and upgrades are not in yet. Prices are the design's base prices; brand multipliers and own-brand parts are not applied.
+Wear parts. Imported from `docs/design_data/parts.json`: one part for each slot in the GDD's list (nozzle, hotend, build plate, belts, PTFE tube, fans), plus the feeder rollers and nozzle wiper that come with a multicolour unit. The other Garage parts, alternative parts for a slot and upgrades are not in yet. Prices are the design's base prices; brand multipliers and own-brand parts are not applied.
 
 | Field | Meaning |
 | --- | --- |
@@ -222,6 +252,7 @@ Starting conditions and global rates. Not a table of rows.
 | `courier` | The one courier and packaging so far: `name`, `damage_multiplier`, `delivery_minutes` as `[shortest, longest]`, and the mailer box's `protection` (1 to 5). A parcel arrives broken with chance `(5 - durability) x 2% x (6 - protection) / 3 x damage_multiplier` (`Marketplace.damage_chance`). The packaging and courier tables in `docs/design_data/shipping.json` replace this when there is a choice of either |
 | `default_preset` | The preset the print dialog opens on |
 | `moisture` | `gain_per_day`: moisture (0 to 1) a filament with sensitivity 1.0 gains in a day in the open. `wet_at`: the level at which a spool is wet. Every `step` beyond that adds `extra_fail_per_step` to the chance of a print failing, and wet filament raises the `wet_filament` flag for failures |
+| `multicolour` | `main_colour_share`: the share of a multicolour print's filament its first colour takes. `contrast_purge`: how much more a colour change purges going from black to white. `many_swaps`: colour changes at which a print raises `many_colour_swaps`. `reference_jam_chance`: the `jam_chance_per_swap` of a unit that jams as often as the jam failure's `weight` says |
 | `design` | Rules for the business's own designs (`DesignStudio`). `unlock_tier`: when they become possible. `base_minutes`: PC time for a V1, times (1 + the item's difficulty); an iteration takes `iteration_time` of that, a fix `fix_minutes`. Quality starts at `base_quality` plus a skill level for every `designs_per_skill_level` designs finished (to `max_skill`), rises by one per iteration to `max_version`, and stops at `max_quality`. `fault_chance`, less `fault_chance_per_skill` per skill level, is the chance a new version hides a fault. Demand for an own design is `appeal_base + appeal_per_quality x quality` times the bought design's |
 | `trends` | One product category is in demand and one has gone quiet, for a random `days` range (`[shortest, longest]`), scaling its orders by `hot_multiplier` or `cool_multiplier`. Only categories with at least `min_designs` designs take part, and never those listed in `seasonal`, which wait for a calendar (`Trends`) |
 | `wear_rate` | Multiplies all part wear. Above 1 because the design's lifespans are in real printer hours, which would take many sessions to matter. A balancing knob |

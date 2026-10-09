@@ -10,7 +10,9 @@ extends Node
 ##       e.g. call>buy_design("phone_stand"), or `on>group>expression` to
 ##       run one on the first node in a group, e.g.
 ##       on>print_dialog>choose("cable_management_clips_x12","draft"). `shot>file.png` saves a
-##       screenshot at that point and `quit` exits. A step starts once the
+##       screenshot at that point and `quit` exits. `zoom>Plodder Mini>1.6`
+##       centres the camera on an object and sets how many metres tall the
+##       view is, for a close look in the next shot. A step starts once the
 ##       character has finished the one before.
 ##   --time-scale=8   run the whole game faster
 
@@ -42,6 +44,10 @@ func _play(steps: PackedStringArray) -> void:
 			await RenderingServer.frame_post_draw
 			get_viewport().get_texture().get_image().save_png(parts[1])
 			print("Autoplay: saved %s" % parts[1])
+			continue
+		if parts[0] == "zoom":
+			_zoom(parts[1], parts[2].to_float())
+			await get_tree().create_timer(0.2, true, false, true).timeout
 			continue
 		if parts[0] == "quit":
 			get_tree().quit()
@@ -76,6 +82,21 @@ func _play(steps: PackedStringArray) -> void:
 	if agent.is_busy():
 		await agent.became_idle
 	print("Autoplay: finished")
+
+
+## Centres the camera on the object with this display name, `metres` tall.
+func _zoom(display_name: String, metres: float) -> void:
+	var camera := get_viewport().get_camera_3d()
+	for node: Interactable in get_tree().get_nodes_in_group(&"interactable"):
+		if node.display_name == display_name:
+			# Where the object is in the camera's own view, across and up from its centre.
+			var seen := camera.global_transform.affine_inverse() * (node.global_position + Vector3.UP * 0.3)
+			camera.set(&"_pan", Vector2(camera.get(&"_pan")) + Vector2(seen.x, seen.y))
+			camera.set(&"_target_size", metres)
+			camera.size = metres
+			print("Autoplay: zoom %s" % display_name)
+			return
+	push_error("Autoplay: nothing called '%s' to zoom to" % display_name)
 
 
 ## Moves the mouse to a screen position and left clicks, as real input.

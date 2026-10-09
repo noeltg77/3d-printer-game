@@ -75,7 +75,10 @@ static func conditions(printer: Dictionary, preset: Dictionary, product: Diction
 ## How heavily a failure counts when choosing which one happens: its weight,
 ## times every cause that applies, times the filament's own modifier for it,
 ## times what the printer's upgrades do to it (`multipliers`, by failure id).
+## A failure that `requires` a condition counts for nothing without it.
 static func weight_of(failure: Dictionary, flags: Array[StringName], filament: Dictionary, multipliers := {}) -> float:
+	if failure.has("requires") and not flags.has(StringName(failure["requires"])):
+		return 0.0
 	var weight := float(failure["weight"])
 	for cause: String in failure["causes"]:
 		if flags.has(StringName(cause)):

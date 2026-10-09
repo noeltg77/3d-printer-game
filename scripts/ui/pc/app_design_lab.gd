@@ -175,6 +175,11 @@ func _card(product: StringName, row: Dictionary) -> Control:
 	], 12)
 	if royalty > 0.0 and not Game.studio.has(product):
 		column.add_child(Ui.text("The designer takes %d%% of each sale" % roundi(royalty * 100.0), 13, Ui.AMBER_DARK, 800))
+	var colours := Multicolour.colours_of(row)
+	if colours > 1:
+		facts.add_child(Ui.pill("%d colours" % colours, FACT_TEXT, FACT_BG))
+		column.add_child(Ui.wrap(Ui.text("Needs a printer with a multicolour unit to print in all %d colours. In one colour it sells for %d%% less." % [
+			colours, roundi((1.0 - float(Game.data.toggles["multicolour"]["off_price_multiplier"])) * 100.0)], 13, Ui.AMBER_DARK, 800)))
 
 	column.add_child(_own_design(product))
 	var action: Control

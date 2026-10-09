@@ -64,6 +64,7 @@ def _open_frame(args):
     frame.box((0.1, 0.09, 0.02), (0, 0.05, 0.63), "charcoal")
     frame_obj = frame.finish("frame")
     marker("spool_mount", (0, 0.05, 0.64), frame_obj)
+    marker("unit_mount", (0, 0.05, 0.64), frame_obj)
 
     bed = MeshBuilder()
     bed.box((0.08, 0.3, 0.02), (0, 0, 0.092), "metal_dark")

@@ -78,6 +78,102 @@
 			"failure_multipliers": {},
 			"time_multiplier": 1.0,
 			"wear_multiplier": 0.9
+		},
+		{
+			"id": "zippy_colourhub_lite",
+			"name": "Zippy ColourHub Lite",
+			"description": "Holds four spools and swaps between them mid-print, so one print can be several colours. The cheap way in, for the A1 Mini only.",
+			"unlock_tier": 2,
+			"price_pence": 19899,
+			"install_minutes": 20,
+			"fits_motion": [],
+			"fits_printers": ["zippy_a1_mini"],
+			"grants": ["multicolour"],
+			"failure_multipliers": {},
+			"time_multiplier": 1.0,
+			"wear_multiplier": 1.0,
+			"multicolour": {
+				"slots": 4,
+				"swap_seconds": 50,
+				"purge_grams_per_swap": 4.0,
+				"jam_chance_per_swap": 0.001,
+				"soft_filament": false,
+				"keeps_dry": false,
+				"parts": ["feeder_rollers_multicolour", "wiper_and_purge_kit"],
+				"model": "multicolour_unit"
+			}
+		},
+		{
+			"id": "zippy_colourhub",
+			"name": "Zippy ColourHub",
+			"description": "The classic four spool unit. Quicker swaps and less plastic thrown away on each one.",
+			"unlock_tier": 2,
+			"price_pence": 29899,
+			"install_minutes": 20,
+			"fits_motion": [],
+			"fits_printers": ["zippy_a1_mini", "zippy_x1"],
+			"grants": ["multicolour"],
+			"failure_multipliers": {},
+			"time_multiplier": 1.0,
+			"wear_multiplier": 1.0,
+			"multicolour": {
+				"slots": 4,
+				"swap_seconds": 40,
+				"purge_grams_per_swap": 3.5,
+				"jam_chance_per_swap": 0.0008,
+				"soft_filament": false,
+				"keeps_dry": false,
+				"parts": ["feeder_rollers_multicolour", "wiper_and_purge_kit"],
+				"model": "multicolour_unit"
+			}
+		},
+		{
+			"id": "zippy_colourhub_2_pro",
+			"name": "Zippy ColourHub 2 Pro",
+			"description": "A ColourHub with a heated lid: spools inside it stay dry. The least wasteful of the lot.",
+			"unlock_tier": 2,
+			"price_pence": 44899,
+			"install_minutes": 20,
+			"fits_motion": [],
+			"fits_printers": ["zippy_a1_mini", "zippy_x1"],
+			"grants": ["multicolour"],
+			"failure_multipliers": {},
+			"time_multiplier": 1.0,
+			"wear_multiplier": 1.0,
+			"multicolour": {
+				"slots": 4,
+				"swap_seconds": 35,
+				"purge_grams_per_swap": 3.0,
+				"jam_chance_per_swap": 0.0006,
+				"soft_filament": false,
+				"keeps_dry": true,
+				"parts": ["feeder_rollers_multicolour", "wiper_and_purge_kit"],
+				"model": "multicolour_unit"
+			}
+		},
+		{
+			"id": "spoolsmith_quad",
+			"name": "Spoolsmith Quad",
+			"description": "A bolt-on four spool feeder for open printers. Fiddly to fit, slow to swap and it jams more than the big names, but it is cheap.",
+			"unlock_tier": 2,
+			"price_pence": 17899,
+			"install_minutes": 60,
+			"fits_motion": [],
+			"fits_printers": ["kestrel_mk4"],
+			"grants": ["multicolour"],
+			"failure_multipliers": {},
+			"time_multiplier": 1.0,
+			"wear_multiplier": 1.0,
+			"multicolour": {
+				"slots": 4,
+				"swap_seconds": 65,
+				"purge_grams_per_swap": 5.0,
+				"jam_chance_per_swap": 0.0018,
+				"soft_filament": false,
+				"keeps_dry": false,
+				"parts": ["feeder_rollers_multicolour", "wiper_and_purge_kit"],
+				"model": "multicolour_unit"
+			}
 		}
 	]
 }

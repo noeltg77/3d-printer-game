@@ -2,7 +2,8 @@ class_name PrinterMods
 extends RefCounted
 ## The upgrades fitted to one printer and what they add up to: capabilities the
 ## printer didn't come with, failures made less likely, faster prints and
-## slower wear. Works on rows from data/upgrades.json.
+## slower wear. A multicolour unit is an upgrade too: its row carries a
+## `multicolour` block (see Multicolour). Works on rows from data/upgrades.json.
 
 const MOTION_NAMES := {"bed_slinger": "bed slinger", "core_xy": "core XY"}
 
@@ -29,9 +30,14 @@ func problem(upgrade: StringName, printer: Dictionary) -> String:
 	var motions: Array = row["fits_motion"]
 	if not motions.is_empty() and not motions.has(printer["motion"]):
 		return "Doesn't fit a %s printer" % MOTION_NAMES.get(printer["motion"], printer["motion"])
+	var models: Array = row.get("fits_printers", [])
+	if not models.is_empty() and not models.has(printer["id"]):
+		return "Doesn't fit the %s" % printer["name"]
 	for capability: String in row["grants"]:
-		if apply(printer).get(capability, false):
+		if printer.get(capability, false):
 			return "This printer already has it built in"
+		if apply(printer).get(capability, false):
+			return "This printer already has one"
 	return ""
 
 
@@ -47,6 +53,15 @@ func apply(printer: Dictionary) -> Dictionary:
 		for capability: String in upgrades[upgrade]["grants"]:
 			improved[capability] = true
 	return improved
+
+
+## The multicolour unit fitted (the `multicolour` block of its upgrade row), or
+## {} if there isn't one.
+func unit() -> Dictionary:
+	for upgrade in fitted:
+		if upgrades[upgrade].has("multicolour"):
+			return upgrades[upgrade]["multicolour"]
+	return {}
 
 
 ## Failure id -> multiplier on how likely that failure is, across all upgrades.

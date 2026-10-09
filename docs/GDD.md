@@ -287,9 +287,9 @@ Build small and prove each step before moving on: assets and garage first, then 
 
 ### Phase 7: Multicolour units
 
-- [ ] Multicolour unit with 4 slots, linkable units
-- [ ] Colour change waste, batching to reduce swaps
-- [ ] Multicolour products and pricing
+- [ ] Multicolour unit with 4 slots, linkable units. Four slot units are in (bought, fitted, loaded, jams, their own wear parts); linking units still to do
+- [ ] Colour change waste, batching to reduce swaps. Waste, swap time and the dark to light penalty are in; batching still to do
+- [ ] Multicolour products and pricing. The way of colouring parts, one colour printing at a discount and the first six products are in; the other 172 need models
 
 ### Phase 8: Tier 3 workshop
 
