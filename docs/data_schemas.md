@@ -66,7 +66,8 @@ Display currencies, keyed by code. Not a table of rows with ids.
 | `value_multiplier` | Sale price uplift for items in this material: the buyer pays the listed price times this |
 | `ease_of_printing` | 1 (fussy) to 5 (easy). Scales the chance of a print failing by (6 - ease) / 3 |
 | `abrasive` | Multiplies nozzle wear by the nozzle's `abrasive_wear_multiplier` |
-| `moisture_sensitivity` | How fast badly stored spools absorb moisture (Phase 6) |
+| `moisture_sensitivity` | How fast a spool in the open soaks up moisture: this times the game's `moisture.gain_per_day`, per game day |
+| `drying_multiplier` | How much longer than plain PLA it takes to dry |
 | `requires` | `enclosure` and `direct_drive` are hard limits: a printer without one can't load it. `hardened_nozzle` is advice: it prints on brass, at the cost of the nozzle |
 | `failure_modifiers` | Multipliers on the weight of a failure from `failures.json`, by its id, e.g. `{ "warping": 1.6 }` |
 | `colours` | Colours this filament is sold in |
@@ -183,6 +184,17 @@ Wear parts. Imported from `docs/design_data/parts.json`: one part for each slot 
 
 Health lost per print hour is `printer wear_multiplier x game wear_rate x preset wear_multiplier / lifespan_print_hours` (`PrinterWear.wear_per_hour`). At nothing the part is broken and the printer can't print until a spare is fitted.
 
+## dryers.json
+
+Filament dryers. Imported from `docs/design_data/accessories.json` (`dryers`): one Garage dryer and one for the small unit. Dry boxes, which only slow moisture down, are not in yet. The premises hold one dryer.
+
+| Field | Meaning |
+| --- | --- |
+| `capacity` | Spools it holds at once (the model has room for two) |
+| `hours_to_dry` | Game hours to take a soaked spool of plain PLA to dry. A spool takes its share of that, times its filament's `drying_multiplier` |
+| `power_watts` | Charged as electricity for the time it spends drying |
+| `dries` | Filament families it gets hot enough for |
+
 ## premises.json
 
 The places the business can run from, smallest first.
@@ -207,6 +219,7 @@ Starting conditions and global rates. Not a table of rows.
 | `courier_minute_of_day` | When parcels in the outbox are collected and paid |
 | `courier` | The one courier and packaging so far: `name`, `damage_multiplier`, `delivery_minutes` as `[shortest, longest]`, and the mailer box's `protection` (1 to 5). A parcel arrives broken with chance `(5 - durability) x 2% x (6 - protection) / 3 x damage_multiplier` (`Marketplace.damage_chance`). The packaging and courier tables in `docs/design_data/shipping.json` replace this when there is a choice of either |
 | `default_preset` | The preset the print dialog opens on |
+| `moisture` | `gain_per_day`: moisture (0 to 1) a filament with sensitivity 1.0 gains in a day in the open. `wet_at`: the level at which a spool is wet. Every `step` beyond that adds `extra_fail_per_step` to the chance of a print failing, and wet filament raises the `wet_filament` flag for failures |
 | `wear_rate` | Multiplies all part wear. Above 1 because the design's lifespans are in real printer hours, which would take many sessions to matter. A balancing knob |
 | `bank_name`, `business_name` | Names shown on the PC |
 | `supplier` | The filament and hardware shop names, lead times in game minutes (filament, printers, spare parts), and the packaging pack size and price |

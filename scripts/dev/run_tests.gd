@@ -11,6 +11,7 @@ func _init() -> void:
 	_test_printer_wear()
 	_test_printer_mods()
 	_test_filaments()
+	_test_moisture()
 	_test_clock()
 	_test_bank()
 	_test_money()
@@ -279,6 +280,43 @@ func _test_filaments() -> void:
 	market.mark_packed(fancy, 3, 3, false, float(data.filaments["pla_cf"]["value_multiplier"]))
 	_check(plain.price == 400 and fancy.price == 560, "a print in a premium filament sells for more than the listed price")
 	_check(market.ship(fancy)["fee"] == market.fee_for(560), "and the marketplace takes its cut of the higher price")
+
+
+func _test_moisture() -> void:
+	var data := GameData.load_all()
+	var rules: Dictionary = data.settings["moisture"]
+	var pla: Dictionary = data.filaments["pla"]
+	var tpu: Dictionary = data.filaments["tpu"]
+	var petg: Dictionary = data.filaments["petg"]
+	_check(is_equal_approx(Moisture.gain_per_day(pla, rules), 0.08), "PLA in the open gains 8% moisture a day")
+	_check(Moisture.gain_per_day(tpu, rules) > Moisture.gain_per_day(pla, rules) * 1.9, "thirstier filaments soak it up faster")
+	_check(is_equal_approx(Moisture.after(0.1, GameClock.DAY * 2.0, pla, rules), 0.26), "moisture builds up with time in the open")
+	_check(is_equal_approx(Moisture.after(0.95, GameClock.DAY * 30.0, pla, rules), 1.0), "and stops at soaked")
+	_check(Moisture.label(0.1, rules) == "dry" and Moisture.label(0.25, rules) == "damp" and Moisture.label(0.4, rules) == "wet", "a spool goes from dry to damp to wet")
+	_check(not Moisture.is_wet(0.39, rules) and Moisture.is_wet(0.4, rules), "wet starts at the threshold")
+	_check(is_zero_approx(Moisture.extra_fail_chance(0.4, rules)), "a spool that is only just wet adds no risk yet")
+	_check(is_equal_approx(Moisture.extra_fail_chance(0.6, rules), 0.03) and is_equal_approx(Moisture.extra_fail_chance(1.0, rules), 0.09), "each further 20% of moisture adds 3% to the chance of failure")
+	var plodder: Dictionary = data.printers["plodder_mini"]
+	var clips: Dictionary = data.products["cable_management_clips_x12"]
+	var dry_chance := PrintRisk.fail_chance(plodder, data.presets["standard"], pla, clips)
+	_check(PrintRisk.fail_chance(plodder, data.presets["standard"], pla, clips, Moisture.extra_fail_chance(1.0, rules)) > dry_chance * 2.5, "a soaked spool makes failure far more likely")
+	var stringing: Dictionary = data.failures["stringing"]
+	_check(is_equal_approx(PrintRisk.weight_of(stringing, [&"wet_filament"], pla), float(stringing["weight"]) * 2.5), "and stringing the likely result")
+
+	var mini: Dictionary = data.dryers["dryhive_mini_dryer_s1"]
+	var duo: Dictionary = data.dryers["dryhive_duo_dryer_s2"]
+	_check(Moisture.can_dry(mini, pla) and Moisture.can_dry(mini, data.filaments["pla_silk"]) and not Moisture.can_dry(mini, petg), "the small dryer handles the PLA family but not PETG")
+	_check(Moisture.can_dry(duo, petg) and Moisture.can_dry(duo, data.filaments["asa"]), "the bigger one handles the fussier filaments")
+	_check(is_equal_approx(Moisture.hours_to_dry(0.5, mini, pla), 3.0), "a half soaked PLA spool dries in half the dryer's time")
+	_check(is_equal_approx(Moisture.hours_to_dry(0.5, duo, petg), 0.5 * 5.0 * 1.5), "PETG takes half as long again")
+	_check(is_equal_approx(Moisture.dried(0.5, 90.0, mini, pla), 0.25), "moisture falls steadily in the dryer")
+	_check(is_zero_approx(Moisture.dried(0.5, 600.0, mini, pla)), "and stops at dry")
+
+	var supplier := Supplier.new(data)
+	_check(supplier.price_of({"dryers": {"dryhive_mini_dryer_s1": 1}}) == 3899, "a dryer has its shop price")
+	var boxes := supplier.place({"dryers": {"dryhive_mini_dryer_s1": 1}, "spools": {"red": 1}}, 0.0)
+	_check(boxes.size() == 2 and boxes[1].dryer == &"dryhive_mini_dryer_s1" and boxes[1].describe() == "Filament dryer", "a dryer comes in a box of its own")
+	_check(Supplier.Delivery.restored(_through_file(boxes[1].save())).dryer == &"dryhive_mini_dryer_s1", "and survives a save while on its way")
 
 
 func _test_clock() -> void:

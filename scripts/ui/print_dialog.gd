@@ -140,7 +140,8 @@ func _preset_card(preset_id: StringName) -> Control:
 ## The risk meter: chance of failure as a bar, strength and finish as dots.
 func _meter() -> Control:
 	var preset: Dictionary = Game.data.presets[_preset]
-	var chance := Game.fail_chance(_printer.spec, _preset, _printer.spool.material, _product, _printer.wear, _printer.mods)
+	var chance := Game.fail_chance(_printer.spec, _preset, _printer.spool.material, _product, _printer.wear, _printer.mods,
+		_printer.spool.moisture)
 	var band := PrintRisk.band(chance)
 	var colour: Color = BAND_COLOURS[band]
 	var durability := int(preset["durability"])
@@ -175,6 +176,8 @@ func _meter() -> Control:
 	if not nozzle.is_empty() and FilamentRules.wears_nozzle(filament, nozzle):
 		rows.add_child(Ui.wrap(Ui.text("%s is gritty: it wears this %s %d times faster. A hardened nozzle shrugs it off." % [
 			filament["name"], String(nozzle["name"]).to_lower(), roundi(float(nozzle["abrasive_wear_multiplier"]))], 13, Ui.RED_DARK, 800)))
+	if _printer.spool.is_wet():
+		rows.add_child(Ui.wrap(Ui.text("This spool is wet, which is adding to the risk and makes prints stringy. A spell in a filament dryer sorts it out.", 13, Ui.RED_DARK, 800)))
 	var helping: PackedStringArray = []
 	for upgrade in _printer.mods.fitted:
 		if not Game.data.upgrades[upgrade]["failure_multipliers"].is_empty():

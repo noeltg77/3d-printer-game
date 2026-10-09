@@ -20,6 +20,12 @@
 	"default_preset": "standard",
 	"tier_names": ["Garage", "Small unit", "Workshop", "Factory"],
 	"wear_rate": 4.0,
+	"moisture": {
+		"gain_per_day": 0.2,
+		"wet_at": 0.4,
+		"step": 0.2,
+		"extra_fail_per_step": 0.03
+	},
 	"supplier": {
 		"filament_shop": "Spoolhouse",
 		"hardware_shop": "Printbay",

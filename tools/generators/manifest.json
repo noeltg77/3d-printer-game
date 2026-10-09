@@ -201,6 +201,7 @@
 		{ "generator": "props", "out": "assets/models/props/bin.glb", "args": { "variant": "bin", "seed": 5 } },
 		{ "generator": "props", "out": "assets/models/props/plant.glb", "args": { "variant": "plant", "seed": 3 } },
 		{ "generator": "props", "out": "assets/models/props/rug.glb", "args": { "variant": "rug", "colour": "terracotta" } },
+		{ "generator": "props", "out": "assets/models/props/dryer.glb", "args": { "variant": "dryer", "colour": "orange" } },
 		{ "generator": "props", "out": "assets/models/props/desk_lamp.glb", "args": { "variant": "desk_lamp", "colour": "yellow" } },
 
 		{ "generator": "boxes", "out": "assets/models/props/box_closed_01.glb", "args": { "variant": "closed", "seed": 1 } },

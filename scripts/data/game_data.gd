@@ -13,6 +13,7 @@ const TABLES := {
 	"parts": "res://data/parts.json",
 	"upgrades": "res://data/upgrades.json",
 	"premises": "res://data/premises.json",
+	"dryers": "res://data/dryers.json",
 }
 const FAILURE_HAPPENS: PackedStringArray = ["start", "mid", "end"]
 const FAILURE_OUTCOMES: PackedStringArray = ["scrap", "stop", "degraded"]
@@ -32,6 +33,8 @@ var parts: Dictionary = {}
 var upgrades: Dictionary = {}
 ## The places the business can run from, by id, smallest first.
 var premises: Dictionary = {}
+## Filament dryers, by id.
+var dryers: Dictionary = {}
 ## What each durability score (1 to 5) means, keyed by the score as text.
 var durability_labels: Dictionary = {}
 ## Lines buyers write in reviews, by kind (data/reviews.json).
@@ -108,6 +111,10 @@ func _check_references() -> void:
 	var families := {}
 	for filament: Dictionary in filaments.values():
 		families[filament.get("family", "")] = true
+	for dryer: Dictionary in dryers.values():
+		for family: String in dryer.get("dries", []):
+			if not families.has(family):
+				errors.append("dryer %s: unknown filament family \"%s\"" % [dryer["id"], family])
 	for product: Dictionary in products.values():
 		for filament_id: String in product.get("allowed_filaments", []):
 			if not filaments.has(filament_id) and not families.has(filament_id):

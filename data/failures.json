@@ -43,7 +43,7 @@
 			"happens": "mid",
 			"outcome": "stop",
 			"weight": 9,
-			"causes": { "worn_nozzle": 3.0, "worn_ptfe": 2.0, "worn_hotend": 2.0 },
+			"causes": { "wet_filament": 1.5, "worn_nozzle": 3.0, "worn_ptfe": 2.0, "worn_hotend": 2.0 },
 			"damages": { "nozzle": 0.2 },
 			"clear_minutes": 15,
 			"visual": "stalled",
@@ -115,7 +115,7 @@
 			"happens": "mid",
 			"outcome": "degraded",
 			"weight": 9,
-			"causes": { "worn_nozzle": 2.0, "worn_ptfe": 2.0 },
+			"causes": { "wet_filament": 1.5, "worn_nozzle": 2.0, "worn_ptfe": 2.0 },
 			"quality_loss": 2,
 			"fix": "Usually a sign the hotend wants attention",
 			"player_text": "Looks like it was printed by someone who was rationing plastic."
@@ -126,7 +126,7 @@
 			"happens": "end",
 			"outcome": "degraded",
 			"weight": 12,
-			"causes": { "worn_part_fan": 1.5 },
+			"causes": { "wet_filament": 2.5, "worn_part_fan": 1.5 },
 			"quality_loss": 1,
 			"fix": "Some filaments string more than others",
 			"player_text": "It's covered in fine little hairs. Seasonal for Halloween. Less so for a phone stand."
@@ -137,7 +137,7 @@
 			"happens": "end",
 			"outcome": "degraded",
 			"weight": 12,
-			"causes": { "draft_preset": 1.8, "worn_part_fan": 1.5 },
+			"causes": { "wet_filament": 1.3, "draft_preset": 1.8, "worn_part_fan": 1.5 },
 			"quality_loss": 1,
 			"fix": "A finer preset gives a smoother finish",
 			"player_text": "It works, but it has the texture of a cheese grater."
