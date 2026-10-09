@@ -28,14 +28,20 @@ def add_arguments(parser):
     parser.add_argument("--window", type=float, nargs=2, default=(1.5, 1.3), metavar=("X", "WIDTH"))
     parser.add_argument("--door-width", type=float, default=2.4)
     parser.add_argument("--door-height", type=float, default=2.1)
+    parser.add_argument("--wall", default=WALL, help="inside wall colour")
+    parser.add_argument("--outside", default=OUTSIDE, help="outside wall colour")
+    parser.add_argument("--cap", default=CAP, help="colour of the wall tops")
+    parser.add_argument("--floor", default="stone", help="floor colour")
 
 
 def build(args, rng):
+    global WALL, OUTSIDE, CAP
+    WALL, OUTSIDE, CAP = args.wall, args.outside, args.cap
     width, depth, height = args.size
     half_w, half_d, t = width / 2, depth / 2, THICKNESS
 
     floor = MeshBuilder()
-    floor.box((width + t * 2, depth + t * 2, 0.12), (0, 0, -0.06), "stone")
+    floor.box((width + t * 2, depth + t * 2, 0.12), (0, 0, -0.06), args.floor)
     floor.finish("floor")
 
     _north_wall(args, half_w, half_d, height)

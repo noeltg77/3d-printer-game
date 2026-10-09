@@ -31,6 +31,15 @@ var packaging := 0
 var tier := 1
 ## Dev: the tier a new game starts at, from --tier=<n>.
 var start_tier := 1
+## Id of the place the business runs from (data/premises.json).
+var premises: StringName = &"garage"
+## Dev: the premises a new game starts in, from --premises=<id>.
+var start_premises := ""
+
+## The state of the world being carried from one scene to the next, when the
+## business moves or a save belongs to different premises from the scene loaded.
+var _handover: Dictionary = {}
+var _has_handover := false
 var speed := 1
 var rng := RandomNumberGenerator.new()
 ## Dev: id of a failure the next print is certain to hit. Cleared once used.
@@ -52,6 +61,8 @@ func _ready() -> void:
 			save_path = arg.trim_prefix("--save=")
 		elif arg.begins_with("--tier="):
 			start_tier = arg.trim_prefix("--tier=").to_int()
+		elif arg.begins_with("--premises="):
+			start_premises = arg.trim_prefix("--premises=")
 	new_game()
 
 
@@ -72,6 +83,11 @@ func _process(delta: float) -> void:
 		_settle_delivery(outcome)
 	if clock.crossed(before, data.settings["courier_minute_of_day"]):
 		courier_arrived.emit()
+	var rent := int(premises_row()["rent_pence_per_day"])
+	if rent > 0 and clock.crossed(before, 0.0):
+		bank.charge(rent, "Rent: %s" % premises_row()["name"], clock.minutes)
+		notify("Rent paid on the %s: %s" % [String(premises_row()["name"]).to_lower(), Money.format(rent)])
+		changed.emit()
 
 
 func new_game() -> void:
@@ -85,7 +101,8 @@ func new_game() -> void:
 	supplier = Supplier.new(data)
 	owned_designs.assign(start["designs"])
 	packaging = int(start["packaging"])
-	tier = start_tier
+	premises = StringName(start_premises if data.premises.has(start_premises) else start["premises"])
+	tier = maxi(int(premises_row()["tier"]), start_tier)
 	rng.randomize()
 	saved_at = -1.0
 	set_speed(1)
@@ -139,7 +156,7 @@ func delete_save() -> void:
 func save() -> Dictionary:
 	return {
 		"clock": clock.save(), "bank": bank.save(), "market": market.save(), "supplier": supplier.save(),
-		"owned_designs": owned_designs, "packaging": packaging, "tier": tier,
+		"owned_designs": owned_designs, "packaging": packaging, "tier": tier, "premises": premises,
 	}
 
 
@@ -154,7 +171,9 @@ func restore(state: Dictionary) -> void:
 		if data.products.has(product):
 			owned_designs.append(StringName(product))
 	packaging = int(state["packaging"])
-	tier = maxi(int(state.get("tier", 1)), start_tier)
+	if data.premises.has(state.get("premises", "")):
+		premises = StringName(state["premises"])
+	tier = maxi(maxi(int(state.get("tier", 1)), int(premises_row()["tier"])), start_tier)
 	changed.emit()
 
 
@@ -187,6 +206,58 @@ func set_speed(new_speed: float) -> void:
 
 func notify(text: String, tone: StringName = &"") -> void:
 	notified.emit(text, tone)
+
+
+## Row from data/premises.json for where the business is now.
+func premises_row() -> Dictionary:
+	return data.premises[premises]
+
+
+## Why the business can't move to other premises right now, or "" if it can.
+func move_problem(place: StringName) -> String:
+	var row: Dictionary = data.premises[place]
+	if place == premises:
+		return "You are here"
+	if int(row["tier"]) < tier:
+		return "You have outgrown it"
+	if not bank.can_afford(int(row["move_cost_pence"])):
+		return "Not enough cash"
+	for printer: PrinterStation in get_tree().get_nodes_in_group(&"printer"):
+		if printer.status == PrinterStation.Status.PRINTING:
+			return "Wait for your prints to finish first"
+	return ""
+
+
+## Pays to move the business to other premises. The scene change is the
+## caller's job (WorldSave.move). False if it can't be done.
+func move_to(place: StringName) -> bool:
+	if move_problem(place) != "":
+		return false
+	var row: Dictionary = data.premises[place]
+	bank.spend(int(row["move_cost_pence"]), "Move to the %s" % String(row["name"]).to_lower(), clock.minutes)
+	premises = place
+	tier = maxi(tier, int(row["tier"]))
+	notify("Moved in to the %s" % String(row["name"]).to_lower(), &"good")
+	changed.emit()
+	return true
+
+
+## Leaves the state of the world for the next scene to pick up.
+func hand_over(world: Dictionary) -> void:
+	_handover = world
+	_has_handover = true
+
+
+func has_handover() -> bool:
+	return _has_handover
+
+
+## The world left by hand_over(). It can only be taken once.
+func take_handover() -> Dictionary:
+	var world := _handover
+	_handover = {}
+	_has_handover = false
+	return world
 
 
 ## True if the business has grown enough for a data row (anything with an

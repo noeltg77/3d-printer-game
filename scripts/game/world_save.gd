@@ -1,6 +1,7 @@
 class_name WorldSave
 extends Node
-## Ties the premises to the save file. On starting the scene it loads the save,
+## Ties the premises to the save file, and carries the world from one premises
+## to the next when the business moves. On starting the scene it loads the save,
 ## if there is one, and has each part of the world rebuild itself from it. From
 ## then on it saves whenever the character is between tasks: as each run of
 ## jobs ends, every so often while standing idle, and when the game is closed.
@@ -64,14 +65,36 @@ func save_now() -> bool:
 	return Game.save_game(capture())
 
 
+## Moves the business to other premises, taking everything along: printers,
+## spools, stock, parcels and deliveries. False if it can't be done.
+func move(place: StringName) -> bool:
+	var world := capture()
+	# Where the character stood means nothing in a different room.
+	world.erase("character")
+	if not Game.move_to(place):
+		return false
+	Game.hand_over(world)
+	get_tree().change_scene_to_file(Game.premises_row()["scene"])
+	return true
+
+
 func _load() -> void:
-	var world := Game.load_game()
+	var arrived := Game.has_handover()
+	var world := Game.take_handover() if arrived else Game.load_game()
+	# The save may belong to premises other than the scene that was started.
+	var scene: String = Game.premises_row()["scene"]
+	if get_tree().current_scene.scene_file_path != scene:
+		Game.hand_over(world)
+		get_tree().change_scene_to_file(scene)
+		return
 	for key: String in PARTS:
 		var node := get_tree().get_first_node_in_group(PARTS[key])
 		if node != null and world.has(key):
 			node.call(&"restore", world[key])
 	_agent().became_idle.connect(_autosave)
 	Game.changed.emit()
+	if arrived:
+		save_now()
 
 
 func _autosave() -> void:

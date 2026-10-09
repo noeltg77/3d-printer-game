@@ -12,6 +12,7 @@ const TABLES := {
 	"failures": "res://data/failures.json",
 	"parts": "res://data/parts.json",
 	"upgrades": "res://data/upgrades.json",
+	"premises": "res://data/premises.json",
 }
 const FAILURE_HAPPENS: PackedStringArray = ["start", "mid", "end"]
 const FAILURE_OUTCOMES: PackedStringArray = ["scrap", "stop", "degraded"]
@@ -29,6 +30,8 @@ var failures: Dictionary = {}
 var parts: Dictionary = {}
 ## Printer upgrades, by id.
 var upgrades: Dictionary = {}
+## The places the business can run from, by id, smallest first.
+var premises: Dictionary = {}
 ## What each durability score (1 to 5) means, keyed by the score as text.
 var durability_labels: Dictionary = {}
 ## Lines buyers write in reviews, by kind (data/reviews.json).
@@ -112,6 +115,11 @@ func _check_references() -> void:
 	for product_id: String in settings.get("start", {}).get("designs", []):
 		if not products.has(product_id):
 			errors.append("game.json: unknown starting design \"%s\"" % product_id)
+	if not premises.has(settings.get("start", {}).get("premises", "")):
+		errors.append("game.json: unknown starting premises \"%s\"" % settings.get("start", {}).get("premises", ""))
+	for place: Dictionary in premises.values():
+		if not ResourceLoader.exists(place.get("scene", "")):
+			errors.append("premises %s: no scene at \"%s\"" % [place["id"], place.get("scene", "")])
 	if not presets.has(settings.get("default_preset", "")):
 		errors.append("game.json: unknown default_preset \"%s\"" % settings.get("default_preset", ""))
 	for failure: Dictionary in failures.values():

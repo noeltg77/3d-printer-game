@@ -4,6 +4,7 @@
 		"cash_pence": 30000,
 		"packaging": 5,
 		"designs": ["cable_clips"],
+		"premises": "garage",
 		"minute_of_day": 480
 	},
 	"bank_name": "PennyBank",
@@ -17,7 +18,7 @@
 		"protection": 3
 	},
 	"default_preset": "standard",
-	"tier_names": ["Garage", "Spare room", "Workshop", "Factory"],
+	"tier_names": ["Garage", "Small unit", "Workshop", "Factory"],
 	"wear_rate": 4.0,
 	"supplier": {
 		"filament_shop": "Spoolhouse",

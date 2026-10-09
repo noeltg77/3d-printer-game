@@ -283,7 +283,7 @@ Build small and prove each step before moving on: assets and garage first, then 
 - [ ] Filament moisture and drying
 - [ ] Own designs at the PC with iterations and test prints
 - [ ] More marketplaces, trends and demand
-- [ ] Move to a bigger space
+- [x] Move to a bigger space
 
 ### Phase 7: Multicolour units
 

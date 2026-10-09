@@ -20,7 +20,7 @@ Cosy isometric 3D printing business sim in Godot 4.7 (GDScript). `docs/GDD.md` i
 - `tools/previews/` preview renders from the generators (git ignored)
 - `assets/` generated `.glb` models, palette texture, shared material
 - `data/` JSON content tables
-- `scenes/` garage and later premises; `scenes/dev/` for test scenes
+- `scenes/` garage, small unit (`scenes/unit/`) and later premises; `scenes/dev/` for test scenes
 - `scripts/` gameplay code; `scripts/dev/` for headless tools, `scripts/import/` for import scripts
 
 ## Tools
@@ -62,7 +62,7 @@ Control is semi-autonomous: the player clicks an object, picks from its action l
 - Each printer has a `PrinterWear` (`scripts/sim/`): part health drops with print hours, worn parts add risk, and a part that runs out stops the print and the printer. Spares are `SparePart` boxes on the shelving, bought from the shop's Spare parts tab and fitted from the printer's Parts menu.
 - Each printer also has a `PrinterMods` (`scripts/sim/`): the upgrades fitted to it from `data/upgrades.json`, which grant capabilities, scale failures, print time and wear. Kits are bought and stored like spare parts (the supplier basket's `parts` takes either; `GameData.kit(id)` finds the row) and fitted from the printer's Upgrades menu.
 - `FilamentRules` (`scripts/sim/`) decides what prints in what: a printer's temperature, enclosure and direct drive against the filament's needs, and a design's `allowed_filaments` against the filament's id or family. Spools are named in baskets and deliveries by "material:colour" keys.
-- `Game.tier` (1 garage to 4 factory) gates what the shops sell through `Game.unlocked(row)`. Nothing raises it yet; start a dev run at a tier with `--tier=2`.
+- `Game.tier` (1 garage to 4 factory) gates what the shops sell through `Game.unlocked(row)`. It comes from the premises (`data/premises.json`, `Game.premises`). The player moves from the Roomier app: `WorldSave.move` pays, captures the world and hands it to the new premises' scene, which rebuilds it. A scene started with a save from other premises redirects the same way. Start a dev run elsewhere with `--premises=small_unit`, or just at a tier with `--tier=2`.
 - `Agent` (`scripts/character/agent.gd`, `scenes/characters/player.tscn`) owns the task queue. Task code is a plain sequence of awaits: `go_to()`, `reach(callable)`, `work(game_minutes)`, `carry()`, `release()`, `sit()`. A task must re-check its preconditions when it starts, because the world may have changed while it was queued.
 - `InteractionController` handles hover, the popup menu and floor clicks. `Hud` shows the current task and queue, with the to-do note (`TodoNote`, also on the PC desktop) beneath. `Advice` (`scripts/game/advice.gd`) decides what is on it; give each new thing to do a hint a non printer owner could follow.
 - `PrinterBadges` (in the HUD) floats a status badge over each printer. Messages go through `Game.notify(text, tone)`; give bad news `&"bad"` and good news `&"good"` so the toast is tinted.

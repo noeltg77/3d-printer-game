@@ -82,6 +82,11 @@ static func items(tree: SceneTree) -> Array[Dictionary]:
 			"Click the workbench and choose Pack order. The courier collects what is packed and that is when you get paid.")
 	if waiting > 0:
 		_add(found, "Print %d more for orders" % waiting, "Someone has ordered one you haven't made yet. Orders left too long are cancelled.")
+	var bench: Workbench = tree.get_first_node_in_group(&"workbench")
+	for place: String in Game.data.premises:
+		var row: Dictionary = Game.data.premises[place]
+		if int(row["tier"]) == Game.tier + 1 and bench != null and bench.free_spots() == 0 and Game.bank.can_afford(int(row["move_cost_pence"])):
+			_add(found, "You can afford a bigger space", "The bench is full. Click the computer and open Roomier to move, for more printers, shelving and new things to sell.")
 	if Game.packaging <= LOW_PACKAGING:
 		_add(found, "Mailer boxes are nearly out", "Every order goes out in one. Buy a pack at %s, under Packaging." % shops["hardware_shop"])
 	return found

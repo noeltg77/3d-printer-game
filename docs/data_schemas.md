@@ -180,6 +180,18 @@ Wear parts. Imported from `docs/design_data/parts.json`: one part for each slot 
 
 Health lost per print hour is `printer wear_multiplier x game wear_rate x preset wear_multiplier / lifespan_print_hours` (`PrinterWear.wear_per_hour`). At nothing the part is broken and the printer can't print until a spare is fitted.
 
+## premises.json
+
+The places the business can run from, smallest first.
+
+| Field | Meaning |
+| --- | --- |
+| `tier` | The tier the business is at once it moves in. Shops sell rows whose `unlock_tier` is no higher |
+| `scene` | The scene for the place. It needs the same parts as the garage scene (see `WorldSave.PARTS`), each with at least as many slots as the place before, so everything fits when the business moves |
+| `move_cost_pence` | Paid once to move in |
+| `rent_pence_per_day` | Charged at midnight every game day |
+| `printer_spots`, `shelf_slots`, `rack_slots` | Shown on the place's card. They describe the scene; they don't set it |
+
 ## game.json
 
 Starting conditions and global rates. Not a table of rows.
@@ -187,7 +199,7 @@ Starting conditions and global rates. Not a table of rows.
 | Field | Meaning |
 | --- | --- |
 | `tier_names` | What tiers 1 to 4 are called |
-| `start.cash_pence`, `start.packaging`, `start.designs`, `start.minute_of_day` | What a new game begins with |
+| `start.cash_pence`, `start.packaging`, `start.designs`, `start.premises`, `start.minute_of_day` | What a new game begins with |
 | `electricity_pence_per_kwh` | Charged when a print finishes, from the printer's `power_watts` and the print time |
 | `courier_minute_of_day` | When parcels in the outbox are collected and paid |
 | `courier` | The one courier and packaging so far: `name`, `damage_multiplier`, `delivery_minutes` as `[shortest, longest]`, and the mailer box's `protection` (1 to 5). A parcel arrives broken with chance `(5 - durability) x 2% x (6 - protection) / 3 x damage_multiplier` (`Marketplace.damage_chance`). The packaging and courier tables in `docs/design_data/shipping.json` replace this when there is a choice of either |
