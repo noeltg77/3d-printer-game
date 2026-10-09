@@ -46,6 +46,8 @@ Display currencies, keyed by code. Not a table of rows with ids.
 | `speed_multiplier` | Divides a product's `print_minutes` |
 | `build_volume_mm` | `[x, y, z]`. A product must fit to be printable |
 | `reliability` | Base chance a print succeeds before wear, filament and preset modifiers |
+| `wear_multiplier` | How hard this printer is on its parts. Multiplies all part wear |
+| `parts` | Ids from `parts.json` a new one ships with, one per slot |
 | `max_nozzle_temp_c` | Must be at least the filament's `nozzle_temp_c` |
 | `enclosed`, `direct_drive`, `auto_bed_levelling` | Built-in capabilities |
 | `supported_filaments` | Filament ids it can print out of the box |
@@ -122,13 +124,32 @@ The chance that a print fails at all is `(1 - printer reliability) x preset fail
 | `happens` | `start` (first 5% of the print), `mid` (anywhere from 10% to 90%) or `end` (found on completion) |
 | `outcome` | `scrap`: the print stops and is binned. `stop`: the same, but the fix is to the printer rather than the bed. `degraded`: the print finishes as a flawed item |
 | `weight` | How often it is the failure picked, relative to the others |
-| `causes` | Condition flag to multiplier on `weight`. Flags so far: `draft_preset`, `no_auto_level`, `large_part`, `tall_thin_part`, `bedslinger_tall_part` (`PrintRisk.conditions`) |
+| `causes` | Condition flag to multiplier on `weight`. Flags so far: `draft_preset`, `no_auto_level`, `large_part`, `tall_thin_part`, `bedslinger_tall_part` (`PrintRisk.conditions`), and `worn_<slot>` for each part below 30% health (`PrinterWear.flags`) |
+| `damages` | Part slot to health (0 to 1) the failure knocks off that part |
 | `clear_minutes` | Scrap and stop only. Character time to put the printer right |
 | `visual` | Scrap and stop only. What is left on the plate: `noodles`, `toppled`, `spaghetti` or `stalled` |
 | `quality_loss` | Degraded only. Taken off the item's quality |
 | `fix`, `player_text` | The action offered on the printer, and the message when it happens |
 
 A ruined print only uses the filament and electricity up to the point it failed.
+
+A failure with `weight` 0 is never rolled. `breakdown` is the one so far: the printer sets it off when a part runs out mid-print, filling `{part}` and `{text}` from the part's `slot_name` and `break_text`.
+
+## parts.json
+
+Wear parts. Imported from `docs/design_data/parts.json`: one part for each slot in the GDD's list (nozzle, hotend, build plate, belts, PTFE tube, fans). The other Garage parts, alternative parts for a slot and upgrades are not in yet. Prices are the design's base prices; brand multipliers and own-brand parts are not applied.
+
+| Field | Meaning |
+| --- | --- |
+| `slot`, `slot_name` | Where it fits (a printer has one part per slot) and what to call that in text |
+| `lifespan_print_hours` | Print hours from new to broken on a 1.0 wear printer at Standard, before the game's `wear_rate` |
+| `abrasive_wear_multiplier` | Applied to wear when printing a filament with `abrasive` set |
+| `max_extra_fail` | Added to the chance of every print failing when the part is at 0%. Nothing is added above 30% health, rising evenly below it |
+| `replace_minutes` | Character time to fit a spare |
+| `price_pence`, `pack_size` | Shop price of a pack, and how many spares are in it |
+| `break_text` | The message when it gives out mid-print |
+
+Health lost per print hour is `printer wear_multiplier x game wear_rate x preset wear_multiplier / lifespan_print_hours` (`PrinterWear.wear_per_hour`). At nothing the part is broken and the printer can't print until a spare is fitted.
 
 ## game.json
 
@@ -140,11 +161,12 @@ Starting conditions and global rates. Not a table of rows.
 | `electricity_pence_per_kwh` | Charged when a print finishes, from the printer's `power_watts` and the print time |
 | `courier_minute_of_day` | When parcels in the outbox are collected and paid |
 | `default_preset` | The preset the print dialog opens on |
+| `wear_rate` | Multiplies all part wear. Above 1 because the design's lifespans are in real printer hours, which would take many sessions to matter. A balancing knob |
 | `bank_name`, `business_name` | Names shown on the PC |
-| `supplier` | The filament and hardware shop names, lead times in game minutes, and the packaging pack size and price |
+| `supplier` | The filament and hardware shop names, lead times in game minutes (filament, printers, spare parts), and the packaging pack size and price |
 
 One game day is 1440 game minutes and lasts 10 real minutes at 1x (`GameClock.MINUTES_PER_SECOND`).
 
 ## Not drafted yet
 
-Parts and upgrades, shipping, contracts, staff and events. Each gets a table when its phase starts.
+Upgrades, shipping, contracts, staff and events. Each gets a table when its phase starts.

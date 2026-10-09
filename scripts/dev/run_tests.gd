@@ -8,6 +8,7 @@ var _failures := 0
 func _init() -> void:
 	_test_print_job()
 	_test_print_risk()
+	_test_printer_wear()
 	_test_clock()
 	_test_bank()
 	_test_money()
@@ -96,12 +97,66 @@ func _test_print_risk() -> void:
 		if fate["at"] < span[0] or fate["at"] > span[1]:
 			_check(false, "%s struck at %.2f, outside when it happens" % [failure["id"], fate["at"]])
 			break
-	_check(counts.size() == data.failures.size(), "every failure can happen")
+	var rollable := data.failures.values().filter(func(row: Dictionary) -> bool: return float(row["weight"]) > 0.0).size()
+	_check(counts.size() == rollable and not counts.has("breakdown"), "every failure with a weight can happen, and only those")
 	_check(counts["first_layer"] > counts["tangled_spool"] * 2, "heavier failures happen more often")
 	var failed := 0
 	for attempt in 4000:
 		failed += 0 if PrintRisk.roll(0.25, data.failures, [], pla, rng).is_empty() else 1
 	_check(absi(failed - 1000) < 120, "prints fail about as often as their chance says (got %d of 4000)" % failed)
+
+
+func _test_printer_wear() -> void:
+	var data := GameData.load_all()
+	var plodder: Dictionary = data.printers["plodder_mini"]
+	var pla: Dictionary = data.filaments["pla"]
+	var standard: Dictionary = data.presets["standard"]
+	var wear := PrinterWear.new(data.parts, plodder, 1.0)
+	_check(wear.slots().size() == plodder["parts"].size() and wear.slots().has(&"nozzle"), "a new printer has a part in every slot it ships with")
+	_check(is_equal_approx(wear.health[&"nozzle"], 1.0) and is_zero_approx(wear.extra_fail_chance()), "new parts are at full health and add no risk")
+	_check(wear.flags().is_empty() and wear.broken().is_empty(), "new parts are neither worn nor broken")
+
+	var life := float(data.parts["brass_nozzle_0_4mm"]["lifespan_print_hours"]) / float(plodder["wear_multiplier"])
+	wear.apply(life * 0.5, standard, pla)
+	_check(is_equal_approx(wear.health[&"nozzle"], 0.5), "half a part's life in print hours takes half its health")
+	_check(wear.health[&"belts"] > wear.health[&"nozzle"], "longer lived parts wear more slowly")
+	_check(is_zero_approx(wear.extra_fail_chance()), "a part above 30% adds no risk")
+	_check(wear.worst() == &"nozzle", "the nozzle is the first part to go")
+
+	wear.apply(life * 0.35, standard, pla)
+	_check(wear.is_worn(&"nozzle") and wear.flags().has(&"worn_nozzle"), "below 30% a part is worn and raises its flag")
+	var half_way := float(data.parts["brass_nozzle_0_4mm"]["max_extra_fail"]) * 0.5
+	_check(is_equal_approx(wear.extra_fail_chance(), half_way), "at 15% health a part adds half its extra risk")
+	var base := PrintRisk.fail_chance(plodder, standard, pla, data.products["cable_clips"])
+	_check(PrintRisk.fail_chance(plodder, standard, pla, data.products["cable_clips"], wear.extra_fail_chance()) > base * 1.5, "a worn nozzle clearly raises the chance of failure")
+	var clog: Dictionary = data.failures["clog"]
+	_check(PrintRisk.weight_of(clog, wear.flags(), pla) > float(clog["weight"]) * 2.0, "a worn nozzle makes clogs the likely failure")
+
+	var breaks := wear.breaks_during(life * 0.3, standard, pla)
+	_check(breaks.get("slot") == &"nozzle" and is_equal_approx(breaks["at"], 0.5), "a print longer than the part has left breaks it part way")
+	_check(wear.breaks_during(life * 0.1, standard, pla).is_empty(), "a print the part can survive breaks nothing")
+	wear.apply(life * 0.3 * breaks["at"], standard, pla)
+	_check(wear.is_broken(&"nozzle") and wear.broken() == ([&"nozzle"] as Array[StringName]), "running a part to nothing breaks it")
+
+	wear.replace(&"nozzle", &"brass_nozzle_0_4mm")
+	_check(is_equal_approx(wear.health[&"nozzle"], 1.0) and wear.broken().is_empty(), "fitting a spare restores the slot")
+	wear.damage(&"nozzle", 0.2)
+	_check(is_equal_approx(wear.health[&"nozzle"], 0.8), "a failure can take health straight off a part")
+	wear.damage(&"nozzle", 5.0)
+	_check(is_zero_approx(wear.health[&"nozzle"]), "health never goes below nothing")
+
+	var fast := PrinterWear.new(data.parts, plodder, 4.0)
+	fast.apply(life * 0.125, standard, pla)
+	_check(is_equal_approx(fast.health[&"nozzle"], 0.5), "the game's wear rate scales all wear")
+	var draft_wear := PrinterWear.new(data.parts, plodder, 1.0)
+	draft_wear.apply(10.0, data.presets["draft"], pla)
+	var strong_wear := PrinterWear.new(data.parts, plodder, 1.0)
+	strong_wear.apply(10.0, data.presets["strong"], pla)
+	_check(draft_wear.health[&"nozzle"] < strong_wear.health[&"nozzle"], "Draft wears parts faster than Strong, hour for hour")
+	var gritty := pla.duplicate()
+	gritty["abrasive"] = true
+	_check(is_equal_approx(wear.wear_per_hour(&"nozzle", standard, gritty), wear.wear_per_hour(&"nozzle", standard, pla) * 10.0), "abrasive filament eats a brass nozzle ten times faster")
+	_check(is_equal_approx(wear.wear_per_hour(&"belts", standard, gritty), wear.wear_per_hour(&"belts", standard, pla)), "abrasive filament does not wear the belts any faster")
 
 
 func _test_clock() -> void:
@@ -214,3 +269,10 @@ func _test_supplier() -> void:
 	var second := supplier.collect_due(100.0 + 180.0)
 	_check(second.size() == 1 and second[0].printer == &"plodder_mini", "the printer arrives after its longer lead time")
 	_check(supplier.pending.is_empty(), "collected deliveries are no longer pending")
+
+	var spares := {"parts": {"brass_nozzle_0_4mm": 2, "ptfe_tube": 1}}
+	_check(supplier.price_of(spares) == 2 * 699 + 449, "spare parts are priced by the pack")
+	var parts_box := supplier.place(spares, 0.0)
+	_check(parts_box.size() == 1 and parts_box[0].parts[&"brass_nozzle_0_4mm"] == 6 and parts_box[0].parts[&"ptfe_tube"] == 1, "a delivery holds every part in each pack")
+	_check(parts_box[0].describe() == "7 spare parts", "a parts delivery says how many parts it holds")
+	_check(supplier.collect_due(120.0).size() == 1, "spare parts arrive after the parts lead time")

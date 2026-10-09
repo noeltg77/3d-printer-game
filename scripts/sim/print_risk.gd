@@ -79,7 +79,11 @@ static func pick(failures: Dictionary, flags: Array[StringName], filament: Dicti
 	var roll := rng.randf() * total
 	var last := {}
 	for failure: Dictionary in failures.values():
-		roll -= weight_of(failure, flags, filament)
+		var weight := weight_of(failure, flags, filament)
+		# Weightless failures are never rolled: something else sets them off.
+		if weight <= 0.0:
+			continue
+		roll -= weight
 		last = failure
 		if roll < 0.0:
 			break

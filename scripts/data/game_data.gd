@@ -10,6 +10,7 @@ const TABLES := {
 	"marketplaces": "res://data/marketplaces.json",
 	"presets": "res://data/presets.json",
 	"failures": "res://data/failures.json",
+	"parts": "res://data/parts.json",
 }
 const FAILURE_HAPPENS: PackedStringArray = ["start", "mid", "end"]
 const FAILURE_OUTCOMES: PackedStringArray = ["scrap", "stop", "degraded"]
@@ -22,6 +23,8 @@ var marketplaces: Dictionary = {}
 ## Print presets, in the order they are offered.
 var presets: Dictionary = {}
 var failures: Dictionary = {}
+## Wear parts, by id.
+var parts: Dictionary = {}
 ## What each durability score (1 to 5) means, keyed by the score as text.
 var durability_labels: Dictionary = {}
 ## Starting conditions and global rates (data/game.json).
@@ -64,7 +67,18 @@ func _load_table(table: String, path: String) -> Dictionary:
 
 
 func _check_references() -> void:
+	var slots := {}
+	for part: Dictionary in parts.values():
+		slots[part["slot"]] = true
 	for printer: Dictionary in printers.values():
+		var fitted := {}
+		for part_id: String in printer.get("parts", []):
+			if not parts.has(part_id):
+				errors.append("printer %s: unknown part \"%s\"" % [printer["id"], part_id])
+			elif fitted.has(parts[part_id]["slot"]):
+				errors.append("printer %s: two parts in the %s slot" % [printer["id"], parts[part_id]["slot"]])
+			else:
+				fitted[parts[part_id]["slot"]] = true
 		for filament_id: String in printer.get("supported_filaments", []):
 			if not filaments.has(filament_id):
 				errors.append("printer %s: unknown filament \"%s\"" % [printer["id"], filament_id])
@@ -84,3 +98,6 @@ func _check_references() -> void:
 			errors.append("failure %s: outcome must be one of %s" % [failure["id"], ", ".join(FAILURE_OUTCOMES)])
 		elif failure["outcome"] == "degraded" and failure["happens"] == "start":
 			errors.append("failure %s: a degraded print can't happen at the start" % failure["id"])
+		for slot: String in failure.get("damages", {}):
+			if not slots.has(slot):
+				errors.append("failure %s: damages unknown part slot \"%s\"" % [failure["id"], slot])

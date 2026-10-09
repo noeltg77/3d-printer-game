@@ -1,7 +1,8 @@
 class_name DeliveryBox
 extends Interactable
 ## A supplier delivery sitting by the door until the character unpacks it:
-## spools go to the rack, mailer boxes into stock, a printer onto the bench.
+## spools go to the rack, mailer boxes into stock, spare parts onto the
+## shelving, a printer onto the bench.
 
 const SUPPLIES_MODEL := preload("res://assets/models/props/box_closed_01.glb")
 const PRINTER_MODEL := preload("res://assets/models/props/box_closed_02.glb")
@@ -31,13 +32,17 @@ func get_actions(_agent: Agent) -> Array[Action]:
 
 
 func _unpack(agent: Agent) -> void:
+	var shelf: StorageShelf = get_tree().get_first_node_in_group(&"print_storage")
+	if not shelf.can_store_parts(delivery.parts.keys()):
+		agent.say("No shelf space for the spare parts")
+		return
 	await agent.go_to(self)
 	await agent.reach(_pick_up.bind(agent))
 	if delivery.printer != &"":
 		var bench: Workbench = get_tree().get_first_node_in_group(&"workbench")
 		await agent.go_to(bench)
 		await agent.reach(func() -> void: bench.install_printer(delivery.printer))
-	else:
+	if not delivery.spools.is_empty() or delivery.packaging > 0:
 		var rack: FilamentRack = get_tree().get_first_node_in_group(&"filament_rack")
 		await agent.go_to(rack)
 		await agent.reach(func() -> void:
@@ -45,6 +50,11 @@ func _unpack(agent: Agent) -> void:
 				rack.store(Spool.create(colour))
 			Game.packaging += delivery.packaging
 			Game.changed.emit())
+	if not delivery.parts.is_empty():
+		await agent.go_to(shelf)
+		await agent.reach(func() -> void:
+			for part in delivery.parts:
+				shelf.store_parts(part, delivery.parts[part]))
 	agent.release()
 	queue_free()
 

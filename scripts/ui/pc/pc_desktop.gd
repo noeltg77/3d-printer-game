@@ -140,6 +140,11 @@ func _printer_row(number: int, printer: PrinterStation) -> Control:
 		Ui.text(status, 14, colour, 800),
 	]))
 	column.add_child(Ui.wrap(Ui.text(detail, 13, Ui.MUTED)))
+	var worst := printer.wear.worst()
+	if worst != &"" and printer.wear.is_worn(worst):
+		var broken := printer.wear.is_broken(worst)
+		column.add_child(Ui.margin(Ui.pill("%s: %s" % [printer.wear.part(worst)["slot_name"], printer.health_label(worst)],
+			Ui.RED_DARK if broken else Ui.AMBER_DARK, Ui.RED_SOFT if broken else Ui.AMBER_SOFT), 0, 6, 0, 0))
 	if printer.status == PrinterStation.Status.PRINTING:
 		var job := printer.job
 		var left := GameClock.duration_label((job.duration - job.elapsed) * GameClock.MINUTES_PER_SECOND)

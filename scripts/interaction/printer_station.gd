@@ -8,6 +8,10 @@ extends Interactable
 ## stops part way and leaves a FailedPrint on the plate, which has to be cleared
 ## before the printer can be used again; one that is only spoiled finishes as a
 ## flawed item.
+##
+## Every print wears the printer's parts (PrinterWear). Worn parts make failures
+## more likely, and one that runs out mid-print stops it: the printer then can't
+## print until the character fits a spare from the shelving.
 
 enum Status { IDLE, PRINTING, DONE, FAILED }
 
@@ -25,6 +29,8 @@ var item: PrintedItem = null
 var scrap: FailedPrint = null
 ## Preset of the print on the plate.
 var preset: StringName = &"standard"
+## The state of this printer's wear parts.
+var wear: PrinterWear
 
 ## Filament the current print was set to use.
 var _grams := 0.0
@@ -43,6 +49,7 @@ var _toolhead_rest: Vector3
 static func create(printer_id: StringName) -> PrinterStation:
 	var station := PrinterStation.new()
 	station.spec = Game.data.printers[printer_id]
+	station.wear = PrinterWear.new(Game.data.parts, station.spec, float(Game.data.settings["wear_rate"]))
 	station.display_name = station.spec["name"]
 	station.stand_offset = Vector3(0.0, 0.0, 0.72)
 	station.add_child((load(MODEL_PATH % station.spec["model"]["variant"]) as PackedScene).instantiate())
@@ -97,8 +104,8 @@ func get_actions(_agent: Agent) -> Array[Action]:
 			fix.task_name = "Sort out the %s" % display_name
 			return [Action.info("%s: %s" % [failure["name"], Game.product_name(scrap.product)]), fix]
 	if spool == null:
-		return [_load_menu()]
-	return [Action.info("Loaded: %s" % spool.describe()), _print_menu(), Action.new("Unload filament", _unload)]
+		return [_load_menu(), _parts_menu()]
+	return [Action.info("Loaded: %s" % spool.describe()), _print_menu(), Action.new("Unload filament", _unload), _parts_menu()]
 
 
 func _load_menu() -> Action:
@@ -122,6 +129,32 @@ func _print_menu() -> Action:
 	return action
 
 
+## Each part's health, with the task of swapping it for a spare.
+func _parts_menu() -> Action:
+	var shelf := _shelf()
+	var lines: Array[Action] = []
+	for slot in wear.slots():
+		var part := wear.part(slot)
+		var label := "%s: %s" % [part["slot_name"], health_label(slot)]
+		var spares := shelf.spare_count(wear.fitted[slot])
+		if spares > 0:
+			label += ". Fit a new one (%s)" % GameClock.duration_label(part["replace_minutes"])
+		else:
+			label += ". No spare on the shelf"
+		var action := Action.new(label, _replace.bind(slot), spares > 0)
+		action.task_name = "Fit a new %s to the %s" % [String(part["slot_name"]).to_lower(), display_name]
+		lines.append(action)
+	return Action.submenu("Parts", lines)
+
+
+## "84%", "24%, worn" or "worn out"
+func health_label(slot: StringName) -> String:
+	if wear.is_broken(slot):
+		return "worn out"
+	var percent := maxi(roundi(wear.health[slot] * 100.0), 1)
+	return "%d%%, worn" % percent if wear.is_worn(slot) else "%d%%" % percent
+
+
 ## The task of printing a design at a preset, as set up in the print dialog.
 func print_action(product: StringName, p_preset: StringName) -> Action:
 	return Action.new("Print %s" % Game.product_name(product), _start.bind(product, p_preset),
@@ -134,6 +167,8 @@ func print_problem(product: StringName, p_preset: StringName) -> String:
 		return "No filament loaded"
 	if status != Status.IDLE:
 		return "The printer is busy"
+	for slot in wear.broken():
+		return "The %s is worn out. Fit a new one first" % String(wear.part(slot)["slot_name"]).to_lower()
 	if not Game.data.products[product]["allowed_filaments"].has(String(spool.material)):
 		return "This design can't be printed in %s" % String(spool.material).to_upper()
 	if spool.grams < Game.print_grams(product, p_preset):
@@ -166,9 +201,13 @@ func start_print(product: StringName, p_preset: StringName) -> void:
 	Interactable.attach(item, _plate)
 	item.scale.y = 0.02
 	job = PrintJob.new(GameClock.to_seconds(print_minutes(product, preset)))
-	var fate := Game.roll_print(spec, preset, spool.material, product)
+	var fate := Game.roll_print(spec, preset, spool.material, product, wear)
 	if not fate.is_empty():
 		job.fail(fate["failure"], fate["at"])
+	# A part that runs out before anything else goes wrong stops the print there.
+	var breakdown := wear.breaks_during(print_minutes(product, preset) / 60.0, Game.data.presets[preset], Game.data.filaments[spool.material])
+	if not breakdown.is_empty() and breakdown["at"] < job.stop_at:
+		job.fail(_breakdown(breakdown["slot"]), breakdown["at"])
 	status = Status.PRINTING
 
 
@@ -190,9 +229,23 @@ func take_scrap() -> FailedPrint:
 	return taken
 
 
+## The failure for a part giving out: the `breakdown` row, worded for the part.
+func _breakdown(slot: StringName) -> Dictionary:
+	var part := wear.part(slot)
+	var failure: Dictionary = Game.data.failures["breakdown"].duplicate()
+	failure["name"] = String(failure["name"]).format({"part": part["slot_name"]})
+	failure["player_text"] = String(failure["player_text"]).format({"text": part["break_text"]})
+	failure["damages"] = {String(slot): 1.0}
+	return failure
+
+
 func _end_print() -> void:
 	var title := Game.product_name(item.product)
-	Game.charge_electricity(spec["power_watts"], print_minutes(item.product, preset) * job.progress, title)
+	var minutes_run := print_minutes(item.product, preset) * job.progress
+	Game.charge_electricity(spec["power_watts"], minutes_run, title)
+	wear.apply(minutes_run / 60.0, Game.data.presets[preset], Game.data.filaments[spool.material])
+	for slot: String in job.failure.get("damages", {}):
+		wear.damage(StringName(slot), float(job.failure["damages"][slot]))
 	if job.ruined:
 		# Filament the print never got to is still on the spool.
 		spool.grams += _grams * (1.0 - job.progress)
@@ -279,6 +332,25 @@ func _clear(agent: Agent) -> void:
 	await agent.walk_to(get_tree().get_first_node_in_group(&"bin").global_position)
 	await agent.reach(func() -> void: agent.release().queue_free())
 	agent.say("Binned the failed print")
+
+
+func _replace(agent: Agent, slot: StringName) -> void:
+	var shelf := _shelf()
+	if status == Status.PRINTING or shelf.spare_count(wear.fitted[slot]) == 0:
+		agent.say("Can't change the %s right now" % String(wear.part(slot)["slot_name"]).to_lower())
+		return
+	await agent.go_to(shelf)
+	await agent.reach(func() -> void: agent.carry(shelf.take_spare(wear.fitted[slot])))
+	if agent.carried == null:
+		return
+	await agent.go_to(self)
+	await agent.work(float(wear.part(slot)["replace_minutes"]))
+	await agent.reach(func() -> void:
+		var spare := agent.release() as SparePart
+		wear.replace(slot, spare.part)
+		spare.queue_free()
+		Game.changed.emit())
+	agent.say("Fitted a new %s" % String(wear.part(slot)["slot_name"]).to_lower())
 
 
 func _rack() -> FilamentRack:

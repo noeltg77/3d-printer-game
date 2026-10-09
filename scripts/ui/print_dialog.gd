@@ -140,7 +140,7 @@ func _preset_card(preset_id: StringName) -> Control:
 ## The risk meter: chance of failure as a bar, strength and finish as dots.
 func _meter() -> Control:
 	var preset: Dictionary = Game.data.presets[_preset]
-	var chance := Game.fail_chance(_printer.spec, _preset, _printer.spool.material, _product)
+	var chance := Game.fail_chance(_printer.spec, _preset, _printer.spool.material, _product, _printer.wear)
 	var band := PrintRisk.band(chance)
 	var colour: Color = BAND_COLOURS[band]
 	var durability := int(preset["durability"])
@@ -160,6 +160,12 @@ func _meter() -> Control:
 			Ui.pips(int(preset["quality"]), SCALE, Ui.GREEN),
 		], 12),
 	], 12)
+	var worn: PackedStringArray = []
+	for slot in _printer.wear.slots():
+		if _printer.wear.is_worn(slot):
+			worn.append(String(_printer.wear.part(slot)["slot_name"]).to_lower())
+	if not worn.is_empty():
+		rows.add_child(Ui.text("Worn parts are adding to the risk: %s." % ", ".join(worn), 13, Ui.RED_DARK, 800))
 	return Ui.panel(rows, Ui.box(Ui.INSET, 16, 16, 14))
 
 

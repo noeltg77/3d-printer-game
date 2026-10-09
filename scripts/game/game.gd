@@ -110,20 +110,24 @@ func print_grams(product: StringName, preset: StringName) -> float:
 	return float(data.products[product]["filament_grams"]) * float(data.presets[preset]["filament_multiplier"])
 
 
-## Chance (0 to 1) that printing a design this way goes wrong.
-func fail_chance(printer: Dictionary, preset: StringName, filament: StringName, product: StringName) -> float:
-	return PrintRisk.fail_chance(printer, data.presets[preset], data.filaments[filament], data.products[product])
+## Chance (0 to 1) that printing a design this way goes wrong. `wear` is the
+## state of the printer's parts, if it has any to count.
+func fail_chance(printer: Dictionary, preset: StringName, filament: StringName, product: StringName, wear: PrinterWear = null) -> float:
+	return PrintRisk.fail_chance(printer, data.presets[preset], data.filaments[filament], data.products[product],
+		wear.extra_fail_chance() if wear != null else 0.0)
 
 
 ## Decides the fate of a print as it starts. Returns {} if it will go well, or
 ## { failure, at } with the failure's row and the progress at which it strikes.
-func roll_print(printer: Dictionary, preset: StringName, filament: StringName, product: StringName) -> Dictionary:
+func roll_print(printer: Dictionary, preset: StringName, filament: StringName, product: StringName, wear: PrinterWear = null) -> Dictionary:
 	if data.failures.has(force_failure):
 		var forced: Dictionary = data.failures[force_failure]
 		force_failure = ""
 		return {"failure": forced, "at": PrintRisk.strike_point(forced, rng)}
 	var flags := PrintRisk.conditions(printer, data.presets[preset], data.products[product])
-	return PrintRisk.roll(fail_chance(printer, preset, filament, product), data.failures, flags, data.filaments[filament], rng)
+	if wear != null:
+		flags.append_array(wear.flags())
+	return PrintRisk.roll(fail_chance(printer, preset, filament, product, wear), data.failures, flags, data.filaments[filament], rng)
 
 
 ## Buys a design licence. False if it can't be afforded or is already owned.
@@ -152,6 +156,14 @@ func supplier_problem(basket: Dictionary) -> String:
 	var rack: FilamentRack = get_tree().get_first_node_in_group(&"filament_rack")
 	if rack != null and Supplier.count_spools(basket) + incoming_spools > rack.free_slots() - _unpacked(&"spools"):
 		return "Not enough room on the filament rack"
+	var shelf: StorageShelf = get_tree().get_first_node_in_group(&"print_storage")
+	var part_ids: Array = basket.get("parts", {}).keys()
+	for delivery in supplier.pending:
+		part_ids.append_array(delivery.parts.keys())
+	for box: DeliveryBox in get_tree().get_nodes_in_group(&"delivery_box"):
+		part_ids.append_array(box.delivery.parts.keys())
+	if shelf != null and not basket.get("parts", {}).is_empty() and not shelf.can_store_parts(part_ids):
+		return "No shelf space for more spare parts"
 	var bench: Workbench = get_tree().get_first_node_in_group(&"workbench")
 	if bench != null and Supplier.count_printers(basket) + incoming_printers > bench.free_spots() - _unpacked(&"printers"):
 		return "No bench space for another printer"
