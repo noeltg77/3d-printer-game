@@ -18,7 +18,9 @@ const APPS: Array[Dictionary] = [
 	{"id": "printbay", "name": "Printbay", "colour": "3A6FD8", "dark": "26509F", "url": "printbay.co/printers",
 		"script": preload("res://scripts/ui/pc/app_printbay.gd")},
 	{"id": "craftsy", "name": "Craftsy", "colour": "C9415F", "dark": "962E46", "url": "craftsy.com/your-shop",
-		"script": preload("res://scripts/ui/pc/app_craftsy.gd")},
+		"market": "craftsy", "script": preload("res://scripts/ui/pc/app_craftsy.gd")},
+	{"id": "biddle", "name": "Biddle", "colour": "2F7FD1", "dark": "1F5A99", "url": "biddle.co.uk/seller-hub",
+		"market": "biddle", "script": preload("res://scripts/ui/pc/app_craftsy.gd")},
 	{"id": "design_lab", "name": "Design Lab", "colour": "7A5BC4", "dark": "573F92", "url": "designlab.app/catalogue",
 		"script": preload("res://scripts/ui/pc/app_design_lab.gd")},
 	{"id": "pennybank", "name": "PennyBank", "colour": "2F8F6B", "dark": "1F6A4E", "url": "pennybank.com/account",
@@ -113,10 +115,10 @@ static func app_name(entry: Dictionary) -> String:
 			return settings["supplier"]["filament_shop"]
 		"printbay":
 			return settings["supplier"]["hardware_shop"]
-		"craftsy":
-			return Game.market.config["name"]
 		"pennybank":
 			return settings["bank_name"]
+	if entry.has("market"):
+		return Game.markets[StringName(entry["market"])].config["name"]
 	return entry["name"]
 
 
@@ -145,6 +147,8 @@ func _show(id: String) -> void:
 		_view.size_flags_vertical = Control.SIZE_EXPAND_FILL
 		content = Ui.vbox([_build_chrome(id), _view], 0)
 	_view.set(&"screen", self)
+	if id != "":
+		_view.set(&"app", app(id))
 	content.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_body.add_child(content)
 	_view.refresh()

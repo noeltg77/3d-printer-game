@@ -13,6 +13,7 @@ func _init() -> void:
 	_test_filaments()
 	_test_moisture()
 	_test_design_studio()
+	_test_markets_and_trends()
 	_test_clock()
 	_test_bank()
 	_test_money()
@@ -366,6 +367,56 @@ func _test_design_studio() -> void:
 	market.own_appeal[dragon] = 1.2
 	_check(market.royalty_for(dragon, 1500) == 0, "an own design owes no royalty")
 	_check(is_equal_approx(market.orders_per_day(dragon, 1500), bought * 1.2), "and its appeal scales the orders it brings")
+
+
+func _test_markets_and_trends() -> void:
+	var data := GameData.load_all()
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 6
+	var craftsy := Marketplace.new(data.marketplaces["craftsy"], data.products)
+	var biddle := Marketplace.new(data.marketplaces["biddle"], data.products)
+	var stand := &"phone_stand"
+	var usual := int(data.products[stand]["base_price_pence"])
+	_check(craftsy.typical_price(stand) == usual and biddle.typical_price(stand) < usual, "bargain hunters expect to pay less than the usual price")
+	_check(biddle.listing(stand)["price"] == biddle.typical_price(stand), "a new listing starts at what that marketplace's buyers expect")
+	_check(biddle.orders_per_day(stand, biddle.typical_price(stand)) > craftsy.orders_per_day(stand, usual) * 1.3, "a bigger audience brings more orders at the expected price")
+	_check(biddle.orders_per_day(stand, usual) < craftsy.orders_per_day(stand, usual), "but the usual price is too dear for them")
+	_check(biddle.fee_for(1000) > craftsy.fee_for(1000), "and it takes a bigger cut")
+	biddle.set_listing(stand, true, biddle.typical_price(stand))
+	biddle.config = biddle.config.duplicate()
+	biddle.config["max_open_orders"] = 1000
+	for step in 3000:
+		biddle.tick(step, step + 1.0, rng)
+	var order := biddle.orders[0]
+	_check(order.market == &"biddle" and biddle.order_label(order) == "#BD-1001", "an order knows which marketplace it came from")
+	var again := Marketplace.new(biddle.config, data.products)
+	again.restore(_through_file(biddle.save()))
+	_check(again.orders[0].market == &"biddle", "and still does after a save")
+
+	var trends := Trends.new(data.products, data.settings["trends"])
+	_check(trends.multipliers().is_empty() and is_equal_approx(trends.multiplier("kitchen"), 1.0), "before anything trends, demand is normal")
+	_check(trends.candidates().has("kitchen") and not trends.candidates().has("easter"), "only categories with a few designs can trend")
+	_check(not trends.candidates().has("christmas") and not trends.candidates().has("halloween"), "and seasonal ones are left out")
+	_check(trends.tick(0.0, rng) and trends.hot != "" and trends.cool != "" and trends.hot != trends.cool, "the first tick picks something in demand and something gone quiet")
+	_check(trends.multiplier(trends.hot) > 1.0 and trends.multiplier(trends.cool) < 1.0, "which sell faster and slower")
+	_check(trends.until >= 3.0 * GameClock.DAY and trends.until <= 5.0 * GameClock.DAY, "for a few days")
+	_check(not trends.tick(trends.until - 1.0, rng), "nothing changes until the time is up")
+	var was_hot := trends.hot
+	var was_cool := trends.cool
+	_check(trends.tick(trends.until, rng) and trends.hot != was_hot and trends.cool != was_cool and trends.hot != was_cool, "then fashion moves on to something new")
+	var hot_product: StringName = &""
+	for product: String in data.products:
+		if data.products[product]["category"] == trends.hot:
+			hot_product = StringName(product)
+			break
+	var price := craftsy.typical_price(hot_product)
+	var normal := craftsy.orders_per_day(hot_product, price)
+	craftsy.trend = trends.multipliers()
+	_check(is_equal_approx(craftsy.orders_per_day(hot_product, price), normal * float(data.settings["trends"]["hot_multiplier"])), "a design in a trending category brings more orders")
+	var later := Trends.new(data.products, data.settings["trends"])
+	later.restore(_through_file(trends.save()))
+	_check(later.hot == trends.hot and later.cool == trends.cool and is_equal_approx(later.until, trends.until), "trends come back from a save")
+	_check(trends.category_name("home_organisation") == "Home organisation", "a category has a name for the player")
 
 
 func _test_clock() -> void:

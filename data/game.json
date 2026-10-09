@@ -20,6 +20,13 @@
 	"default_preset": "standard",
 	"tier_names": ["Garage", "Small unit", "Workshop", "Factory"],
 	"wear_rate": 4.0,
+	"trends": {
+		"days": [3, 5],
+		"hot_multiplier": 1.8,
+		"cool_multiplier": 0.6,
+		"min_designs": 4,
+		"seasonal": ["christmas", "halloween", "easter", "valentines_day", "mothers_day", "bonfire_night", "back_to_school"]
+	},
 	"design": {
 		"unlock_tier": 2,
 		"base_minutes": 180,

@@ -1,11 +1,12 @@
 extends VBoxContainer
-## PC app: the marketplace seller dashboard. Headline numbers along the top,
+## PC app: a marketplace's seller dashboard. One script serves every marketplace:
+## the entry in PcScreen.APPS says which (`market`) and gives its colours. Headline numbers along the top,
 ## orders to pack and the listings table on the left, reviews and recent sales
 ## on the right.
 ## "Pack & ship" queues the packing job for the character.
 
-const ROSE := Color("C9415F")
-const ROSE_DARK := Color("962E46")
+const HOT_BG := Color("E3F3EA")
+const COOL_BG := Color("F6E6E2")
 const SHADOW := Color("F0DCD6")
 const ROW := Color("FCF5F3")
 const LABEL := Color("6E5E62")
@@ -19,22 +20,27 @@ const STAR := Color("E0A526")
 const COLUMNS: Array[float] = [2.2, 1.5, 1.0, 1.0, 0.7, 1.9]
 
 var screen: PcScreen
+## This app's entry in PcScreen.APPS.
+var app: Dictionary = {}
 
 
 func refresh() -> void:
 	Ui.clear(self)
 	add_theme_constant_override(&"separation", 0)
-	var market := Game.market
+	var market := _market()
+	if not Game.unlocked(market.config):
+		add_child(_locked_page())
+		return
 	var header := Ui.hbox([
-		Ui.title(String(market.config["name"]).to_lower(), 32, ROSE, 700),
+		Ui.title(String(market.config["name"]).to_lower(), 32, _colour(), 700),
 		Ui.title("%s · Seller dashboard" % Game.data.settings["business_name"], 22),
 		null,
-		Ui.button("+ More designs", func() -> void: screen.show_app("design_lab"), ROSE, Ui.WHITE, 46, 14, ROSE_DARK, 15),
+		Ui.button("+ More designs", func() -> void: screen.show_app("design_lab"), _colour(), Ui.WHITE, 46, 14, _dark(), 15),
 	], 16)
 
 	var left := Ui.vbox([_orders_card(), _listings_card()], 20)
 	left.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var right := Ui.vbox([_reviews_card(), _sales_card()], 20)
+	var right := Ui.vbox([_trends_card(), _reviews_card(), _sales_card()], 20)
 	right.custom_minimum_size.x = 400
 	var side := Ui.scroll(right)
 	side.size_flags_horizontal = Control.SIZE_SHRINK_END
@@ -47,7 +53,7 @@ func refresh() -> void:
 
 
 func _stats() -> Control:
-	var market := Game.market
+	var market := _market()
 	var today_start := float(Game.clock.day - 1) * GameClock.DAY
 	var sold_today := 0
 	var takings := 0
@@ -78,7 +84,7 @@ func _stats() -> Control:
 
 ## The seller rating, and what it is doing to how many orders come in.
 func _rating_stat() -> Control:
-	var market := Game.market
+	var market := _market()
 	if market.reviews.is_empty():
 		return _stat("Seller rating", "New shop", "No reviews yet", LABEL)
 	var effect := market.rating_multiplier()
@@ -108,7 +114,7 @@ func _orders_card() -> Control:
 	var queued := agent.get_queued_labels()
 	# Stock is shared out oldest order first, so one item only makes one order ready.
 	var unclaimed: Dictionary[StringName, int] = {}
-	for order in Game.market.active_orders():
+	for order in _market().active_orders():
 		if not unclaimed.has(order.product):
 			unclaimed[order.product] = Game.stock_of(order.product)
 		var status := "Packed"
@@ -124,7 +130,7 @@ func _orders_card() -> Control:
 				action.disabled = true
 			elif in_stock and bench.pack_problem(order) == "":
 				pill = Ui.pill("Ready to pack", Ui.AMBER_DARK, Ui.AMBER_SOFT)
-				action = Ui.button("Pack & ship", _pack.bind(order), ROSE, Ui.WHITE)
+				action = Ui.button("Pack & ship", _pack.bind(order), _colour(), Ui.WHITE)
 			else:
 				var reason := "Needs printing" if not in_stock else "No mailer boxes"
 				pill = Ui.pill(reason, Ui.RED_DARK, Ui.RED_SOFT)
@@ -139,7 +145,7 @@ func _orders_card() -> Control:
 		], 0)
 		words.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		rows.add_child(Ui.panel(Ui.hbox([
-			Ui.width(Ui.text("#CR-%d" % (1000 + order.id), 14, Ui.INK, 800), 96), words, pill, action,
+			Ui.width(Ui.text(_market().order_label(order), 14, Ui.INK, 800), 96), words, pill, action,
 		], 16), Ui.box(ROW, 14, 14, 10)))
 	if rows.get_child_count() == 0:
 		rows.add_child(Ui.text("No orders waiting. Listed designs bring them in.", 14, LABEL))
@@ -158,11 +164,11 @@ func _listings_card() -> Control:
 
 
 func _listing_row(product: StringName) -> Control:
-	var market := Game.market
+	var market := _market()
 	var entry := market.listing(product)
 	var price: int = entry["price"]
 	var listed: bool = entry["listed"]
-	var profit := Game.unit_profit(product, price)
+	var profit := Game.unit_profit(product, price, market)
 	var cheaper := Ui.button("-", _update.bind(product, listed, price - PRICE_STEP), Ui.WHITE, Ui.INK, 30, 10)
 	cheaper.disabled = price <= PRICE_STEP
 	var toggle := Ui.button("Listed" if listed else "List it", _update.bind(product, not listed, price),
@@ -195,12 +201,12 @@ func _table_row(cells: Array) -> Control:
 
 func _sales_card() -> Control:
 	var rows := Ui.vbox([], 10)
-	var shipped := Game.market.sold_orders()
+	var shipped := _market().sold_orders()
 	shipped.reverse()
 	for order: Marketplace.Order in shipped.slice(0, RECENT_SALES):
 		var when := GameClock.new()
 		when.minutes = order.shipped_at
-		var net := Game.unit_profit(order.product, order.price)
+		var net := Game.unit_profit(order.product, order.price, _market())
 		var refunded := order.status == Marketplace.Status.REFUNDED
 		var note := "Day %d · about %s profit" % [when.day, Money.format(net)]
 		if refunded:
@@ -215,7 +221,7 @@ func _sales_card() -> Control:
 	if shipped.is_empty():
 		rows.add_child(Ui.panel(Ui.wrap(Ui.text("No sales yet. You are paid when the courier collects a packed order.", 14, LABEL)), Ui.box(ROW, 16, 14, 14)))
 	var tip := "Tip: price below the typical price for more orders, or above it for more profit on each one. Fees are %.1f%% + %s a sale." % [
-		float(Game.market.config["fee_pct"]) * 100.0, Money.format(int(Game.market.config["fee_fixed_pence"]))]
+		float(_market().config["fee_pct"]) * 100.0, Money.format(int(_market().config["fee_fixed_pence"]))]
 	rows.add_child(Ui.panel(Ui.wrap(Ui.text(tip, 13, Ui.GREEN_DARK, 800)), Ui.box(TIP_BG, 16, 14, 14)))
 	return _section("Recent sales", rows)
 
@@ -223,7 +229,7 @@ func _sales_card() -> Control:
 ## The latest reviews, newest first.
 func _reviews_card() -> Control:
 	var rows := Ui.vbox([], 10)
-	var latest := Game.market.reviews.duplicate()
+	var latest := _market().reviews.duplicate()
 	latest.reverse()
 	for review: Dictionary in latest.slice(0, RECENT_REVIEWS):
 		var stars := int(review["stars"])
@@ -251,5 +257,53 @@ func _pack(order: Marketplace.Order) -> void:
 
 
 func _update(product: StringName, listed: bool, price: int) -> void:
-	Game.market.set_listing(product, listed, price)
+	_market().set_listing(product, listed, price)
 	Game.changed.emit()
+
+
+## What buyers are after this week, and what has gone quiet.
+func _trends_card() -> Control:
+	var trends := Game.trends
+	if trends.hot == "":
+		return _section("In demand", Ui.text("Nothing in particular yet.", 14, LABEL))
+	var days := maxi(ceili((trends.until - Game.clock.minutes) / GameClock.DAY), 1)
+	var rows := Ui.vbox([
+		Ui.panel(Ui.vbox([
+			Ui.text("Selling fast: %s" % trends.category_name(trends.hot), 14, Ui.GREEN_DARK, 800),
+			Ui.text("About %d%% more orders" % roundi((trends.multiplier(trends.hot) - 1.0) * 100.0), 13, LABEL),
+		], 0), Ui.box(HOT_BG, 16, 14, 10)),
+		Ui.panel(Ui.vbox([
+			Ui.text("Gone quiet: %s" % trends.category_name(trends.cool), 14, Ui.RED_DARK, 800),
+			Ui.text("About %d%% fewer orders" % roundi((1.0 - trends.multiplier(trends.cool)) * 100.0), 13, LABEL),
+		], 0), Ui.box(COOL_BG, 16, 14, 10)),
+		Ui.text("Fashions move on in about %d day%s." % [days, "" if days == 1 else "s"], 13, LABEL),
+	], 10)
+	return _section("In demand", rows)
+
+
+## Shown instead of the dashboard until the business is big enough to sell here.
+func _locked_page() -> Control:
+	var market := _market()
+	var card := Ui.card(Ui.vbox([
+		Ui.title(String(market.config["name"]).to_lower(), 32, _colour(), 700),
+		Ui.wrap(Ui.text(market.config["description"], 15, Ui.INK)),
+		Ui.wrap(Ui.text("%s only signs up sellers with proper premises. Move to a bigger space and you can open a shop here." % market.config["name"], 14, LABEL, 800)),
+	], 12), 22, 28, SHADOW)
+	card.custom_minimum_size.x = 620
+	card.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	card.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	var page := Ui.margin(card, 40, 32, 40, 24)
+	page.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	return page
+
+
+func _market() -> Marketplace:
+	return Game.markets[StringName(app.get("market", "craftsy"))]
+
+
+func _colour() -> Color:
+	return Color.html(app.get("colour", "C9415F"))
+
+
+func _dark() -> Color:
+	return Color.html(app.get("dark", "962E46"))

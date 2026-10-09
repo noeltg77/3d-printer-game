@@ -93,6 +93,9 @@ func set_hover(text: String) -> void:
 
 
 func _refresh() -> void:
+	# The scene may be on its way out (a move to other premises) while signals still arrive.
+	if not is_inside_tree():
+		return
 	if _agent.is_busy() and _agent.current_label != "":
 		_task.text = "Doing: %s" % _agent.current_label
 	else:
@@ -102,12 +105,14 @@ func _refresh() -> void:
 	_queue.text = "Next: " + ", ".join(queued)
 	_queue.visible = not queued.is_empty()
 	_task_panel.reset_size()
-	var open := Game.market.open_orders().size()
+	var open := Game.open_orders().size()
 	_orders.text = "%d order%s to pack" % [open, "" if open == 1 else "s"]
 
 
 ## Shows a message for a few seconds. `tone` tints it: &"good", &"bad" or plain.
 func _show_toast(text: String, tone: StringName = &"") -> void:
+	if not is_inside_tree():
+		return
 	var colours: Array = TOAST_COLOURS.get(tone, TOAST_COLOURS[&""])
 	var label := Ui.text(text, 15, colours[1], 800)
 	if label.get_minimum_size().x > TOAST_WIDTH:

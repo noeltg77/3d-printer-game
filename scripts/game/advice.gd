@@ -22,6 +22,7 @@ static func todo(tree: SceneTree) -> PackedStringArray:
 static func items(tree: SceneTree) -> Array[Dictionary]:
 	var found: Array[Dictionary] = []
 	var market := Game.market
+	var open_orders := Game.open_orders()
 	var shops: Dictionary = Game.data.settings["supplier"]
 	var boxes_waiting := not tree.get_nodes_in_group(&"delivery_box").is_empty()
 	if boxes_waiting:
@@ -67,14 +68,14 @@ static func items(tree: SceneTree) -> Array[Dictionary]:
 			_add(found, "%s is nearly out" % spool.title(),
 				"A print needs enough on the spool to finish. Order another from %s on the computer." % shops["filament_shop"])
 
-	if not printers.is_empty() and not market.listings.values().any(func(entry: Dictionary) -> bool: return entry["listed"]):
+	if not printers.is_empty() and not Game.anything_listed():
 		_add(found, "List a design on %s" % market.config["name"],
 			"Buyers can only order what is listed. Click the computer, open %s and press List it." % market.config["name"])
 
 	var ready := 0
 	var waiting := 0
 	var unclaimed: Dictionary[StringName, int] = {}
-	for order in market.open_orders():
+	for order in open_orders:
 		if not unclaimed.has(order.product):
 			unclaimed[order.product] = Game.stock_of(order.product)
 		if unclaimed[order.product] > 0:
@@ -111,4 +112,4 @@ static func _nothing_to_sell(market: Marketplace) -> bool:
 	for product in Game.owned_designs:
 		if Game.stock_of(product) > 0:
 			return false
-	return market.open_orders().is_empty()
+	return Game.open_orders().is_empty()

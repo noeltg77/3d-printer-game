@@ -18,7 +18,7 @@ func _ready() -> void:
 func get_actions(_agent: Agent) -> Array[Action]:
 	var actions: Array[Action] = [Action.info("Mailer boxes: %d" % Game.packaging)]
 	var orders: Array[Action] = []
-	for order in Game.market.open_orders():
+	for order in Game.open_orders():
 		orders.append(pack_action(order))
 	if orders.is_empty():
 		actions.append(Action.info("Pack order (no orders waiting)"))
@@ -30,7 +30,7 @@ func get_actions(_agent: Agent) -> Array[Action]:
 ## The task of packing one order and taking the parcel to the outbox.
 ## Disabled, with the reason in its label, if it can't be done yet.
 func pack_action(order: Marketplace.Order) -> Action:
-	var label := "#%d %s, %s" % [order.id, Game.product_name(order.product), Money.format(order.price)]
+	var label := "%s %s, %s" % [Game.market_of(order).order_label(order), Game.product_name(order.product), Money.format(order.price)]
 	var problem := pack_problem(order)
 	var action := Action.new(label if problem == "" else "%s: %s" % [label, problem], _pack.bind(order), problem == "")
 	action.task_name = pack_task_name(order)
@@ -38,7 +38,7 @@ func pack_action(order: Marketplace.Order) -> Action:
 
 
 static func pack_task_name(order: Marketplace.Order) -> String:
-	return "Pack order #%d" % order.id
+	return "Pack order %s" % Game.market_of(order).order_label(order)
 
 
 func free_spots() -> int:
@@ -69,7 +69,7 @@ func pack_problem(order: Marketplace.Order) -> String:
 
 func _pack(agent: Agent, order: Marketplace.Order) -> void:
 	if order.status != Marketplace.Status.OPEN or pack_problem(order) != "":
-		agent.say("Can't pack order #%d right now" % order.id)
+		agent.say("Can't pack that order right now")
 		return
 	var shelf := _shelf()
 	await agent.go_to(shelf)
@@ -81,7 +81,7 @@ func _pack(agent: Agent, order: Marketplace.Order) -> void:
 	# The item goes in a box and comes back out as a parcel.
 	var item := agent.release() as PrintedItem
 	Game.packaging -= 1
-	Game.market.mark_packed(order, item.durability, item.quality, item.is_flawed(),
+	Game.market_of(order).mark_packed(order, item.durability, item.quality, item.is_flawed(),
 		float(Game.data.filaments[item.material]["value_multiplier"]))
 	item.queue_free()
 	Game.changed.emit()

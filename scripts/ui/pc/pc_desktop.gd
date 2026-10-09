@@ -26,7 +26,9 @@ func refresh() -> void:
 		_widgets.add_child(delivery)
 	_widgets.add_child(_sticky_note())
 	_widgets_note.refresh()
-	_set_badge("craftsy", Game.market.open_orders().size())
+	for entry in PcScreen.APPS:
+		if entry.has("market") and _badges.has(entry["id"]):
+			_set_badge(entry["id"], Game.markets[StringName(entry["market"])].open_orders().size())
 
 
 func _build() -> void:
