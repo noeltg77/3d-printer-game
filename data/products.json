@@ -16,8 +16,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 999,
-			"demand_per_day": 3.0,
-			"licence": { "type": "one_off", "fee_pence": 1199, "royalty_pct": 0.0 }
+			"demand_per_day": 2.0,
+			"licence": { "type": "one_off", "fee_pence": 1999, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "stackable_storage_bin",
@@ -34,8 +34,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 1899,
-			"demand_per_day": 2.5,
-			"licence": { "type": "one_off", "fee_pence": 2299, "royalty_pct": 0.0 }
+			"demand_per_day": 1.5,
+			"licence": { "type": "one_off", "fee_pence": 3799, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "gridfinity_baseplate_4x4",
@@ -52,8 +52,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 999,
-			"demand_per_day": 3.0,
-			"licence": { "type": "one_off", "fee_pence": 1199, "royalty_pct": 0.0 }
+			"demand_per_day": 2.0,
+			"licence": { "type": "one_off", "fee_pence": 1999, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "gridfinity_bin_pack_x6",
@@ -70,8 +70,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 999,
-			"demand_per_day": 3.0,
-			"licence": { "type": "one_off", "fee_pence": 1199, "royalty_pct": 0.0 }
+			"demand_per_day": 2.0,
+			"licence": { "type": "one_off", "fee_pence": 1999, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "label_holder_clips_x10",
@@ -88,8 +88,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 599,
-			"demand_per_day": 3.5,
-			"licence": { "type": "one_off", "fee_pence": 699, "royalty_pct": 0.0 }
+			"demand_per_day": 2.5,
+			"licence": { "type": "one_off", "fee_pence": 1199, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "cable_tidy_box",
@@ -106,8 +106,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 1899,
-			"demand_per_day": 2.5,
-			"licence": { "type": "one_off", "fee_pence": 2299, "royalty_pct": 0.0 }
+			"demand_per_day": 1.5,
+			"licence": { "type": "one_off", "fee_pence": 3799, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "hook_rail_x5_hooks",
@@ -124,8 +124,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 999,
-			"demand_per_day": 3.0,
-			"licence": { "type": "one_off", "fee_pence": 1199, "royalty_pct": 0.0 }
+			"demand_per_day": 2.0,
+			"licence": { "type": "one_off", "fee_pence": 1999, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "mail_sorter",
@@ -142,8 +142,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 1899,
-			"demand_per_day": 2.5,
-			"licence": { "type": "one_off", "fee_pence": 2299, "royalty_pct": 0.0 }
+			"demand_per_day": 1.5,
+			"licence": { "type": "one_off", "fee_pence": 3799, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "battery_organiser",
@@ -160,8 +160,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 999,
-			"demand_per_day": 3.0,
-			"licence": { "type": "one_off", "fee_pence": 1199, "royalty_pct": 0.0 }
+			"demand_per_day": 2.0,
+			"licence": { "type": "one_off", "fee_pence": 1999, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "remote_control_holder",
@@ -178,8 +178,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 999,
-			"demand_per_day": 3.0,
-			"licence": { "type": "one_off", "fee_pence": 1199, "royalty_pct": 0.0 }
+			"demand_per_day": 2.0,
+			"licence": { "type": "one_off", "fee_pence": 1999, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "bag_clip_set_x6",
@@ -196,8 +196,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 599,
-			"demand_per_day": 3.5,
-			"licence": { "type": "one_off", "fee_pence": 699, "royalty_pct": 0.0 }
+			"demand_per_day": 2.5,
+			"licence": { "type": "one_off", "fee_pence": 1199, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "spice_jar_lid_adapters_x6",
@@ -214,8 +214,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 599,
-			"demand_per_day": 3.5,
-			"licence": { "type": "one_off", "fee_pence": 699, "royalty_pct": 0.0 }
+			"demand_per_day": 2.5,
+			"licence": { "type": "one_off", "fee_pence": 1199, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "sock_and_underwear_drawer_grid",
@@ -232,8 +232,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 1899,
-			"demand_per_day": 2.5,
-			"licence": { "type": "one_off", "fee_pence": 2299, "royalty_pct": 0.0 }
+			"demand_per_day": 1.5,
+			"licence": { "type": "one_off", "fee_pence": 3799, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "sticky_note_holder",
@@ -250,8 +250,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 599,
-			"demand_per_day": 3.5,
-			"licence": { "type": "one_off", "fee_pence": 699, "royalty_pct": 0.0 }
+			"demand_per_day": 2.5,
+			"licence": { "type": "one_off", "fee_pence": 1199, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "charging_cable_spool",
@@ -268,8 +268,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 599,
-			"demand_per_day": 3.5,
-			"licence": { "type": "one_off", "fee_pence": 699, "royalty_pct": 0.0 }
+			"demand_per_day": 2.5,
+			"licence": { "type": "one_off", "fee_pence": 1199, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "coat_peg_x3",
@@ -286,8 +286,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 599,
-			"demand_per_day": 3.5,
-			"licence": { "type": "one_off", "fee_pence": 699, "royalty_pct": 0.0 }
+			"demand_per_day": 2.5,
+			"licence": { "type": "one_off", "fee_pence": 1199, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "lid_organiser_rack",
@@ -304,8 +304,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 1899,
-			"demand_per_day": 2.5,
-			"licence": { "type": "one_off", "fee_pence": 2299, "royalty_pct": 0.0 }
+			"demand_per_day": 1.5,
+			"licence": { "type": "one_off", "fee_pence": 3799, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "pen_pot_hex",
@@ -322,8 +322,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 599,
-			"demand_per_day": 3.5,
-			"licence": { "type": "one_off", "fee_pence": 699, "royalty_pct": 0.0 }
+			"demand_per_day": 2.5,
+			"licence": { "type": "one_off", "fee_pence": 1199, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "headphone_stand",
@@ -340,8 +340,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 1999,
-			"demand_per_day": 2.5,
-			"licence": { "type": "one_off", "fee_pence": 2399, "royalty_pct": 0.0 }
+			"demand_per_day": 1.45,
+			"licence": { "type": "one_off", "fee_pence": 3999, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "phone_stand",
@@ -358,8 +358,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 599,
-			"demand_per_day": 3.5,
-			"licence": { "type": "one_off", "fee_pence": 699, "royalty_pct": 0.0 }
+			"demand_per_day": 2.5,
+			"licence": { "type": "one_off", "fee_pence": 1199, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "tablet_stand",
@@ -376,8 +376,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 999,
-			"demand_per_day": 3.0,
-			"licence": { "type": "one_off", "fee_pence": 1199, "royalty_pct": 0.0 }
+			"demand_per_day": 2.0,
+			"licence": { "type": "one_off", "fee_pence": 1999, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "business_card_holder",
@@ -394,8 +394,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 599,
-			"demand_per_day": 3.5,
-			"licence": { "type": "one_off", "fee_pence": 699, "royalty_pct": 0.0 }
+			"demand_per_day": 2.5,
+			"licence": { "type": "one_off", "fee_pence": 1199, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "cable_management_clips_x12",
@@ -412,7 +412,7 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 499,
-			"demand_per_day": 5.0,
+			"demand_per_day": 2.7,
 			"licence": { "type": "one_off", "fee_pence": 0, "royalty_pct": 0.0 }
 		},
 		{
@@ -430,8 +430,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 499,
-			"demand_per_day": 5.0,
-			"licence": { "type": "one_off", "fee_pence": 599, "royalty_pct": 0.0 }
+			"demand_per_day": 2.7,
+			"licence": { "type": "one_off", "fee_pence": 999, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "paper_tray_stackable",
@@ -448,8 +448,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 1999,
-			"demand_per_day": 2.5,
-			"licence": { "type": "one_off", "fee_pence": 2399, "royalty_pct": 0.0 }
+			"demand_per_day": 1.45,
+			"licence": { "type": "one_off", "fee_pence": 3999, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "keyboard_wrist_rest_frame",
@@ -466,8 +466,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 999,
-			"demand_per_day": 3.0,
-			"licence": { "type": "one_off", "fee_pence": 1199, "royalty_pct": 0.0 }
+			"demand_per_day": 2.0,
+			"licence": { "type": "one_off", "fee_pence": 1999, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "mouse_bungee",
@@ -484,8 +484,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 599,
-			"demand_per_day": 3.5,
-			"licence": { "type": "one_off", "fee_pence": 699, "royalty_pct": 0.0 }
+			"demand_per_day": 2.5,
+			"licence": { "type": "one_off", "fee_pence": 1199, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "planner_stand",
@@ -502,8 +502,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 999,
-			"demand_per_day": 3.0,
-			"licence": { "type": "one_off", "fee_pence": 1199, "royalty_pct": 0.0 }
+			"demand_per_day": 2.0,
+			"licence": { "type": "one_off", "fee_pence": 1999, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "stapler_dock",
@@ -520,8 +520,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 599,
-			"demand_per_day": 3.5,
-			"licence": { "type": "one_off", "fee_pence": 699, "royalty_pct": 0.0 }
+			"demand_per_day": 2.5,
+			"licence": { "type": "one_off", "fee_pence": 1199, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "desk_lamp_shade",
@@ -538,8 +538,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 1999,
-			"demand_per_day": 2.5,
-			"licence": { "type": "one_off", "fee_pence": 2399, "royalty_pct": 0.0 }
+			"demand_per_day": 1.45,
+			"licence": { "type": "one_off", "fee_pence": 3999, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "bulldog_clip_display_wall",
@@ -556,8 +556,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 999,
-			"demand_per_day": 3.0,
-			"licence": { "type": "one_off", "fee_pence": 1199, "royalty_pct": 0.0 }
+			"demand_per_day": 2.0,
+			"licence": { "type": "one_off", "fee_pence": 1999, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "ruler_and_template_set",
@@ -574,8 +574,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 599,
-			"demand_per_day": 3.5,
-			"licence": { "type": "one_off", "fee_pence": 699, "royalty_pct": 0.0 }
+			"demand_per_day": 2.5,
+			"licence": { "type": "one_off", "fee_pence": 1199, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "cookie_cutter_set_x6",
@@ -592,8 +592,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 599,
-			"demand_per_day": 3.5,
-			"licence": { "type": "one_off", "fee_pence": 699, "royalty_pct": 0.0 }
+			"demand_per_day": 2.5,
+			"licence": { "type": "one_off", "fee_pence": 1199, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "herb_stripper",
@@ -610,8 +610,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 599,
-			"demand_per_day": 3.5,
-			"licence": { "type": "one_off", "fee_pence": 699, "royalty_pct": 0.0 }
+			"demand_per_day": 2.5,
+			"licence": { "type": "one_off", "fee_pence": 1199, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "bag_sealing_clips_x8",
@@ -628,8 +628,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 599,
-			"demand_per_day": 3.5,
-			"licence": { "type": "one_off", "fee_pence": 699, "royalty_pct": 0.0 }
+			"demand_per_day": 2.5,
+			"licence": { "type": "one_off", "fee_pence": 1199, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "spice_rack_insert",
@@ -646,8 +646,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 1899,
-			"demand_per_day": 2.5,
-			"licence": { "type": "one_off", "fee_pence": 2299, "royalty_pct": 0.0 }
+			"demand_per_day": 1.5,
+			"licence": { "type": "one_off", "fee_pence": 3799, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "tea_bag_caddy",
@@ -664,8 +664,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 999,
-			"demand_per_day": 3.0,
-			"licence": { "type": "one_off", "fee_pence": 1199, "royalty_pct": 0.0 }
+			"demand_per_day": 2.0,
+			"licence": { "type": "one_off", "fee_pence": 1999, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "coffee_scoop",
@@ -682,8 +682,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 399,
-			"demand_per_day": 5.0,
-			"licence": { "type": "one_off", "fee_pence": 499, "royalty_pct": 0.0 }
+			"demand_per_day": 3.0,
+			"licence": { "type": "one_off", "fee_pence": 799, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "coffee_pod_holder",
@@ -700,8 +700,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 1899,
-			"demand_per_day": 2.5,
-			"licence": { "type": "one_off", "fee_pence": 2299, "royalty_pct": 0.0 }
+			"demand_per_day": 1.5,
+			"licence": { "type": "one_off", "fee_pence": 3799, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "recipe_card_stand",
@@ -718,8 +718,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 599,
-			"demand_per_day": 3.5,
-			"licence": { "type": "one_off", "fee_pence": 699, "royalty_pct": 0.0 }
+			"demand_per_day": 2.5,
+			"licence": { "type": "one_off", "fee_pence": 1199, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "utensil_holder",
@@ -736,8 +736,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 999,
-			"demand_per_day": 3.0,
-			"licence": { "type": "one_off", "fee_pence": 1199, "royalty_pct": 0.0 }
+			"demand_per_day": 2.0,
+			"licence": { "type": "one_off", "fee_pence": 1999, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "cake_topper_custom_text",
@@ -754,8 +754,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 599,
-			"demand_per_day": 3.5,
-			"licence": { "type": "one_off", "fee_pence": 699, "royalty_pct": 0.0 }
+			"demand_per_day": 2.5,
+			"licence": { "type": "one_off", "fee_pence": 1199, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "napkin_holder",
@@ -772,8 +772,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 999,
-			"demand_per_day": 3.0,
-			"licence": { "type": "one_off", "fee_pence": 1199, "royalty_pct": 0.0 }
+			"demand_per_day": 2.0,
+			"licence": { "type": "one_off", "fee_pence": 1999, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "fruit_bowl_low_poly",
@@ -790,8 +790,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 1899,
-			"demand_per_day": 2.5,
-			"licence": { "type": "one_off", "fee_pence": 2299, "royalty_pct": 0.0 }
+			"demand_per_day": 1.5,
+			"licence": { "type": "one_off", "fee_pence": 3799, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "wine_bottle_holder",
@@ -808,8 +808,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 1899,
-			"demand_per_day": 2.5,
-			"licence": { "type": "one_off", "fee_pence": 2299, "royalty_pct": 0.0 }
+			"demand_per_day": 1.5,
+			"licence": { "type": "one_off", "fee_pence": 3799, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "pasta_measure",
@@ -826,8 +826,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 599,
-			"demand_per_day": 3.5,
-			"licence": { "type": "one_off", "fee_pence": 699, "royalty_pct": 0.0 }
+			"demand_per_day": 2.5,
+			"licence": { "type": "one_off", "fee_pence": 1199, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "cookie_stamp_set",
@@ -844,8 +844,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 599,
-			"demand_per_day": 3.5,
-			"licence": { "type": "one_off", "fee_pence": 699, "royalty_pct": 0.0 }
+			"demand_per_day": 2.5,
+			"licence": { "type": "one_off", "fee_pence": 1199, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "drawer_bin_for_cutlery",
@@ -862,8 +862,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 1899,
-			"demand_per_day": 2.5,
-			"licence": { "type": "one_off", "fee_pence": 2299, "royalty_pct": 0.0 }
+			"demand_per_day": 1.5,
+			"licence": { "type": "one_off", "fee_pence": 3799, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "cotton_bud_dispenser",
@@ -880,8 +880,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 999,
-			"demand_per_day": 3.0,
-			"licence": { "type": "one_off", "fee_pence": 1199, "royalty_pct": 0.0 }
+			"demand_per_day": 2.0,
+			"licence": { "type": "one_off", "fee_pence": 1999, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "toothpaste_squeezer",
@@ -898,8 +898,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 399,
-			"demand_per_day": 5.0,
-			"licence": { "type": "one_off", "fee_pence": 499, "royalty_pct": 0.0 }
+			"demand_per_day": 3.0,
+			"licence": { "type": "one_off", "fee_pence": 799, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "nail_polish_rack",
@@ -916,8 +916,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 1899,
-			"demand_per_day": 2.5,
-			"licence": { "type": "one_off", "fee_pence": 2299, "royalty_pct": 0.0 }
+			"demand_per_day": 1.5,
+			"licence": { "type": "one_off", "fee_pence": 3799, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "hair_tie_holder",
@@ -934,8 +934,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 599,
-			"demand_per_day": 3.5,
-			"licence": { "type": "one_off", "fee_pence": 699, "royalty_pct": 0.0 }
+			"demand_per_day": 2.5,
+			"licence": { "type": "one_off", "fee_pence": 1199, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "hanging_planter",
@@ -952,8 +952,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 999,
-			"demand_per_day": 3.0,
-			"licence": { "type": "one_off", "fee_pence": 1199, "royalty_pct": 0.0 }
+			"demand_per_day": 2.0,
+			"licence": { "type": "one_off", "fee_pence": 1999, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "controller_wall_mount_x2",
@@ -970,8 +970,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 599,
-			"demand_per_day": 3.5,
-			"licence": { "type": "one_off", "fee_pence": 699, "royalty_pct": 0.0 }
+			"demand_per_day": 2.5,
+			"licence": { "type": "one_off", "fee_pence": 1199, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "controller_stand",
@@ -988,8 +988,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 1099,
-			"demand_per_day": 3.0,
-			"licence": { "type": "one_off", "fee_pence": 1299, "royalty_pct": 0.0 }
+			"demand_per_day": 1.9,
+			"licence": { "type": "one_off", "fee_pence": 2199, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "vr_headset_stand",
@@ -1006,8 +1006,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 2099,
-			"demand_per_day": 2.5,
-			"licence": { "type": "one_off", "fee_pence": 2499, "royalty_pct": 0.0 }
+			"demand_per_day": 1.45,
+			"licence": { "type": "one_off", "fee_pence": 4199, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "camera_lens_cap_holder",
@@ -1024,8 +1024,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 499,
-			"demand_per_day": 5.0,
-			"licence": { "type": "one_off", "fee_pence": 599, "royalty_pct": 0.0 }
+			"demand_per_day": 2.7,
+			"licence": { "type": "one_off", "fee_pence": 999, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "sd_card_holder",
@@ -1042,8 +1042,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 599,
-			"demand_per_day": 3.5,
-			"licence": { "type": "one_off", "fee_pence": 699, "royalty_pct": 0.0 }
+			"demand_per_day": 2.5,
+			"licence": { "type": "one_off", "fee_pence": 1199, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "usb_stick_organiser",
@@ -1060,8 +1060,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 599,
-			"demand_per_day": 3.5,
-			"licence": { "type": "one_off", "fee_pence": 699, "royalty_pct": 0.0 }
+			"demand_per_day": 2.5,
+			"licence": { "type": "one_off", "fee_pence": 1199, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "keyboard_case_60",
@@ -1078,8 +1078,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 2099,
-			"demand_per_day": 2.5,
-			"licence": { "type": "one_off", "fee_pence": 2499, "royalty_pct": 0.0 }
+			"demand_per_day": 1.45,
+			"licence": { "type": "one_off", "fee_pence": 4199, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "smartwatch_charging_stand",
@@ -1096,8 +1096,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 599,
-			"demand_per_day": 3.5,
-			"licence": { "type": "one_off", "fee_pence": 699, "royalty_pct": 0.0 }
+			"demand_per_day": 2.5,
+			"licence": { "type": "one_off", "fee_pence": 1199, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "console_vertical_stand",
@@ -1114,8 +1114,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 2099,
-			"demand_per_day": 2.5,
-			"licence": { "type": "one_off", "fee_pence": 2499, "royalty_pct": 0.0 }
+			"demand_per_day": 1.45,
+			"licence": { "type": "one_off", "fee_pence": 4199, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "cable_comb_set",
@@ -1132,8 +1132,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 599,
-			"demand_per_day": 3.5,
-			"licence": { "type": "one_off", "fee_pence": 699, "royalty_pct": 0.0 }
+			"demand_per_day": 2.5,
+			"licence": { "type": "one_off", "fee_pence": 1199, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "miniature_display_shelf",
@@ -1150,8 +1150,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 2399,
-			"demand_per_day": 2.5,
-			"licence": { "type": "one_off", "fee_pence": 2899, "royalty_pct": 0.0 }
+			"demand_per_day": 1.35,
+			"licence": { "type": "one_off", "fee_pence": 4799, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "wargaming_terrain_ruined_building",
@@ -1168,8 +1168,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 2399,
-			"demand_per_day": 2.5,
-			"licence": { "type": "one_off", "fee_pence": 2899, "royalty_pct": 0.0 }
+			"demand_per_day": 1.35,
+			"licence": { "type": "one_off", "fee_pence": 4799, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "wargaming_terrain_crates_and_barrels_x10",
@@ -1186,8 +1186,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 1299,
-			"demand_per_day": 3.0,
-			"licence": { "type": "one_off", "fee_pence": 1599, "royalty_pct": 0.0 }
+			"demand_per_day": 1.75,
+			"licence": { "type": "one_off", "fee_pence": 2599, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "wargaming_terrain_walls_and_barricades",
@@ -1204,8 +1204,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 2399,
-			"demand_per_day": 2.5,
-			"licence": { "type": "one_off", "fee_pence": 2899, "royalty_pct": 0.0 }
+			"demand_per_day": 1.35,
+			"licence": { "type": "one_off", "fee_pence": 4799, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "wargaming_terrain_forest_bases",
@@ -1222,8 +1222,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 1299,
-			"demand_per_day": 3.0,
-			"licence": { "type": "one_off", "fee_pence": 1599, "royalty_pct": 0.0 }
+			"demand_per_day": 1.75,
+			"licence": { "type": "one_off", "fee_pence": 2599, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "dungeon_tiles_x10",
@@ -1240,8 +1240,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 2399,
-			"demand_per_day": 2.5,
-			"licence": { "type": "one_off", "fee_pence": 2899, "royalty_pct": 0.0 }
+			"demand_per_day": 1.35,
+			"licence": { "type": "one_off", "fee_pence": 4799, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "sci_fi_bulkheads_x6",
@@ -1258,8 +1258,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 2399,
-			"demand_per_day": 2.5,
-			"licence": { "type": "one_off", "fee_pence": 2899, "royalty_pct": 0.0 }
+			"demand_per_day": 1.35,
+			"licence": { "type": "one_off", "fee_pence": 4799, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "paint_pot_rack",
@@ -1276,8 +1276,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 2399,
-			"demand_per_day": 2.5,
-			"licence": { "type": "one_off", "fee_pence": 2899, "royalty_pct": 0.0 }
+			"demand_per_day": 1.35,
+			"licence": { "type": "one_off", "fee_pence": 4799, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "hobby_brush_holder",
@@ -1294,8 +1294,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 799,
-			"demand_per_day": 3.5,
-			"licence": { "type": "one_off", "fee_pence": 999, "royalty_pct": 0.0 }
+			"demand_per_day": 2.15,
+			"licence": { "type": "one_off", "fee_pence": 1599, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "miniature_painting_handle",
@@ -1312,8 +1312,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 799,
-			"demand_per_day": 3.5,
-			"licence": { "type": "one_off", "fee_pence": 999, "royalty_pct": 0.0 }
+			"demand_per_day": 2.15,
+			"licence": { "type": "one_off", "fee_pence": 1599, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "card_shuffler_housing",
@@ -1330,8 +1330,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 2399,
-			"demand_per_day": 2.5,
-			"licence": { "type": "one_off", "fee_pence": 2899, "royalty_pct": 0.0 }
+			"demand_per_day": 1.35,
+			"licence": { "type": "one_off", "fee_pence": 4799, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "movement_tray",
@@ -1348,8 +1348,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 799,
-			"demand_per_day": 3.5,
-			"licence": { "type": "one_off", "fee_pence": 999, "royalty_pct": 0.0 }
+			"demand_per_day": 2.15,
+			"licence": { "type": "one_off", "fee_pence": 1599, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "poker_chip_holder",
@@ -1366,8 +1366,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 2399,
-			"demand_per_day": 2.5,
-			"licence": { "type": "one_off", "fee_pence": 2899, "royalty_pct": 0.0 }
+			"demand_per_day": 1.35,
+			"licence": { "type": "one_off", "fee_pence": 4799, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "mahjong_tile_rack",
@@ -1384,8 +1384,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 1299,
-			"demand_per_day": 3.0,
-			"licence": { "type": "one_off", "fee_pence": 1599, "royalty_pct": 0.0 }
+			"demand_per_day": 1.75,
+			"licence": { "type": "one_off", "fee_pence": 2599, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "retro_console_cartridge_holder",
@@ -1402,8 +1402,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 2399,
-			"demand_per_day": 2.5,
-			"licence": { "type": "one_off", "fee_pence": 2899, "royalty_pct": 0.0 }
+			"demand_per_day": 1.35,
+			"licence": { "type": "one_off", "fee_pence": 4799, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "train_track_pieces_x10",
@@ -1420,8 +1420,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 2299,
-			"demand_per_day": 2.5,
-			"licence": { "type": "one_off", "fee_pence": 2799, "royalty_pct": 0.0 }
+			"demand_per_day": 1.35,
+			"licence": { "type": "one_off", "fee_pence": 4599, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "dino_skeleton_kit",
@@ -1438,8 +1438,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 1199,
-			"demand_per_day": 3.0,
-			"licence": { "type": "one_off", "fee_pence": 1399, "royalty_pct": 0.0 }
+			"demand_per_day": 1.85,
+			"licence": { "type": "one_off", "fee_pence": 2399, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "mask_half_face",
@@ -1456,8 +1456,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 2999,
-			"demand_per_day": 2.5,
-			"licence": { "type": "one_off", "fee_pence": 3599, "royalty_pct": 0.0 }
+			"demand_per_day": 1.2,
+			"licence": { "type": "one_off", "fee_pence": 5999, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "plague_doctor_mask",
@@ -1474,8 +1474,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 2999,
-			"demand_per_day": 2.5,
-			"licence": { "type": "one_off", "fee_pence": 3599, "royalty_pct": 0.0 }
+			"demand_per_day": 1.2,
+			"licence": { "type": "one_off", "fee_pence": 5999, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "horns_pair",
@@ -1492,8 +1492,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 1599,
-			"demand_per_day": 3.0,
-			"licence": { "type": "one_off", "fee_pence": 1899, "royalty_pct": 0.0 }
+			"demand_per_day": 1.6,
+			"licence": { "type": "one_off", "fee_pence": 3199, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "potion_bottle_stoppers_x6",
@@ -1510,8 +1510,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 899,
-			"demand_per_day": 3.5,
-			"licence": { "type": "one_off", "fee_pence": 1099, "royalty_pct": 0.0 }
+			"demand_per_day": 2.05,
+			"licence": { "type": "one_off", "fee_pence": 1799, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "low_poly_planter",
@@ -1528,8 +1528,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 1399,
-			"demand_per_day": 3.0,
-			"licence": { "type": "one_off", "fee_pence": 1699, "royalty_pct": 0.0 }
+			"demand_per_day": 1.7,
+			"licence": { "type": "one_off", "fee_pence": 2799, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "lithophane_photo_panel",
@@ -1546,8 +1546,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 1399,
-			"demand_per_day": 3.0,
-			"licence": { "type": "one_off", "fee_pence": 1699, "royalty_pct": 0.0 }
+			"demand_per_day": 1.7,
+			"licence": { "type": "one_off", "fee_pence": 2799, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "lithophane_lamp",
@@ -1564,8 +1564,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 2599,
-			"demand_per_day": 2.5,
-			"licence": { "type": "one_off", "fee_pence": 3099, "royalty_pct": 0.0 }
+			"demand_per_day": 1.3,
+			"licence": { "type": "one_off", "fee_pence": 5199, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "moon_lamp",
@@ -1582,8 +1582,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 2599,
-			"demand_per_day": 2.5,
-			"licence": { "type": "one_off", "fee_pence": 3099, "royalty_pct": 0.0 }
+			"demand_per_day": 1.3,
+			"licence": { "type": "one_off", "fee_pence": 5199, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "tea_light_lantern",
@@ -1600,8 +1600,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 1399,
-			"demand_per_day": 3.0,
-			"licence": { "type": "one_off", "fee_pence": 1699, "royalty_pct": 0.0 }
+			"demand_per_day": 1.7,
+			"licence": { "type": "one_off", "fee_pence": 2799, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "air_plant_holder_x3",
@@ -1618,8 +1618,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 799,
-			"demand_per_day": 3.5,
-			"licence": { "type": "one_off", "fee_pence": 999, "royalty_pct": 0.0 }
+			"demand_per_day": 2.15,
+			"licence": { "type": "one_off", "fee_pence": 1599, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "bust_sculpture_classical",
@@ -1636,8 +1636,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 2599,
-			"demand_per_day": 2.5,
-			"licence": { "type": "one_off", "fee_pence": 3099, "royalty_pct": 0.0 }
+			"demand_per_day": 1.3,
+			"licence": { "type": "one_off", "fee_pence": 5199, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "low_poly_animal_figurine",
@@ -1654,8 +1654,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 1399,
-			"demand_per_day": 3.0,
-			"licence": { "type": "one_off", "fee_pence": 1699, "royalty_pct": 0.0 }
+			"demand_per_day": 1.7,
+			"licence": { "type": "one_off", "fee_pence": 2799, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "wall_shelf_hexagon",
@@ -1672,8 +1672,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 2599,
-			"demand_per_day": 2.5,
-			"licence": { "type": "one_off", "fee_pence": 3099, "royalty_pct": 0.0 }
+			"demand_per_day": 1.3,
+			"licence": { "type": "one_off", "fee_pence": 5199, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "plant_mister_holder",
@@ -1690,8 +1690,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 799,
-			"demand_per_day": 3.5,
-			"licence": { "type": "one_off", "fee_pence": 999, "royalty_pct": 0.0 }
+			"demand_per_day": 2.15,
+			"licence": { "type": "one_off", "fee_pence": 1599, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "curtain_tie_backs_pair",
@@ -1708,8 +1708,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 799,
-			"demand_per_day": 3.5,
-			"licence": { "type": "one_off", "fee_pence": 999, "royalty_pct": 0.0 }
+			"demand_per_day": 2.15,
+			"licence": { "type": "one_off", "fee_pence": 1599, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "light_switch_cover",
@@ -1726,8 +1726,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 799,
-			"demand_per_day": 3.5,
-			"licence": { "type": "one_off", "fee_pence": 999, "royalty_pct": 0.0 }
+			"demand_per_day": 2.15,
+			"licence": { "type": "one_off", "fee_pence": 1599, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "hair_comb",
@@ -1744,8 +1744,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 999,
-			"demand_per_day": 3.5,
-			"licence": { "type": "one_off", "fee_pence": 1199, "royalty_pct": 0.0 }
+			"demand_per_day": 1.95,
+			"licence": { "type": "one_off", "fee_pence": 1999, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "jewellery_stand_tree",
@@ -1762,8 +1762,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 1599,
-			"demand_per_day": 3.0,
-			"licence": { "type": "one_off", "fee_pence": 1899, "royalty_pct": 0.0 }
+			"demand_per_day": 1.6,
+			"licence": { "type": "one_off", "fee_pence": 3199, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "earring_display_card_stand",
@@ -1780,8 +1780,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 999,
-			"demand_per_day": 3.5,
-			"licence": { "type": "one_off", "fee_pence": 1199, "royalty_pct": 0.0 }
+			"demand_per_day": 1.95,
+			"licence": { "type": "one_off", "fee_pence": 1999, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "button_set_x10",
@@ -1798,8 +1798,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 699,
-			"demand_per_day": 5.0,
-			"licence": { "type": "one_off", "fee_pence": 799, "royalty_pct": 0.0 }
+			"demand_per_day": 2.25,
+			"licence": { "type": "one_off", "fee_pence": 1399, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "tyre_tread_depth_gauge",
@@ -1816,8 +1816,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 599,
-			"demand_per_day": 3.5,
-			"licence": { "type": "one_off", "fee_pence": 699, "royalty_pct": 0.0 }
+			"demand_per_day": 2.5,
+			"licence": { "type": "one_off", "fee_pence": 1199, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "marking_gauge",
@@ -1834,8 +1834,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 599,
-			"demand_per_day": 3.5,
-			"licence": { "type": "one_off", "fee_pence": 699, "royalty_pct": 0.0 }
+			"demand_per_day": 2.5,
+			"licence": { "type": "one_off", "fee_pence": 1199, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "hex_key_holder",
@@ -1852,8 +1852,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 599,
-			"demand_per_day": 3.5,
-			"licence": { "type": "one_off", "fee_pence": 699, "royalty_pct": 0.0 }
+			"demand_per_day": 2.5,
+			"licence": { "type": "one_off", "fee_pence": 1199, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "glue_bottle_holder",
@@ -1870,8 +1870,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 999,
-			"demand_per_day": 3.0,
-			"licence": { "type": "one_off", "fee_pence": 1199, "royalty_pct": 0.0 }
+			"demand_per_day": 2.0,
+			"licence": { "type": "one_off", "fee_pence": 1999, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "filament_clip_set_x10",
@@ -1888,8 +1888,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 399,
-			"demand_per_day": 5.0,
-			"licence": { "type": "one_off", "fee_pence": 499, "royalty_pct": 0.0 }
+			"demand_per_day": 3.0,
+			"licence": { "type": "one_off", "fee_pence": 799, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "nozzle_and_tool_caddy",
@@ -1906,8 +1906,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 999,
-			"demand_per_day": 3.0,
-			"licence": { "type": "one_off", "fee_pence": 1199, "royalty_pct": 0.0 }
+			"demand_per_day": 2.0,
+			"licence": { "type": "one_off", "fee_pence": 1999, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "calibration_cube_pack_of_10",
@@ -1924,8 +1924,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 399,
-			"demand_per_day": 5.0,
-			"licence": { "type": "one_off", "fee_pence": 499, "royalty_pct": 0.0 }
+			"demand_per_day": 3.0,
+			"licence": { "type": "one_off", "fee_pence": 799, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "benchy_pack_of_5",
@@ -1942,8 +1942,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 599,
-			"demand_per_day": 3.5,
-			"licence": { "type": "one_off", "fee_pence": 699, "royalty_pct": 0.0 }
+			"demand_per_day": 2.5,
+			"licence": { "type": "one_off", "fee_pence": 1199, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "skull_anatomy_model",
@@ -1960,8 +1960,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 1899,
-			"demand_per_day": 2.5,
-			"licence": { "type": "one_off", "fee_pence": 2299, "royalty_pct": 0.0 }
+			"demand_per_day": 1.5,
+			"licence": { "type": "one_off", "fee_pence": 3799, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "braille_alphabet_tiles",
@@ -1978,8 +1978,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 999,
-			"demand_per_day": 3.0,
-			"licence": { "type": "one_off", "fee_pence": 1199, "royalty_pct": 0.0 }
+			"demand_per_day": 2.0,
+			"licence": { "type": "one_off", "fee_pence": 1999, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "bridge_building_kit",
@@ -1996,8 +1996,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 1899,
-			"demand_per_day": 2.5,
-			"licence": { "type": "one_off", "fee_pence": 2299, "royalty_pct": 0.0 }
+			"demand_per_day": 1.5,
+			"licence": { "type": "one_off", "fee_pence": 3799, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "fossil_replica",
@@ -2014,8 +2014,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 999,
-			"demand_per_day": 3.0,
-			"licence": { "type": "one_off", "fee_pence": 1199, "royalty_pct": 0.0 }
+			"demand_per_day": 2.0,
+			"licence": { "type": "one_off", "fee_pence": 1999, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "pendulum_wave_kit",
@@ -2032,8 +2032,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 1899,
-			"demand_per_day": 2.5,
-			"licence": { "type": "one_off", "fee_pence": 2299, "royalty_pct": 0.0 }
+			"demand_per_day": 1.5,
+			"licence": { "type": "one_off", "fee_pence": 3799, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "table_number_stands_x10",
@@ -2050,8 +2050,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 1399,
-			"demand_per_day": 3.0,
-			"licence": { "type": "one_off", "fee_pence": 1699, "royalty_pct": 0.0 }
+			"demand_per_day": 1.7,
+			"licence": { "type": "one_off", "fee_pence": 2799, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "balloon_weights_x4",
@@ -2068,8 +2068,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 799,
-			"demand_per_day": 3.5,
-			"licence": { "type": "one_off", "fee_pence": 999, "royalty_pct": 0.0 }
+			"demand_per_day": 2.15,
+			"licence": { "type": "one_off", "fee_pence": 1599, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "birthday_number_topper",
@@ -2086,8 +2086,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 1399,
-			"demand_per_day": 3.0,
-			"licence": { "type": "one_off", "fee_pence": 1699, "royalty_pct": 0.0 }
+			"demand_per_day": 1.7,
+			"licence": { "type": "one_off", "fee_pence": 2799, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "custom_cookie_cutter_logo",
@@ -2104,8 +2104,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 899,
-			"demand_per_day": 3.5,
-			"licence": { "type": "one_off", "fee_pence": 1099, "royalty_pct": 0.0 }
+			"demand_per_day": 2.05,
+			"licence": { "type": "one_off", "fee_pence": 1799, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "initial_letter_shelf_decor",
@@ -2122,8 +2122,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 1499,
-			"demand_per_day": 3.0,
-			"licence": { "type": "one_off", "fee_pence": 1799, "royalty_pct": 0.0 }
+			"demand_per_day": 1.65,
+			"licence": { "type": "one_off", "fee_pence": 2999, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "guitar_pick_holder",
@@ -2140,8 +2140,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 699,
-			"demand_per_day": 3.5,
-			"licence": { "type": "one_off", "fee_pence": 799, "royalty_pct": 0.0 }
+			"demand_per_day": 2.3,
+			"licence": { "type": "one_off", "fee_pence": 1399, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "recorder",
@@ -2158,8 +2158,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 1199,
-			"demand_per_day": 3.0,
-			"licence": { "type": "one_off", "fee_pence": 1399, "royalty_pct": 0.0 }
+			"demand_per_day": 1.85,
+			"licence": { "type": "one_off", "fee_pence": 2399, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "ocarina",
@@ -2176,8 +2176,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 699,
-			"demand_per_day": 3.5,
-			"licence": { "type": "one_off", "fee_pence": 799, "royalty_pct": 0.0 }
+			"demand_per_day": 2.3,
+			"licence": { "type": "one_off", "fee_pence": 1399, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "sheet_music_stand_clip",
@@ -2194,8 +2194,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 699,
-			"demand_per_day": 3.5,
-			"licence": { "type": "one_off", "fee_pence": 799, "royalty_pct": 0.0 }
+			"demand_per_day": 2.3,
+			"licence": { "type": "one_off", "fee_pence": 1399, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "vinyl_record_display_stand",
@@ -2212,8 +2212,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 1199,
-			"demand_per_day": 3.0,
-			"licence": { "type": "one_off", "fee_pence": 1399, "royalty_pct": 0.0 }
+			"demand_per_day": 1.85,
+			"licence": { "type": "one_off", "fee_pence": 2399, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "vinyl_wall_mount_x3",
@@ -2230,8 +2230,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 699,
-			"demand_per_day": 3.5,
-			"licence": { "type": "one_off", "fee_pence": 799, "royalty_pct": 0.0 }
+			"demand_per_day": 2.3,
+			"licence": { "type": "one_off", "fee_pence": 1399, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "card_holder_for_games",
@@ -2248,8 +2248,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 999,
-			"demand_per_day": 3.0,
-			"licence": { "type": "one_off", "fee_pence": 1199, "royalty_pct": 0.0 }
+			"demand_per_day": 2.0,
+			"licence": { "type": "one_off", "fee_pence": 1999, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "tablet_stylus_holder",
@@ -2266,8 +2266,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 399,
-			"demand_per_day": 5.0,
-			"licence": { "type": "one_off", "fee_pence": 499, "royalty_pct": 0.0 }
+			"demand_per_day": 3.0,
+			"licence": { "type": "one_off", "fee_pence": 799, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "cabinet_hinge_cover_x4",
@@ -2284,8 +2284,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 499,
-			"demand_per_day": 5.0,
-			"licence": { "type": "one_off", "fee_pence": 599, "royalty_pct": 0.0 }
+			"demand_per_day": 2.7,
+			"licence": { "type": "one_off", "fee_pence": 999, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "toy_battery_cover",
@@ -2302,8 +2302,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 499,
-			"demand_per_day": 5.0,
-			"licence": { "type": "one_off", "fee_pence": 599, "royalty_pct": 0.0 }
+			"demand_per_day": 2.7,
+			"licence": { "type": "one_off", "fee_pence": 999, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "remote_battery_door",
@@ -2320,8 +2320,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 499,
-			"demand_per_day": 5.0,
-			"licence": { "type": "one_off", "fee_pence": 599, "royalty_pct": 0.0 }
+			"demand_per_day": 2.7,
+			"licence": { "type": "one_off", "fee_pence": 999, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "film_canister_holder",
@@ -2338,8 +2338,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 599,
-			"demand_per_day": 3.5,
-			"licence": { "type": "one_off", "fee_pence": 699, "royalty_pct": 0.0 }
+			"demand_per_day": 2.5,
+			"licence": { "type": "one_off", "fee_pence": 1199, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "battery_case_camera",
@@ -2356,8 +2356,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 599,
-			"demand_per_day": 3.5,
-			"licence": { "type": "one_off", "fee_pence": 699, "royalty_pct": 0.0 }
+			"demand_per_day": 2.5,
+			"licence": { "type": "one_off", "fee_pence": 1199, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "filter_case",
@@ -2374,8 +2374,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 599,
-			"demand_per_day": 3.5,
-			"licence": { "type": "one_off", "fee_pence": 699, "royalty_pct": 0.0 }
+			"demand_per_day": 2.5,
+			"licence": { "type": "one_off", "fee_pence": 1199, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "rc_transmitter_stand",
@@ -2392,8 +2392,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 1199,
-			"demand_per_day": 3.0,
-			"licence": { "type": "one_off", "fee_pence": 1399, "royalty_pct": 0.0 }
+			"demand_per_day": 1.85,
+			"licence": { "type": "one_off", "fee_pence": 2399, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "platform_benches_x10",
@@ -2410,8 +2410,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 799,
-			"demand_per_day": 3.5,
-			"licence": { "type": "one_off", "fee_pence": 999, "royalty_pct": 0.0 }
+			"demand_per_day": 2.15,
+			"licence": { "type": "one_off", "fee_pence": 1599, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "diorama_base_hex",
@@ -2428,8 +2428,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 1299,
-			"demand_per_day": 3.0,
-			"licence": { "type": "one_off", "fee_pence": 1599, "royalty_pct": 0.0 }
+			"demand_per_day": 1.75,
+			"licence": { "type": "one_off", "fee_pence": 2599, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "model_railway_tunnel_portal",
@@ -2446,8 +2446,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 1299,
-			"demand_per_day": 3.0,
-			"licence": { "type": "one_off", "fee_pence": 1599, "royalty_pct": 0.0 }
+			"demand_per_day": 1.75,
+			"licence": { "type": "one_off", "fee_pence": 2599, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "bridge_girder_set",
@@ -2464,8 +2464,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 2399,
-			"demand_per_day": 2.5,
-			"licence": { "type": "one_off", "fee_pence": 2899, "royalty_pct": 0.0 }
+			"demand_per_day": 1.35,
+			"licence": { "type": "one_off", "fee_pence": 4799, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "skull_candle_holder",
@@ -2482,8 +2482,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 1299,
-			"demand_per_day": 3.0,
-			"licence": { "type": "one_off", "fee_pence": 1599, "royalty_pct": 0.0 }
+			"demand_per_day": 1.75,
+			"licence": { "type": "one_off", "fee_pence": 2599, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "bat_garland_x10",
@@ -2500,8 +2500,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 1299,
-			"demand_per_day": 3.0,
-			"licence": { "type": "one_off", "fee_pence": 1599, "royalty_pct": 0.0 }
+			"demand_per_day": 1.75,
+			"licence": { "type": "one_off", "fee_pence": 2599, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "spider_web_wall_decor",
@@ -2518,8 +2518,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 2399,
-			"demand_per_day": 2.5,
-			"licence": { "type": "one_off", "fee_pence": 2899, "royalty_pct": 0.0 }
+			"demand_per_day": 1.35,
+			"licence": { "type": "one_off", "fee_pence": 4799, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "witch_hat",
@@ -2536,8 +2536,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 2399,
-			"demand_per_day": 2.5,
-			"licence": { "type": "one_off", "fee_pence": 2899, "royalty_pct": 0.0 }
+			"demand_per_day": 1.35,
+			"licence": { "type": "one_off", "fee_pence": 4799, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "tombstone_set_x3",
@@ -2554,8 +2554,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 2399,
-			"demand_per_day": 2.5,
-			"licence": { "type": "one_off", "fee_pence": 2899, "royalty_pct": 0.0 }
+			"demand_per_day": 1.35,
+			"licence": { "type": "one_off", "fee_pence": 4799, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "skeleton_hand_bowl",
@@ -2572,8 +2572,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 1299,
-			"demand_per_day": 3.0,
-			"licence": { "type": "one_off", "fee_pence": 1599, "royalty_pct": 0.0 }
+			"demand_per_day": 1.75,
+			"licence": { "type": "one_off", "fee_pence": 2599, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "halloween_cookie_cutters_x5",
@@ -2590,8 +2590,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 799,
-			"demand_per_day": 3.5,
-			"licence": { "type": "one_off", "fee_pence": 999, "royalty_pct": 0.0 }
+			"demand_per_day": 2.15,
+			"licence": { "type": "one_off", "fee_pence": 1599, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "crow_figurine",
@@ -2608,8 +2608,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 1299,
-			"demand_per_day": 3.0,
-			"licence": { "type": "one_off", "fee_pence": 1599, "royalty_pct": 0.0 }
+			"demand_per_day": 1.75,
+			"licence": { "type": "one_off", "fee_pence": 2599, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "zombie_hand_garden_stake",
@@ -2626,8 +2626,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 1299,
-			"demand_per_day": 3.0,
-			"licence": { "type": "one_off", "fee_pence": 1599, "royalty_pct": 0.0 }
+			"demand_per_day": 1.75,
+			"licence": { "type": "one_off", "fee_pence": 2599, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "monster_tooth_necklace",
@@ -2644,8 +2644,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 599,
-			"demand_per_day": 5.0,
-			"licence": { "type": "one_off", "fee_pence": 699, "royalty_pct": 0.0 }
+			"demand_per_day": 2.45,
+			"licence": { "type": "one_off", "fee_pence": 1199, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "guy_fawkes_mask",
@@ -2662,8 +2662,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 1099,
-			"demand_per_day": 3.0,
-			"licence": { "type": "one_off", "fee_pence": 1299, "royalty_pct": 0.0 }
+			"demand_per_day": 1.9,
+			"licence": { "type": "one_off", "fee_pence": 2199, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "reindeer_figurine",
@@ -2680,8 +2680,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 1399,
-			"demand_per_day": 3.0,
-			"licence": { "type": "one_off", "fee_pence": 1699, "royalty_pct": 0.0 }
+			"demand_per_day": 1.7,
+			"licence": { "type": "one_off", "fee_pence": 2799, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "christmas_cookie_cutters_x6",
@@ -2698,8 +2698,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 799,
-			"demand_per_day": 3.5,
-			"licence": { "type": "one_off", "fee_pence": 999, "royalty_pct": 0.0 }
+			"demand_per_day": 2.15,
+			"licence": { "type": "one_off", "fee_pence": 1599, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "candle_arch",
@@ -2716,8 +2716,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 2599,
-			"demand_per_day": 2.5,
-			"licence": { "type": "one_off", "fee_pence": 3099, "royalty_pct": 0.0 }
+			"demand_per_day": 1.3,
+			"licence": { "type": "one_off", "fee_pence": 5199, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "snow_globe_base",
@@ -2734,8 +2734,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 1399,
-			"demand_per_day": 3.0,
-			"licence": { "type": "one_off", "fee_pence": 1699, "royalty_pct": 0.0 }
+			"demand_per_day": 1.7,
+			"licence": { "type": "one_off", "fee_pence": 2799, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "christmas_lithophane",
@@ -2752,8 +2752,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 1399,
-			"demand_per_day": 3.0,
-			"licence": { "type": "one_off", "fee_pence": 1699, "royalty_pct": 0.0 }
+			"demand_per_day": 1.7,
+			"licence": { "type": "one_off", "fee_pence": 2799, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "heart_lithophane",
@@ -2770,8 +2770,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 1499,
-			"demand_per_day": 3.0,
-			"licence": { "type": "one_off", "fee_pence": 1799, "royalty_pct": 0.0 }
+			"demand_per_day": 1.65,
+			"licence": { "type": "one_off", "fee_pence": 2999, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "easter_cookie_cutters_x5",
@@ -2788,8 +2788,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 699,
-			"demand_per_day": 3.5,
-			"licence": { "type": "one_off", "fee_pence": 799, "royalty_pct": 0.0 }
+			"demand_per_day": 2.3,
+			"licence": { "type": "one_off", "fee_pence": 1399, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "photo_lithophane_frame",
@@ -2806,8 +2806,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 1399,
-			"demand_per_day": 3.0,
-			"licence": { "type": "one_off", "fee_pence": 1699, "royalty_pct": 0.0 }
+			"demand_per_day": 1.7,
+			"licence": { "type": "one_off", "fee_pence": 2799, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "locker_shelf",
@@ -2824,8 +2824,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 1899,
-			"demand_per_day": 2.5,
-			"licence": { "type": "one_off", "fee_pence": 2299, "royalty_pct": 0.0 }
+			"demand_per_day": 1.5,
+			"licence": { "type": "one_off", "fee_pence": 3799, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "protractor_and_compass_set",
@@ -2842,8 +2842,8 @@
 			"colour_count": 1,
 			"allowed_filaments": ["pla"],
 			"base_price_pence": 599,
-			"demand_per_day": 3.5,
-			"licence": { "type": "one_off", "fee_pence": 699, "royalty_pct": 0.0 }
+			"demand_per_day": 2.5,
+			"licence": { "type": "one_off", "fee_pence": 1199, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "desk_organiser",

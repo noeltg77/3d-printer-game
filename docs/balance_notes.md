@@ -21,27 +21,32 @@ The catalogue is far bigger than a garage can print, so the scripted player does
 
 | Player | Second printer | Worth after 7 days | Sold a day | Printer busy | Designs owned | Ruined | Flawed | Refunded | Rating | Effect on orders |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Attentive, Standard | day 1.4 | £1,102 | 23.2 | 70% | 8 | 2.3% | 1.8% | 3.2% | 4.37 | x1.08 |
-| Casual, Standard | day 2.4 | £808 | 15.6 | 50% | 8 | 2.4% | 1.6% | 3.3% | 4.34 | x1.07 |
-| Attentive, Draft | day 1.4 | £768 | 15.9 | 34% | 8 | 3.3% | 2.6% | 11.8% | 3.17 | x0.44 |
-| Attentive, Strong | day 1.4 | £1,068 | 22.2 | 83% | 8 | 2.0% | 1.6% | 0.4% | 4.58 | x1.18 |
+| Attentive, Standard | day 2.4 | £785 | 16.9 | 81% | 16 | 2.3% | 1.7% | 3.2% | 4.33 | x1.06 |
+| Casual, Standard | day 4.4 | £441 | 10.1 | 53% | 16 | 2.4% | 1.8% | 3.5% | 4.34 | x1.07 |
+| Attentive, Draft | day 2.4 | £492 | 11.8 | 45% | 16 | 3.2% | 2.7% | 11.9% | 3.15 | x0.43 |
+| Attentive, Strong | day 3.4 | £605 | 13.4 | 88% | 16 | 1.9% | 1.4% | 0.4% | 4.59 | x1.18 |
 
-"Attentive" notices a printer needs them within 10 game minutes, "casual" within an hour. Day 1.4 is 14 minutes at 1x. The day always ends in .4 because money only arrives when the courier calls at 17:00. "Printer busy" is across both printers once the second arrives.
+"Attentive" notices a printer needs them within 10 game minutes, "casual" within an hour. Day 2.4 is 24 minutes at 1x. The day always ends in .4 because money only arrives when the courier calls at 17:00. "Printer busy" is across both printers once the second arrives.
 
-- **Second printer: too fast.** 14 minutes for an attentive player and 24 for a casual one, against a target of 30. Before the catalogue it was 24 and 34.
-- **Failures:** about one print in 24 goes wrong on a fresh Plodder Mini. With this many small prints that is roughly one a game day, which is on target.
-- **Wear:** still only the nozzle wears out inside a week. Spares cost about £7.
-- **Rating:** a careful Standard player still gains a little from it (x1.08).
+- **Second printer:** on target for an attentive player at 24 minutes. A casual one takes 44, with the quickest runs at 34; it was 34 with the old five designs.
+- **Failures:** about one print in 25 goes wrong on a fresh Plodder Mini, roughly one every game day and a half. On target.
+- **Wear:** still only the nozzle wears out inside a week. Spares cost £5 to £10.
+- **Rating:** a careful Standard player still gains a little from it (x1.06).
 
-## Why it sped up
+## Changed in the catalogue pass
 
-The scripted player now picks from 160 designs and takes the best eight, where it used to buy all five there were. The best are much better than the old five:
+The first import of the catalogue gave every design the old five's demand and a licence fee of 1.2 times its price. The scripted player then took the best eight of 160 and could afford a second printer after 14 minutes. Three rules in `scripts/dev/import_products.gd` changed; nothing in the catalogue's own prices, grams or print times did.
 
-- Profit for an hour of printer and character time runs from £5.18 (Button set) down to £1.80 (the old Desk Organiser and Flexi Dragon). The old Cable Clips made £3.69 an hour of printer time alone.
-- Small prints win. The catalogue prices by size band, and the small bands earn most for the time: every design in the best ten is XS, S or a higher priced M.
-- Category matters as much as size. Jewellery, Cosplay and Personalised earn £3.60 to £5.20 an hour; Kitchen, Home organisation and Education earn £2.10 to £2.60 for prints of the same size and time.
+- **Demand by size band** from XS 5, S 3.5, M 3, L 2.5 orders a day to XS 3, S 2.5, M 2, L 1.5. One design no longer fills a third of a printer's day, so a garage wants about sixteen designs, not eight. A catalogue this size should reward owning a range.
+- **Dearer designs sell slower.** Demand is multiplied by the square root of (cheapest price in the band / this price). A £6.99 button set took the same orders as a £3.99 scoop; it now takes three quarters as many.
+- **Licence fee** from 1.2 to 2 times the typical price. A design pays for itself in about three sales. Sixteen designs cost over £300 across the week, which is most of what holds the second printer back to day 2.4.
 
-Nothing in `data/` was changed for this. The demand and licence fee rules in `scripts/dev/import_products.gd` are placeholders and are the first things to look at: licence fees are small beside what the best designs earn, and demand does not fall for pricier categories.
+Tried and dropped: halving demand with a fee of 3 times the price put the second printer at day 6.4 and out of reach for a casual player; a full price correction (power 1.0) with slightly higher bands gave day 3.4 and 4.4.
+
+## What the catalogue is worth
+
+- Profit for an hour of printer and character time runs from £5.18 (Button set) down to £1.80 (the old Desk Organiser and Flexi Dragon). That is a property of the catalogue's prices and is unchanged.
+- Small prints still earn most for the time, and category matters as much as size: Jewellery, Cosplay and Personalised earn £3.60 to £5.20 an hour, Kitchen, Home organisation and Education £2.10 to £2.60. The demand rule now takes back part of that advantage in orders a day.
 
 ## Changed in the Phase 5 pass
 
@@ -50,7 +55,9 @@ Nothing in `data/` was changed for this. The demand and licence fee rules in `sc
 
 ## Not changed, worth a look
 
-- **Draft now costs a lot.** It ends the week 30% behind Standard (it was 10% with five designs), with orders at less than half. The second printer still arrives just as fast, so the cost comes later.
-- **Strong is nearly as good as Standard.** It ends 3% behind, where it used to be the worst choice. With a second printer there is spare printer time for its longer prints, and it nearly removes refunds.
-- **A casual player's printers sit idle half the time.** With eight designs of mostly small prints, the character's attention is the limit, not the printer.
+- **Draft costs a lot.** It ends the week 37% behind Standard, with orders at less than half. The second printer still arrives just as fast, so the cost comes later.
+- **Strong is a real choice again, but a costly one.** It ends 23% behind Standard and buys the second printer a day later, for almost no refunds and the best rating. With one printer its longer prints are what hold it back.
+- **A casual player's printers sit idle half the time.** With sixteen designs of mostly small prints, the character's attention is the limit, not the printer. That is why the casual player's second printer slipped from day 3.4 to 4.4.
+- **The starting design earns very little alone.** The free clips bring about £9 a day, so a new player has to buy designs straight away. Starting cash leaves about £125 after the first printer and spool, enough for four to eight designs.
 - **Seasons are not applied.** Seasonal designs sell all year, and two of the best ten are seasonal.
+- **The move to a small unit** (£399.99 and £9.99 a day) was priced before this pass. An attentive Standard player ends a week with about £470 in cash after the second printer.
