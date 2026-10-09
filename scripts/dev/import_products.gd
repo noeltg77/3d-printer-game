@@ -45,6 +45,9 @@ const SIZE_STEP_MM := 5
 
 ## What each design's card says in the Design Lab, by product id. Written by hand.
 const DESCRIPTIONS := "res://data/import/product_descriptions.json"
+## Small parts whose model was scaled up again to be visible (`builder.enlarge` in
+## its generator), by product id. Their real size divides by this as well.
+const ENLARGEMENT := "res://data/import/model_enlargement.json"
 
 ## Per product values that replace what the rules give. The names are for
 ## catalogue entries called after a real brand, which the game doesn't use.
@@ -56,6 +59,12 @@ const OVERRIDES := {
 	"replica_lightsaber_hilt": {"name": "Energy sword hilt"},
 	"spotify_code_plaque": {"name": "Music code plaque"},
 	"elf_on_the_shelf_props_set": {"name": "Shelf elf props set"},
+	"gridfinity_baseplate_4x4": {"name": "Grid storage baseplate 4x4"},
+	"gridfinity_bin_pack_x6": {"name": "Grid storage bin pack (x6)"},
+	"benchy_pack_of_5": {"name": "Test boat (pack of 5)"},
+	"arduino_mounting_plate": {"name": "Controller board mounting plate"},
+	"gopro_mount_set": {"name": "Action camera mount set"},
+	"mandalorian_style_helmet": {"name": "Bounty hunter helmet"},
 }
 
 ## Field order in the output, and which numbers are written as whole numbers.
@@ -70,6 +79,7 @@ const WHOLE: Array[String] = ["unlock_tier", "filament_grams", "print_minutes", 
 ## tiers only, so bringing in a later tier doesn't move the demand of an earlier one.
 var _band_floor := {}
 var _descriptions := {}
+var _enlargement := {}
 ## Imported products with nothing written for them, which fall back to their category name.
 var _undescribed: PackedStringArray = []
 
@@ -88,6 +98,7 @@ func _init() -> void:
 		if not _band_floor.has(band):
 			_band_floor[band] = later_floor[band]
 	_descriptions = JSON.parse_string(FileAccess.get_file_as_string(DESCRIPTIONS))
+	_enlargement = JSON.parse_string(FileAccess.get_file_as_string(ENLARGEMENT))
 	var rows: Array[Dictionary] = []
 	var skipped := 0
 	var waiting := 0
@@ -178,9 +189,10 @@ func _real_size_mm(id: String) -> Array:
 		first = false
 	model.free()
 	# Godot has y up; the data has z up.
+	var scale := MODEL_SCALE * float(_enlargement.get(id, 1.0))
 	var size: Array = []
 	for metres: float in [bounds.size.x, bounds.size.z, bounds.size.y]:
-		size.append(maxi(SIZE_STEP_MM, roundi(metres / MODEL_SCALE * 1000.0 / SIZE_STEP_MM) * SIZE_STEP_MM))
+		size.append(maxi(SIZE_STEP_MM, roundi(metres / scale * 1000.0 / SIZE_STEP_MM) * SIZE_STEP_MM))
 	return size
 
 

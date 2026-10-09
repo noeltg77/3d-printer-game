@@ -30,7 +30,7 @@ Stored exactly as supplied on 2026-10-09. Don't edit them to match the game; cha
 
 `data/products.json` is written by `scripts/dev/import_products.gd`, not by hand. It converts the fields above and works out what this list does not hold:
 
-- `size_mm` is measured from the product's model, scaled back down to real size.
+- `size_mm` is measured from the product's model, scaled back down to real size. A small part whose generator calls `builder.enlarge(...)` to make it visible needs the same factor in `data/import/model_enlargement.json`, or the import records it too big.
 - `demand_per_day` comes from the size band (XS 3, S 2.5, M 2, L 1.5, XL 1 for the cheapest design in the band; the cheapest Garage design, or for XL, which the Garage has none of, the cheapest Spare room one) and falls for dearer designs, by the square root of the price ratio. Seasons and demand patterns are not applied yet, so seasonal products sell all year.
 - `licence` is a one-off fee of twice the typical price.
 - `description` is written by hand in `data/import/product_descriptions.json`, one line per product id. A product with nothing there shows its category name, and the import lists it.
