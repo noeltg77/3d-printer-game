@@ -74,12 +74,33 @@ def _flexi_dragon(builder):
         builder.box((0.008, 0.008, 0.025), (-0.14, -0.005 + side * 0.014, 0.05), "white")
 
 
+def hex_pot(builder, radius=0.045, height=0.1, wall=0.006):
+    """Open hexagonal pot: six walls around a thin floor. `radius` is the corner distance from the centre.
+
+    The floor is a six-sided disc, so its corners sit on the same angles as the walls' joins.
+    It stays inside the walls, which are lengthened a little so the corners meet.
+    """
+    apothem = radius * math.cos(math.radians(30))
+    wall_length = radius + wall * math.tan(math.radians(30)) * 2
+    builder.cylinder(radius * 0.9, 0.004, (0, 0, 0.002), "white", segments=6)
+    for index in range(6):
+        angle = math.radians(30 + 60 * index)
+        centre = (apothem * math.cos(angle), apothem * math.sin(angle), height / 2)
+        builder.box((wall, wall_length, height), centre, "white", rotation=(0, 0, angle), bevel=0.002)
+
+
+def _pen_pot_hex(builder):
+    """Hexagonal pen pot, the Garage product `pen_pot_hex`."""
+    hex_pot(builder, radius=0.045, height=0.1, wall=0.006)
+
+
 VARIANTS = {
     "desk_organiser": _desk_organiser,
     "cable_clips": _cable_clips,
     "phone_stand": _phone_stand,
     "plant_pot": _plant_pot,
     "flexi_dragon": _flexi_dragon,
+    "pen_pot_hex": _pen_pot_hex,
 }
 
 if __name__ == "__main__":
