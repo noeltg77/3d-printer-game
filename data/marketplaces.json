@@ -17,9 +17,9 @@
 			"return_chance_per_quality_point": 0.04,
 			"rating_window": 20,
 			"rating_confidence_reviews": 5,
-			"rating_neutral": 4.4,
-			"rating_demand_per_star": 0.4,
-			"min_rating_multiplier": 0.4,
+			"rating_neutral": 4.2,
+			"rating_demand_per_star": 0.55,
+			"min_rating_multiplier": 0.3,
 			"max_rating_multiplier": 1.2
 		}
 	]

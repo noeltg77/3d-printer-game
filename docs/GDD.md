@@ -271,7 +271,7 @@ Build small and prove each step before moving on: assets and garage first, then 
 - [x] Save and load
 - [ ] UI polish, sound effects, music, lighting pass
 - [x] Light onboarding hints for non printer owners
-- [ ] Balance pass on the garage tier
+- [x] Balance pass on the garage tier
 - [ ] Playtest with printer owners and complete beginners
 
 **Done when:** the garage tier is a shareable demo you'd be happy to show people.
