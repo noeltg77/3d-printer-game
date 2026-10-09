@@ -75,9 +75,12 @@ Imported from `docs/design_data/filaments.json` (`materials`): PLA, three specia
 
 ## products.json
 
+Generated from `docs/design_data/products.json` by `scripts/dev/import_products.gd`. Don't edit it by hand: change the rules or per product overrides in that script and run it again. Every product needs a model at `assets/models/prints/<id>.glb`; the validator checks.
+
 | Field | Meaning |
 | --- | --- |
 | `category` | Demand and trend group, e.g. `home_organisation`, `fidget_toys` |
+| `category_name` | The category as shown to the player, e.g. "Valentine's Day". Optional: without it the id is tidied up and shown |
 | `filament_grams` | Filament used per unit at the Standard preset |
 | `print_minutes` | Print time per unit on a 1.0 speed printer at the Standard preset |
 | `size_mm` | `[x, y, z]`, checked against printer build volume |

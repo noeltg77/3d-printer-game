@@ -9,7 +9,7 @@ extends Node
 ##       an expression on the Game autoload (what the PC screens would do),
 ##       e.g. call>buy_design("phone_stand"), or `on>group>expression` to
 ##       run one on the first node in a group, e.g.
-##       on>print_dialog>choose("cable_clips","draft"). `shot>file.png` saves a
+##       on>print_dialog>choose("cable_management_clips_x12","draft"). `shot>file.png` saves a
 ##       screenshot at that point and `quit` exits. A step starts once the
 ##       character has finished the one before.
 ##   --time-scale=8   run the whole game faster

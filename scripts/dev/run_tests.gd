@@ -57,7 +57,7 @@ func _test_print_risk() -> void:
 	var plodder: Dictionary = data.printers["plodder_mini"]
 	var zippy: Dictionary = data.printers["zippy_x1"]
 	var pla: Dictionary = data.filaments["pla"]
-	var clips: Dictionary = data.products["cable_clips"]
+	var clips: Dictionary = data.products["cable_management_clips_x12"]
 	var dragon: Dictionary = data.products["flexi_dragon"]
 	var draft: Dictionary = data.presets["draft"]
 	var standard: Dictionary = data.presets["standard"]
@@ -131,8 +131,8 @@ func _test_printer_wear() -> void:
 	_check(wear.is_worn(&"nozzle") and wear.flags().has(&"worn_nozzle"), "below 30% a part is worn and raises its flag")
 	var half_way := float(data.parts["brass_nozzle_0_4mm"]["max_extra_fail"]) * 0.5
 	_check(is_equal_approx(wear.extra_fail_chance(), half_way), "at 15% health a part adds half its extra risk")
-	var base := PrintRisk.fail_chance(plodder, standard, pla, data.products["cable_clips"])
-	_check(PrintRisk.fail_chance(plodder, standard, pla, data.products["cable_clips"], wear.extra_fail_chance()) > base * 1.5, "a worn nozzle clearly raises the chance of failure")
+	var base := PrintRisk.fail_chance(plodder, standard, pla, data.products["cable_management_clips_x12"])
+	_check(PrintRisk.fail_chance(plodder, standard, pla, data.products["cable_management_clips_x12"], wear.extra_fail_chance()) > base * 1.5, "a worn nozzle clearly raises the chance of failure")
 	var clog: Dictionary = data.failures["clog"]
 	_check(PrintRisk.weight_of(clog, wear.flags(), pla) > float(clog["weight"]) * 2.0, "a worn nozzle makes clogs the likely failure")
 
@@ -174,13 +174,13 @@ func _test_printer_mods() -> void:
 	_check(mods.problem(&"auto_bed_levelling_kit", zippy) != "", "but not a printer of the wrong kind, or one that has it already")
 	_check(mods.problem(&"anti_vibration_feet", zippy) == "", "an upgrade that fits anything fits a core XY")
 
-	var flags := PrintRisk.conditions(plodder, data.presets["standard"], data.products["cable_clips"])
-	var before := PrintRisk.fail_chance(plodder, data.presets["standard"], pla, data.products["cable_clips"])
+	var flags := PrintRisk.conditions(plodder, data.presets["standard"], data.products["cable_management_clips_x12"])
+	var before := PrintRisk.fail_chance(plodder, data.presets["standard"], pla, data.products["cable_management_clips_x12"])
 	mods.fit(&"auto_bed_levelling_kit")
 	_check(mods.has(&"auto_bed_levelling_kit") and mods.problem(&"auto_bed_levelling_kit", plodder) != "", "an upgrade can only be fitted once")
 	var improved := mods.apply(plodder)
 	_check(improved["auto_bed_levelling"] and not plodder["auto_bed_levelling"], "bed levelling gives the printer the capability without touching its data row")
-	var levelled := PrintRisk.conditions(improved, data.presets["standard"], data.products["cable_clips"])
+	var levelled := PrintRisk.conditions(improved, data.presets["standard"], data.products["cable_management_clips_x12"])
 	_check(flags.has(&"no_auto_level") and not levelled.has(&"no_auto_level"), "so the missing bed levelling flag goes")
 	var scale := PrintRisk.upgrade_scale(data.failures, levelled, pla, mods.failure_multipliers())
 	_check(scale < 0.92 and scale > 0.6, "bed levelling clearly cuts the chance of a failure (to %.2f of what it was)" % scale)
@@ -217,7 +217,7 @@ func _test_filaments() -> void:
 	var data := GameData.load_all()
 	var plodder: Dictionary = data.printers["plodder_mini"]
 	var zippy: Dictionary = data.printers["zippy_x1"]
-	var clips: Dictionary = data.products["cable_clips"]
+	var clips: Dictionary = data.products["cable_management_clips_x12"]
 	var standard: Dictionary = data.presets["standard"]
 	_check(FilamentRules.problem(plodder, data.filaments["pla"]) == "", "the starter printer prints PLA")
 	_check(FilamentRules.problem(plodder, data.filaments["petg"]) == "", "and is just hot enough for PETG")
@@ -235,7 +235,8 @@ func _test_filaments() -> void:
 	_check(FilamentRules.problem(tent.apply(hot_open), data.filaments["abs"]) == "", "a snap-on enclosure lets it print ABS")
 
 	_check(FilamentRules.suits(clips, data.filaments["pla"]) and FilamentRules.suits(clips, data.filaments["pla_silk"]), "a PLA design prints in any filament of the PLA family")
-	_check(FilamentRules.suits(clips, data.filaments["petg"]) and not FilamentRules.suits(clips, data.filaments["tpu"]), "and in the other filaments it names, but no others")
+	var tough := {"allowed_filaments": ["pla", "petg"]}
+	_check(FilamentRules.suits(tough, data.filaments["petg"]) and not FilamentRules.suits(tough, data.filaments["tpu"]), "and in the other filaments it names, but no others")
 	_check(FilamentRules.suits(data.products["flexi_dragon"], data.filaments["pla_glow"]) and not FilamentRules.suits(data.products["flexi_dragon"], data.filaments["petg"]), "a PLA-only design takes the fancy PLAs but not PETG")
 	_check(FilamentRules.has_a_use(data.products, data.filaments["pla_wood"]) and not FilamentRules.has_a_use(data.products, data.filaments["asa"]), "a filament no design can use is spotted")
 
@@ -267,7 +268,7 @@ func _test_filaments() -> void:
 
 	var market := Marketplace.new(data.marketplaces["craftsy"].duplicate(), data.products)
 	market.config["max_open_orders"] = 1000
-	market.set_listing(&"cable_clips", true, 400)
+	market.set_listing(&"cable_management_clips_x12", true, 400)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 2
 	for step in 2000:
@@ -482,7 +483,7 @@ func _test_saving() -> void:
 	var market := Marketplace.new(data.marketplaces["craftsy"].duplicate(), data.products)
 	market.comments = data.review_comments
 	market.config["review_chance"] = 1.0
-	market.set_listing(&"cable_clips", true, 399)
+	market.set_listing(&"cable_management_clips_x12", true, 399)
 	for step in 2000:
 		market.tick(step, step + 1.0, rng)
 	var first := market.orders[0]
@@ -496,7 +497,7 @@ func _test_saving() -> void:
 	saved_market["listings"]["gone_design"] = {"listed": true, "price": 100, "sold": 0}
 	var market_again := Marketplace.new(market.config, data.products)
 	market_again.restore(saved_market)
-	_check(market_again.listing(&"cable_clips") == market.listing(&"cable_clips"), "listings come back with their price and sales")
+	_check(market_again.listing(&"cable_management_clips_x12") == market.listing(&"cable_management_clips_x12"), "listings come back with their price and sales")
 	_check(not market_again.listings.has(&"gone_design"), "a listing for a design the game no longer has is dropped")
 	_check(market_again.orders.size() == market.orders.size() and market_again.open_orders().size() == market.open_orders().size(), "every order comes back in the state it was in")
 	var second_again := market_again.order_by_id(second.id)

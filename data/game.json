@@ -3,7 +3,7 @@
 	"start": {
 		"cash_pence": 30000,
 		"packaging": 5,
-		"designs": ["cable_clips"],
+		"designs": ["cable_management_clips_x12"],
 		"premises": "garage",
 		"minute_of_day": 480
 	},

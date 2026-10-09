@@ -13,6 +13,7 @@ from pathlib import Path
 
 sys.path.append(str(Path(__file__).resolve().parent))
 import common
+import print_shapes
 from common import MeshBuilder
 
 
@@ -34,28 +35,12 @@ def _desk_organiser(builder):
     builder.box((0.045, 0.09, 0.04), (0.07, 0.005, 0.035), "white", bevel=0.006)
 
 
-def _cable_clips(builder):
-    """Six little clips laid out in two rows, as they come off the bed."""
-    for row in (-1, 1):
-        for column in (-1, 0, 1):
-            x, y = column * 0.06, row * 0.035
-            builder.box((0.045, 0.045, 0.012), (x, y, 0.006), "white", bevel=0.003)
-            builder.box((0.012, 0.045, 0.03), (x - 0.0165, y, 0.027), "white", bevel=0.003)
-            builder.box((0.012, 0.045, 0.02), (x + 0.0165, y, 0.022), "white", bevel=0.003)
-
-
 def _phone_stand(builder):
     """Base with a lip and a leaning back rest."""
     builder.box((0.11, 0.13, 0.015), (0, 0, 0.0075), "white", bevel=0.004)
     builder.box((0.11, 0.02, 0.03), (0, -0.055, 0.03), "white", bevel=0.004)
     builder.box((0.11, 0.018, 0.15), (0, 0.035, 0.082), "white", rotation=(math.radians(-18), 0, 0), bevel=0.004)
     builder.box((0.03, 0.05, 0.06), (0, 0.075, 0.04), "white", rotation=(math.radians(25), 0, 0))
-
-
-def _plant_pot(builder):
-    """Faceted pot, wider at the rim."""
-    builder.cylinder(0.045, 0.1, (0, 0, 0.05), "white", segments=6, radius_top=0.07)
-    builder.cylinder(0.078, 0.02, (0, 0, 0.11), "white", segments=6)
 
 
 def _flexi_dragon(builder):
@@ -74,12 +59,36 @@ def _flexi_dragon(builder):
         builder.box((0.008, 0.008, 0.025), (-0.14, -0.005 + side * 0.014, 0.05), "white")
 
 
+def _pen_pot_hex(builder):
+    """Hexagonal pen pot, the Garage product `pen_pot_hex`. About 1.4 times real size."""
+    builder.shell(0.065, 0.13, 0.009, "white", segments=6, chamfer=0.006)
+
+
+def _headphone_stand(builder):
+    """Oval base, upright post and a curved cradle on top for the headband."""
+    builder.cylinder(0.075, 0.016, (0, 0, 0.008), "white", segments=16, radius_top=0.07)
+    builder.box((0.03, 0.03, 0.17), (0, 0, 0.09), "white", bevel=0.006, bevel_segments=2)
+    # Cradle: a half ring of short boxes, each turned to follow the curve, opening upwards.
+    arc_radius, centre_z, pieces = 0.06, 0.22, 13
+    for index in range(pieces):
+        angle = math.pi + math.pi * index / (pieces - 1)
+        x, z = arc_radius * math.cos(angle), centre_z + arc_radius * math.sin(angle)
+        builder.box((0.03, 0.04, 0.014), (x, 0, z), "white", rotation=(0, -(angle + math.pi / 2), 0), bevel=0.003)
+    builder.box((0.036, 0.04, 0.03), (0, 0, 0.165), "white", bevel=0.005)
+
+
+def _mail_sorter(builder):
+    """Letter rack, the Garage product `mail_sorter`: three panels stepping up to the back."""
+    print_shapes.slot_rack(builder, 0.26, 0.14, (0.07, 0.115, 0.16))
+
+
 VARIANTS = {
     "desk_organiser": _desk_organiser,
-    "cable_clips": _cable_clips,
     "phone_stand": _phone_stand,
-    "plant_pot": _plant_pot,
     "flexi_dragon": _flexi_dragon,
+    "pen_pot_hex": _pen_pot_hex,
+    "headphone_stand": _headphone_stand,
+    "mail_sorter": _mail_sorter,
 }
 
 if __name__ == "__main__":

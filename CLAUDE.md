@@ -34,6 +34,7 @@ Neither tool is on PATH. Run from the repo root.
 godot --headless --path . --import                                        # import new or changed assets
 godot --headless --path . --script res://scripts/dev/validate_data.gd     # check data tables
 godot --headless --path . --script res://scripts/dev/build_palette.gd     # rebuild palette.png from data/palette.json
+godot --headless --path . --script res://scripts/dev/import_products.gd   # rebuild data/products.json from the design catalogue
 godot --path . res://scenes/garage/garage.tscn -- --shot=tools/previews/godot_garage.png   # screenshot any scene, then quit
 ```
 
@@ -44,7 +45,7 @@ Checking gameplay without clicking: the `DevAutoplay` autoload (`scripts/dev/dev
 ```
 godot --headless --path . --script res://scripts/dev/run_tests.gd    # unit tests for simulation classes
 godot --headless --path . --script res://scripts/dev/balance_report.gd   # play the garage 200 times and report the economy (see docs/balance_notes.md)
-godot --path . res://scenes/garage/garage.tscn -- --time-scale=2 "--autoplay=call>place_supplier_order({\"printers\":{\"plodder_mini\":1},\"spools\":{\"red\":1}});wait>80;Delivery: 1 spool>Unpack;Delivery: Printer>Unpack;Plodder Mini>Load filament>Red;Plodder Mini>Print...;on>print_dialog>choose(\"cable_clips\",\"standard\");shot>tools/previews/play.png;quit"
+godot --path . res://scenes/garage/garage.tscn -- --time-scale=2 "--autoplay=call>place_supplier_order({\"printers\":{\"plodder_mini\":1},\"spools\":{\"red\":1}});wait>80;Delivery: 1 spool>Unpack;Delivery: Printer>Unpack;Plodder Mini>Load filament>Red;Plodder Mini>Print...;on>print_dialog>choose(\"cable_management_clips_x12\",\"standard\");shot>tools/previews/play.png;quit"
 ```
 
 Runs with `--autoplay` or `--shot` neither load nor write the save game, so they always start fresh and never touch a real one. Add `--save=user://some_test.json` to a run to have it load and save that file instead; `on>world_save>save_now()` saves on the spot.
