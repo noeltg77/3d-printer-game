@@ -13,16 +13,12 @@ func _ready() -> void:
 
 func get_actions(_agent: Agent) -> Array[Action]:
 	var actions: Array[Action] = [Action.info("%d of %d slots used" % [spools().size(), _slots.size()])]
+	# A spool nobody wants (wet, the wrong colour, nearly gone) only takes up a
+	# slot, so each one opens onto binning it.
 	for spool in spools():
-		actions.append(Action.info(spool.describe()))
-	# A spool nobody wants (wet, the wrong colour, nearly gone) only takes up a slot.
-	var unwanted: Array[Action] = []
-	for spool in spools():
-		var bin := Action.new(spool.describe(), _bin.bind(spool))
+		var bin := Action.new("Bin it", _bin.bind(spool))
 		bin.task_name = "Bin the %s" % spool.title().to_lower()
-		unwanted.append(bin)
-	if not unwanted.is_empty():
-		actions.append(Action.submenu("Bin a spool", unwanted))
+		actions.append(Action.submenu(spool.describe(), [bin]))
 	return actions
 
 
@@ -97,7 +93,7 @@ func _bin(agent: Agent, spool: Spool) -> void:
 		Game.changed.emit())
 	await agent.walk_to(get_tree().get_first_node_in_group(&"bin").global_position)
 	await agent.reach(func() -> void: agent.release().queue_free())
-	agent.say("Binned the %s" % title.to_lower())
+	agent.say("Binned the %s" % title)
 
 
 func save() -> Dictionary:
