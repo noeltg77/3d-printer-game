@@ -4,11 +4,17 @@ extends SceneTree
 ## day earns, how often things go wrong and what each design is worth. For
 ## judging balance changes to data/*.json without playing every one by hand.
 ## Run: godot --headless --path . --script res://scripts/dev/balance_report.gd
-## Optional, after `--`: --days=7 --runs=200
+## Optional, after `--`: --days=7 --runs=200 --designs=all
 ##
 ## It uses the real rules (Marketplace, Supplier, PrintRisk, PrinterWear) but
 ## not the scene, so the character is a single pair of hands with rough times
 ## for each job, and the player a set of habits (see PLAYERS).
+##
+## The catalogue is far bigger than one garage can print, so the player does not
+## buy everything. They buy the design that earns most for the time it takes,
+## then the next, until the orders they expect would fill PRINTER_SHARE of the
+## printers' day or all of the character's. When it is the printers that are
+## full they save for another one.
 
 const STEP := 5.0
 ## Game minutes of the character's time each job takes, walking included.
@@ -18,6 +24,14 @@ const PACK_ORDER := 20.0
 const RESERVE := 2000
 const LOW_FILAMENT_GRAMS := 300.0
 const LOW_PACKAGING := 3
+## Share of a day the player lets expected orders fill. Printers keep some slack
+## for failures and for sitting finished until someone comes; the character has none.
+const PRINTER_SHARE := 0.8
+const HANDS_SHARE := 1.0
+const HOURS_IN_DAY := 24.0
+## How many designs the short table lists from each end.
+const BEST_SHOWN := 10
+const WORST_SHOWN := 5
 ## Habits to compare. `reaction` is game minutes before the player notices a
 ## printer needs them; `preset` is what they always print at.
 const PLAYERS: Array[Dictionary] = [
@@ -30,6 +44,9 @@ const PLAYERS: Array[Dictionary] = [
 var _data: GameData
 var _days := 7
 var _runs := 200
+var _all_designs := false
+## Every design with its figures (see _figures), best earner for the time first.
+var _wishlist: Array[Dictionary] = []
 
 
 func _init() -> void:
@@ -38,7 +55,12 @@ func _init() -> void:
 			_days = arg.trim_prefix("--days=").to_int()
 		elif arg.begins_with("--runs="):
 			_runs = arg.trim_prefix("--runs=").to_int()
+		elif arg == "--designs=all":
+			_all_designs = true
 	_data = GameData.load_all()
+	for product: String in _data.products:
+		_wishlist.append(_figures(product))
+	_wishlist.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return a["per_hour"] > b["per_hour"])
 	print("Garage balance: %d runs of %d game days each (one day is 10 minutes of play at 1x)\n" % [_runs, _days])
 	for player in PLAYERS:
 		_report(player)
@@ -61,8 +83,9 @@ func _report(player: Dictionary) -> void:
 			second[second.size() / 2], second[0], second[int(second.size() * 0.9)], roundi(100.0 * second.size() / _runs)])
 	else:
 		print("  Second printer bought in only %d%% of runs" % roundi(100.0 * second.size() / _runs))
-	print("  Worth at the end (cash + printers): %s    Sold per day: %.1f    Printer busy: %d%%" % [
-		_pounds(_mean(results, "worth")), _mean(results, "sold") / _days, roundi(_mean(results, "busy") * 100.0)])
+	print("  Worth at the end (cash + printers): %s    Sold per day: %.1f    Printer busy: %d%%    Designs owned: %.1f" % [
+		_pounds(_mean(results, "worth")), _mean(results, "sold") / _days, roundi(_mean(results, "busy") * 100.0),
+		_mean(results, "designs")])
 	print("  Prints ruined: %.1f%%   flawed: %.1f%%   parcels refunded: %.1f%%   orders cancelled: %.1f%%   rating: %.2f (orders x%.2f)" % [
 		_mean(results, "ruined") * 100.0, _mean(results, "flawed") * 100.0, _mean(results, "refunded") * 100.0,
 		_mean(results, "cancelled") * 100.0, _mean(results, "rating"), _mean(results, "rating_multiplier")])
@@ -70,23 +93,66 @@ func _report(player: Dictionary) -> void:
 		_pounds(_mean(results, "parts_spend")), _mean(results, "parts_fitted"), _mean(results, "breakdowns")])
 
 
-## What each design earns for an hour of printer time, and how much of a
-## printer's day its orders can fill, at its typical price.
-func _design_table() -> void:
+## What a design is worth at its typical price, printed at Standard on the starter
+## printer: profit a sale in pence, printer hours a print, the hours of a day its
+## expected orders take from a printer and from the character, and profit for
+## each hour of printer and character time together.
+func _figures(product: String) -> Dictionary:
 	var market := Marketplace.new(_data.marketplaces["craftsy"], _data.products)
 	var printer: Dictionary = _data.printers.values()[0]
 	var pla: Dictionary = _data.filaments["pla"]
-	print("== Designs at their typical price, Standard, on the %s ==" % printer["name"])
-	for product: String in _data.products:
-		var row: Dictionary = _data.products[product]
-		var price := int(row["base_price_pence"])
-		var hours := float(row["print_minutes"]) / float(printer["speed_multiplier"]) / 60.0
-		var cost := float(row["filament_grams"]) / 1000.0 * float(pla["price_pence_per_kg"]) + _mailer_pence() \
-			+ float(printer["power_watts"]) / 1000.0 * hours * float(_data.settings["electricity_pence_per_kwh"])
-		var profit := price - cost - market.fee_for(price) - market.royalty_for(StringName(product), price)
-		print("  %-26s profit %s   %s an hour   orders fill %4.1f printer hours a day   licence %s" % [
-			row["name"], _pounds(profit), _pounds(profit / hours), float(row["demand_per_day"]) * hours,
-			_pounds(float(row["licence"]["fee_pence"]))])
+	var row: Dictionary = _data.products[product]
+	var price := int(row["base_price_pence"])
+	var hours := float(row["print_minutes"]) / float(printer["speed_multiplier"]) / 60.0
+	var hands := (HANDLE_PRINT + PACK_ORDER) / 60.0
+	var cost := float(row["filament_grams"]) / 1000.0 * float(pla["price_pence_per_kg"]) + _mailer_pence() \
+		+ float(printer["power_watts"]) / 1000.0 * hours * float(_data.settings["electricity_pence_per_kwh"])
+	var profit := price - cost - market.fee_for(price) - market.royalty_for(StringName(product), price)
+	return {
+		"id": StringName(product),
+		"name": row["name"],
+		"category": row.get("category_name", String(row["category"]).capitalize()),
+		"fee": int(row["licence"]["fee_pence"]),
+		"profit": profit,
+		"hours": hours,
+		"per_hour": profit / (hours + hands),
+		"printer_load": float(row["demand_per_day"]) * hours,
+		"hands_load": float(row["demand_per_day"]) * hands,
+	}
+
+
+## The catalogue at typical prices: a line per category, then the best and worst
+## earners. `--designs=all` lists every design instead.
+func _design_table() -> void:
+	print("== Designs at their typical price, Standard, on the %s ==" % _data.printers.values()[0]["name"])
+	print("  \"An hour\" counts printer time and the character's time to handle and pack it.\n")
+	if _all_designs:
+		for wish in _wishlist:
+			_design_line(wish)
+		return
+	var categories := {}
+	for wish in _wishlist:
+		if not categories.has(wish["category"]):
+			categories[wish["category"]] = []
+		categories[wish["category"]].append(wish["per_hour"])
+	print("  By category (designs, profit an hour from worst to best):")
+	for category: String in categories:
+		var rates: Array = categories[category]
+		print("    %-28s %3d   %s to %s" % [category, rates.size(), _pounds(rates.min()), _pounds(rates.max())])
+	var best := mini(BEST_SHOWN, _wishlist.size())
+	var worst := mini(WORST_SHOWN, _wishlist.size() - best)
+	print("\n  Best %d:" % best)
+	for wish in _wishlist.slice(0, best):
+		_design_line(wish)
+	if worst > 0:
+		print("  Worst %d:" % worst)
+		for wish in _wishlist.slice(_wishlist.size() - worst):
+			_design_line(wish)
+
+
+func _design_line(wish: Dictionary) -> void:
+	print("    %-40s profit %6s   %5s an hour   orders fill %4.1f printer hours a day   licence %s" % [
+		wish["name"], _pounds(wish["profit"]), _pounds(wish["per_hour"]), wish["printer_load"], _pounds(wish["fee"])])
 
 
 ## One game from a new start. Returns the figures _report averages.
@@ -116,6 +182,14 @@ func _play(player: Dictionary, seed_value: int) -> Dictionary:
 	var printer_id: String = _data.printers.keys()[0]
 	var printer_spec: Dictionary = _data.printers[printer_id]
 	var printers_bought := 1
+	# Hours of a day the owned designs' expected orders take, and what the shopping last saw.
+	var printer_load := 0.0
+	var hands_load := 0.0
+	for wish in _wishlist:
+		if owned.has(wish["id"]):
+			printer_load += wish["printer_load"]
+			hands_load += wish["hands_load"]
+	var shopped_with := [-1, -1]
 	_order(supplier, bank, {"printers": {printer_id: 1}, "spools": {"red": 1}}, clock.minutes)
 	for product in owned:
 		market.set_listing(product, true, int(_data.products[product]["base_price_pence"]))
@@ -199,16 +273,28 @@ func _play(player: Dictionary, seed_value: int) -> Dictionary:
 				if wear.is_worn(slot) and int(spares.get(part, 0)) == 0 and not coming:
 					if _order(supplier, bank, {"parts": {part: 1}}, now):
 						tally["parts_spend"] += supplier.price_of({"parts": {part: 1}})
-		for product: String in _data.products:
-			var fee := int(_data.products[product]["licence"]["fee_pence"])
-			if not owned.has(StringName(product)) and bank.cash >= fee + RESERVE and not printers.is_empty():
-				bank.spend(fee, "Licence", now)
-				owned.append(StringName(product))
-				market.set_listing(StringName(product), true, int(_data.products[product]["base_price_pence"]))
-		if printers_bought == 1 and owned.size() >= _data.products.size() and bank.cash >= int(printer_spec["price_pence"]) + RESERVE:
-			_order(supplier, bank, {"printers": {printer_id: 1}}, now)
-			printers_bought = 2
-			tally["second_printer_day"] = (now - start) / GameClock.DAY
+		# Designs: nothing about the choice changes unless the cash or the printers have.
+		if not printers.is_empty() and shopped_with != [bank.cash, printers_bought]:
+			var printers_full := false
+			for wish in _wishlist:
+				if owned.has(wish["id"]) or hands_load + wish["hands_load"] > HOURS_IN_DAY * HANDS_SHARE:
+					continue
+				if printer_load + wish["printer_load"] > HOURS_IN_DAY * PRINTER_SHARE * printers_bought:
+					printers_full = true
+					continue
+				# The best design that fits is worth waiting for.
+				if bank.cash < wish["fee"] + RESERVE:
+					break
+				bank.spend(wish["fee"], "Licence", now)
+				owned.append(wish["id"])
+				market.set_listing(wish["id"], true, int(_data.products[wish["id"]]["base_price_pence"]))
+				printer_load += wish["printer_load"]
+				hands_load += wish["hands_load"]
+			if printers_bought == 1 and printers_full and bank.cash >= int(printer_spec["price_pence"]) + RESERVE:
+				_order(supplier, bank, {"printers": {printer_id: 1}}, now)
+				printers_bought = 2
+				tally["second_printer_day"] = (now - start) / GameClock.DAY
+			shopped_with = [bank.cash, printers_bought]
 
 	var cancelled := market.orders.filter(func(order: Marketplace.Order) -> bool: return order.status == Marketplace.Status.CANCELLED).size()
 	return {
@@ -225,6 +311,7 @@ func _play(player: Dictionary, seed_value: int) -> Dictionary:
 		"parts_spend": float(tally["parts_spend"]),
 		"parts_fitted": float(tally["parts_fitted"]),
 		"breakdowns": float(tally["breakdowns"]),
+		"designs": float(owned.size()),
 	}
 
 

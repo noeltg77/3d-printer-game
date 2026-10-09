@@ -17,13 +17,18 @@ const SKIPPED_PATTERNS: Array[String] = ["Contracts"]
 ## they are until that tier is imported, because tests and the starting game use them.
 const LEGACY: Array[String] = ["desk_organiser", "flexi_dragon"]
 
-## Orders per game day at the typical price, by catalogue size band. Small, cheap things sell fastest.
-const DEMAND_PER_DAY := {"XS": 5.0, "S": 3.5, "M": 3.0, "L": 2.5}
+## Orders per game day at the typical price for the cheapest design in each catalogue
+## size band. Small, cheap things sell fastest.
+const DEMAND_PER_DAY := {"XS": 3.0, "S": 2.5, "M": 2.0, "L": 1.5}
+## Dearer designs in a band sell slower: demand is multiplied by (cheapest price in
+## the band / this price) to this power. At 1.0 every design in a band takes the same
+## money in a day; at 0.0 price makes no difference to demand.
+const DEMAND_PRICE_POWER := 0.5
 ## Game difficulty (0 to 1) for catalogue difficulty 1, and the step for each level above.
 const DIFFICULTY_BASE := 0.05
 const DIFFICULTY_STEP := 0.1
 ## A design costs this multiple of its typical sale price, tidied to end in 99.
-const LICENCE_FEE_MULTIPLE := 1.2
+const LICENCE_FEE_MULTIPLE := 2.0
 ## Models are built larger than life so they read at the game camera.
 const MODEL_SCALE := 1.4
 const SIZE_STEP_MM := 5
@@ -47,8 +52,15 @@ const FIELDS: Array[String] = [
 const WHOLE: Array[String] = ["unlock_tier", "filament_grams", "print_minutes", "size_mm", "colour_count", "base_price_pence", "fee_pence"]
 
 
+## Cheapest catalogue price in each size band, in pounds.
+var _band_floor := {}
+
+
 func _init() -> void:
 	var catalogue: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(SOURCE))
+	for entry: Dictionary in catalogue["products"]:
+		if TIERS.has(entry["unlock_tier"]) and not SKIPPED_PATTERNS.has(entry["demand_pattern"]):
+			_band_floor[entry["size"]] = minf(_band_floor.get(entry["size"], INF), float(entry["base_price_gbp"]))
 	var rows: Array[Dictionary] = []
 	var skipped := 0
 	var missing_models: PackedStringArray = []
@@ -100,7 +112,8 @@ func _convert(entry: Dictionary) -> Dictionary:
 		"colour_count": entry["colours"],
 		"allowed_filaments": [String(entry["material"]).to_lower()],
 		"base_price_pence": price,
-		"demand_per_day": DEMAND_PER_DAY[entry["size"]],
+		"demand_per_day": snappedf(DEMAND_PER_DAY[entry["size"]]
+			* pow(_band_floor[entry["size"]] / float(entry["base_price_gbp"]), DEMAND_PRICE_POWER), 0.05),
 		"licence": {"type": "one_off", "fee_pence": roundi(price * LICENCE_FEE_MULTIPLE / 100.0) * 100 - 1, "royalty_pct": 0.0},
 	}
 	row.merge(OVERRIDES.get(entry["id"], {}), true)
