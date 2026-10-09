@@ -36,5 +36,8 @@ Each product needs a small model that grows on the print bed and then sits on a 
 - Origin at the centre of the base, sitting on z = 0, because the print animation grows the model upwards from the bed.
 - Size for readability at the game camera, not realism: the existing five are roughly 1.3 to 1.5 times real size. Keep within the product's size band so it fits a shelf slot (about 0.35 m wide).
 - Bevel edges to match the props.
+- For anything hollow and open-topped (pots, cups, bins, tubs, trays) use `builder.shell(radius, height, wall, colour, segments=...)` from `common.py`. It makes the walls and floor as one piece, so corners and the base are right by construction. Don't assemble containers from separate wall boxes.
+- Keep models light: most should be under about 200 triangles. A row of small bevelled boxes to fake a curve adds up fast.
+- Before calling a model done, check the preview against what the code comments claim, and look from above as well as from the game angle (`common.render_preview(path, direction=(0.15, -0.5, 1.0))`), since the game camera looks down into open shapes.
 - **Start with the 160 Garage products**, all single-colour PLA. The 178 multicolour products (all Spare room or later) need a way to colour parts separately that doesn't exist yet; leave them until Phase 7 decides it.
 - Prefer a few parameterised shapes per category (bins, stands, clips, hooks, pots, trays) over 660 one-offs. Many products are variations on the same form.

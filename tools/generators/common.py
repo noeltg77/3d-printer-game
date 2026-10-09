@@ -107,6 +107,54 @@ class MeshBuilder:
         self.paint(faces, colour)
         return faces
 
+    def shell(self, radius, height, wall, colour, segments=6, centre=(0.0, 0.0, 0.0), floor=None,
+              radius_top=None, chamfer=0.0, turn=0.0):
+        """Open-topped hollow container as one clean piece: pots, cups, bins, tubs.
+
+        A prism with `segments` sides (6 hexagonal, 4 square, 12 or more round),
+        standing on `centre` with the opening upwards. Corners and the floor are
+        right by construction, so prefer this to leaning separate wall boxes together.
+
+        `radius` is centre to outer corner at the base, `radius_top` the same at the
+        rim if the sides should flare or narrow. `wall` is the wall thickness and
+        `floor` the base thickness (defaults to `wall`). `chamfer` cuts the outer
+        top and bottom edges. `turn` rotates it about Z, in radians; at 0 a corner
+        points along +X.
+        """
+        floor = wall if floor is None else floor
+        top = radius if radius_top is None else radius_top
+        # Thickness is measured square to a wall, so corners move in by a bit more.
+        corner_inset = wall / math.cos(math.pi / segments)
+        # Rings of points from the outside bottom, up and over the rim, down to the inside floor.
+        rings = [
+            (radius - chamfer, 0.0),
+            (radius, chamfer),
+            (top, height - chamfer),
+            (top - chamfer, height),
+            (top - corner_inset, height),
+            (radius + (top - radius) * floor / height - corner_inset, floor),
+        ]
+        if chamfer <= 0.0:
+            rings = [rings[0], rings[3], rings[4], rings[5]]
+        origin = Vector(centre)
+        loops = []
+        for ring_radius, z in rings:
+            loops.append([
+                self.bm.verts.new(origin + Vector((
+                    ring_radius * math.cos(turn + math.tau * index / segments),
+                    ring_radius * math.sin(turn + math.tau * index / segments),
+                    z)))
+                for index in range(segments)
+            ])
+        faces = [self.bm.faces.new(list(reversed(loops[0]))), self.bm.faces.new(loops[-1])]
+        for lower, upper in zip(loops, loops[1:]):
+            for index in range(segments):
+                following = (index + 1) % segments
+                faces.append(self.bm.faces.new((lower[index], lower[following], upper[following], upper[index])))
+        bmesh.ops.recalc_face_normals(self.bm, faces=faces)
+        self.paint(faces, colour)
+        return faces
+
     def cylinder(self, radius, depth, centre, colour, segments=8, axis="Z", rotation=None, radius_top=None):
         """Cylinder along `axis` (or an explicit rotation). `radius_top` makes it a cone."""
         before = set(self.bm.faces)

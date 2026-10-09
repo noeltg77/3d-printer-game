@@ -74,24 +74,9 @@ def _flexi_dragon(builder):
         builder.box((0.008, 0.008, 0.025), (-0.14, -0.005 + side * 0.014, 0.05), "white")
 
 
-def hex_pot(builder, radius=0.045, height=0.1, wall=0.006):
-    """Open hexagonal pot: six walls around a thin floor. `radius` is the corner distance from the centre.
-
-    The floor is a six-sided disc, so its corners sit on the same angles as the walls' joins.
-    It stays inside the walls, which are lengthened a little so the corners meet.
-    """
-    apothem = radius * math.cos(math.radians(30))
-    wall_length = radius + wall * math.tan(math.radians(30)) * 2
-    builder.cylinder(radius * 0.9, 0.004, (0, 0, 0.002), "white", segments=6)
-    for index in range(6):
-        angle = math.radians(30 + 60 * index)
-        centre = (apothem * math.cos(angle), apothem * math.sin(angle), height / 2)
-        builder.box((wall, wall_length, height), centre, "white", rotation=(0, 0, angle), bevel=0.002)
-
-
 def _pen_pot_hex(builder):
-    """Hexagonal pen pot, the Garage product `pen_pot_hex`."""
-    hex_pot(builder, radius=0.045, height=0.1, wall=0.006)
+    """Hexagonal pen pot, the Garage product `pen_pot_hex`. About 1.4 times real size."""
+    builder.shell(0.065, 0.13, 0.009, "white", segments=6, chamfer=0.006)
 
 
 def _headphone_stand(builder):
