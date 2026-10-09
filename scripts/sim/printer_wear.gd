@@ -18,6 +18,8 @@ var fitted: Dictionary[StringName, StringName] = {}
 var health: Dictionary[StringName, float] = {}
 ## The printer's own wear multiplier times the game's wear rate.
 var rate := 1.0
+## What the printer's upgrades do to wear (PrinterMods.wear_multiplier).
+var upgrade_multiplier := 1.0
 
 
 ## Fits a new printer with the parts it ships with. `wear_rate` is the global
@@ -50,7 +52,7 @@ func replace(slot: StringName, part_id: StringName) -> void:
 func wear_per_hour(slot: StringName, preset: Dictionary, filament: Dictionary) -> float:
 	var row := part(slot)
 	var abrasion := float(row["abrasive_wear_multiplier"]) if filament["abrasive"] else 1.0
-	return rate * float(preset["wear_multiplier"]) * abrasion / float(row["lifespan_print_hours"])
+	return rate * upgrade_multiplier * float(preset["wear_multiplier"]) * abrasion / float(row["lifespan_print_hours"])
 
 
 ## Wears every part by `hours` of printing.

@@ -9,8 +9,9 @@ const MODEL_PATH := "res://assets/models/prints/%s.glb"
 
 func _init() -> void:
 	var data := GameData.load_all()
-	print("printers: %d, filaments: %d, products: %d, presets: %d, failures: %d" % [
-		data.printers.size(), data.filaments.size(), data.products.size(), data.presets.size(), data.failures.size()])
+	print("printers: %d, filaments: %d, products: %d, presets: %d, failures: %d, parts: %d, upgrades: %d" % [
+		data.printers.size(), data.filaments.size(), data.products.size(), data.presets.size(), data.failures.size(),
+		data.parts.size(), data.upgrades.size()])
 	var errors := data.errors.duplicate()
 	for product: String in data.products:
 		if not ResourceLoader.exists(MODEL_PATH % product):

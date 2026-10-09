@@ -10,8 +10,10 @@ const BRAND := "Plainly"
 
 var screen: PcScreen
 
-## Palette colour name -> number of spools wanted.
+## Spool key ("material:colour") -> number of spools wanted.
 var _basket: Dictionary = {}
+## Filament id whose colours are on show.
+var _material := FilamentRules.DEFAULT_MATERIAL
 var _search := ""
 var _content: MarginContainer = null
 
@@ -52,25 +54,30 @@ func _build() -> void:
 
 func _sidebar() -> Control:
 	var materials := Ui.vbox([], 8)
-	for filament: Dictionary in Game.data.filaments.values():
-		var stocked := int(filament["unlock_tier"]) <= 1
+	for filament_id: String in Game.data.filaments:
+		var filament: Dictionary = Game.data.filaments[filament_id]
+		var note := _stock_note(filament)
+		var stocked := note == ""
+		var chosen := filament_id == _material
 		var row := Ui.hbox([
-			Ui.text(filament["name"], 15, Ui.PAPER if stocked else Ui.MUTED, 800), null,
-			Ui.text("In stock" if stocked else "Coming later", 12, Color(Ui.PAPER, 0.8) if stocked else Ui.MUTED),
+			Ui.text(filament["name"], 15, Ui.PAPER if chosen else (Ui.INK if stocked else Ui.MUTED), 800), null,
+			Ui.text("" if stocked else note, 12, Ui.MUTED),
 		])
-		var style := Ui.box(Ui.INK, 14, 14, 0) if stocked else Ui.outlined(Ui.WHITE, DISABLED_LINE, 14, 14, 0)
+		var style := Ui.box(Ui.INK, 14, 14, 0) if chosen else Ui.outlined(Ui.WHITE, WARM_LINE if stocked else DISABLED_LINE, 14, 14, 0)
 		var entry := Ui.panel(row, style)
 		entry.custom_minimum_size.y = 48
 		row.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		if stocked:
+			Ui.clickable(entry, _pick_material.bind(filament_id))
 		materials.add_child(entry)
 
 	var shelf := Ui.vbox([Ui.text("Your rack", 14, Ui.INK, 800)], 4)
 	var rack := _rack()
 	var low := ""
 	for spool in rack.spools():
-		shelf.add_child(Ui.text("%s %s · %d g" % [String(spool.material).to_upper(), Palette.display_name(spool.colour), roundi(spool.grams)], 13, Ui.MUTED))
+		shelf.add_child(Ui.text("%s · %d g" % [spool.title(), roundi(spool.grams)], 13, Ui.MUTED))
 		if spool.grams < Advice.LOW_SPOOL_GRAMS:
-			low = "%s is running low" % Palette.display_name(spool.colour)
+			low = "%s is running low" % spool.title()
 	if rack.spools().is_empty():
 		shelf.add_child(Ui.text("Nothing on it yet.", 13, Ui.MUTED))
 	if low != "":
@@ -97,28 +104,53 @@ func _catalogue() -> Control:
 		], 0),
 	], 16), Ui.outlined(WARM, WARM_LINE, 18, 18, 14))
 
+	var filament: Dictionary = Game.data.filaments[_material]
+	var needs: PackedStringArray = []
+	if filament["requires"]["enclosure"]:
+		needs.append("needs an enclosed printer")
+	if filament["requires"]["direct_drive"]:
+		needs.append("needs a direct drive printer")
+	if filament["abrasive"]:
+		needs.append("wears brass nozzles fast, so fit a hardened one")
+	var premium := roundi((float(filament["value_multiplier"]) - 1.0) * 100.0)
+	var about := Ui.vbox([Ui.wrap(Ui.text(filament["description"], 14, Ui.INK, 800))], 2)
+	if premium > 0:
+		about.add_child(Ui.text("Prints in it sell for %d%% more." % premium, 13, Ui.GREEN_DARK, 800))
+	if not needs.is_empty():
+		about.add_child(Ui.wrap(Ui.text("Before you buy: it %s." % ", and ".join(needs), 13, Ui.RED_DARK, 800)))
+
 	var grid := GridContainer.new()
 	grid.columns = 4
 	grid.add_theme_constant_override(&"h_separation", 16)
 	grid.add_theme_constant_override(&"v_separation", 16)
-	for colour: String in Game.data.filaments["pla"]["colours"]:
+	for colour: String in filament["colours"]:
 		if _search.strip_edges() == "" or Palette.display_name(colour).containsn(_search.strip_edges()):
 			grid.add_child(_spool_card(StringName(colour)))
-	var column := Ui.vbox([notice, Ui.scroll(grid)], 16)
+	var column := Ui.vbox([notice, about, Ui.scroll(grid)], 16)
 	column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	return column
 
 
+## Why a filament isn't on sale, or "" if it is.
+func _stock_note(filament: Dictionary) -> String:
+	if not Game.unlocked(filament):
+		return "Needs more space"
+	if not FilamentRules.has_a_use(Game.data.products, filament):
+		return "No designs for it yet"
+	return ""
+
+
 func _spool_card(colour: StringName) -> Control:
+	var filament: Dictionary = Game.data.filaments[_material]
 	var picture := Ui.panel(SpoolIcon.create(Palette.colour(colour), 96), Ui.box(Ui.SOFT, 14, 0, 0))
 	picture.custom_minimum_size.y = 120
 	var card := Ui.card(Ui.vbox([
 		picture,
-		Ui.hbox([Ui.pill("PLA", Ui.PAPER, Ui.INK), null, Ui.text(BRAND, 12, Ui.MUTED)]),
+		Ui.hbox([Ui.pill(filament["name"], Ui.PAPER, Ui.INK), null, Ui.text(BRAND, 12, Ui.MUTED)]),
 		Ui.title(Palette.display_name(colour), 17),
 		Ui.hbox([
-			Ui.text(Money.format(Game.supplier.spool_price()), 16, Ui.INK, 800), null,
-			Ui.button("Add", _add.bind(String(colour), 1)),
+			Ui.text(Money.format(Game.supplier.spool_price(_material)), 16, Ui.INK, 800), null,
+			Ui.button("Add", _add.bind(FilamentRules.spool_key(_material, colour), 1)),
 		]),
 	], 8), 20, 14)
 	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -128,18 +160,20 @@ func _spool_card(colour: StringName) -> Control:
 func _basket_card() -> Control:
 	var config: Dictionary = Game.data.settings["supplier"]
 	var lines := Ui.vbox([], 12)
-	for colour: String in _basket:
-		var quantity: int = _basket[colour]
+	for key: String in _basket:
+		var quantity: int = _basket[key]
+		var colour := FilamentRules.colour_of(key)
+		var material := FilamentRules.material_of(key)
 		var name_and_count := Ui.vbox([
-			Ui.text("PLA %s" % Palette.display_name(colour), 14, Ui.INK, 800),
+			Ui.text("%s %s" % [Palette.display_name(colour), Game.data.filaments[material]["name"]], 14, Ui.INK, 800),
 			Ui.text("Qty %d" % quantity, 12, Ui.MUTED),
 		], 0)
 		name_and_count.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		var remove := Ui.button("-", _add.bind(colour, -1), Ui.INSET, Ui.INK, 30, 10)
+		var remove := Ui.button("-", _add.bind(key, -1), Ui.INSET, Ui.INK, 30, 10)
 		remove.tooltip_text = "Take one out"
 		lines.add_child(Ui.hbox([
 			SpoolIcon.create(Palette.colour(colour), 36, Ui.WHITE), name_and_count, remove,
-			Ui.text(Money.format(Game.supplier.spool_price() * quantity), 14, Ui.INK, 800),
+			Ui.text(Money.format(Game.supplier.spool_price(material) * quantity), 14, Ui.INK, 800),
 		], 12))
 	if _basket.is_empty():
 		lines.add_child(Ui.text("Nothing in it yet.", 14, Ui.MUTED))
@@ -173,12 +207,17 @@ func _basket_card() -> Control:
 	return card
 
 
-func _add(colour: String, by: int) -> void:
-	var quantity := int(_basket.get(colour, 0)) + by
+func _add(key: String, by: int) -> void:
+	var quantity := int(_basket.get(key, 0)) + by
 	if quantity <= 0:
-		_basket.erase(colour)
+		_basket.erase(key)
 	else:
-		_basket[colour] = quantity
+		_basket[key] = quantity
+	refresh.call_deferred()
+
+
+func _pick_material(material: String) -> void:
+	_material = material
 	refresh.call_deferred()
 
 

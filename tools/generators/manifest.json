@@ -16,6 +16,8 @@
 		{ "generator": "spools", "out": "assets/models/filament/spool_teal.glb", "args": { "seed": 11, "colour": "teal" } },
 		{ "generator": "spools", "out": "assets/models/filament/spool_lime.glb", "args": { "seed": 12, "colour": "lime" } },
 		{ "generator": "spools", "out": "assets/models/filament/spool_ink.glb", "args": { "seed": 13, "colour": "ink", "flange": "slate" } },
+		{ "generator": "spools", "out": "assets/models/filament/spool_sand.glb", "args": { "seed": 14, "colour": "sand" } },
+		{ "generator": "spools", "out": "assets/models/filament/spool_terracotta.glb", "args": { "seed": 15, "colour": "terracotta" } },
 		{ "generator": "spools", "out": "assets/models/filament/spool_empty.glb", "args": { "seed": 10, "fill": 0 } },
 
 		{ "generator": "prints", "out": "assets/models/prints/desk_organiser.glb", "args": { "variant": "desk_organiser" } },
@@ -184,11 +186,14 @@
 		{ "generator": "boxes", "out": "assets/models/props/parcel.glb", "args": { "variant": "closed", "seed": 3, "size": [0.26, 0.2, 0.14] } },
 
 		{ "generator": "garage", "out": "assets/models/garage/garage.glb" },
+		{ "generator": "garage", "out": "assets/models/garage/unit.glb", "args": { "size": [8.0, 7.0, 2.8], "window": [2.5, 1.6], "door-width": 2.0, "wall": "white", "outside": "slate", "cap": "navy", "floor": "sand" } },
 
 		{ "generator": "furniture", "out": "assets/models/furniture/shelving.glb", "args": { "variant": "shelving" } },
 		{ "generator": "furniture", "out": "assets/models/furniture/filament_rack_small.glb", "args": { "variant": "filament_rack", "tiers": 3, "per-tier": 8 } },
 		{ "generator": "furniture", "out": "assets/models/furniture/filament_rack_large.glb", "args": { "variant": "filament_rack" } },
 		{ "generator": "furniture", "out": "assets/models/furniture/workbench.glb", "args": { "variant": "workbench", "seed": 4 } },
+		{ "generator": "furniture", "out": "assets/models/furniture/shelving_wide.glb", "args": { "variant": "shelving", "bays": 2 } },
+		{ "generator": "furniture", "out": "assets/models/furniture/workbench_long.glb", "args": { "variant": "workbench", "seed": 6, "width": 3.4 } },
 		{ "generator": "furniture", "out": "assets/models/furniture/desk.glb", "args": { "variant": "desk" } },
 		{ "generator": "furniture", "out": "assets/models/furniture/chair.glb", "args": { "variant": "chair", "colour": "teal" } },
 

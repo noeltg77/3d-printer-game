@@ -11,6 +11,8 @@ const TABLES := {
 	"presets": "res://data/presets.json",
 	"failures": "res://data/failures.json",
 	"parts": "res://data/parts.json",
+	"upgrades": "res://data/upgrades.json",
+	"premises": "res://data/premises.json",
 }
 const FAILURE_HAPPENS: PackedStringArray = ["start", "mid", "end"]
 const FAILURE_OUTCOMES: PackedStringArray = ["scrap", "stop", "degraded"]
@@ -26,6 +28,10 @@ var presets: Dictionary = {}
 var failures: Dictionary = {}
 ## Wear parts, by id.
 var parts: Dictionary = {}
+## Printer upgrades, by id.
+var upgrades: Dictionary = {}
+## The places the business can run from, by id, smallest first.
+var premises: Dictionary = {}
 ## What each durability score (1 to 5) means, keyed by the score as text.
 var durability_labels: Dictionary = {}
 ## Lines buyers write in reviews, by kind (data/reviews.json).
@@ -57,6 +63,12 @@ static func load_all() -> GameData:
 	return data
 
 
+## The row for something that is bought as a kit and kept on the shelving:
+## a wear part or an upgrade. {} if there is no such thing.
+func kit(id: String) -> Dictionary:
+	return parts.get(id, upgrades.get(id, {}))
+
+
 func _load_table(table: String, path: String) -> Dictionary:
 	var by_id := {}
 	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
@@ -78,6 +90,12 @@ func _check_references() -> void:
 	var slots := {}
 	for part: Dictionary in parts.values():
 		slots[part["slot"]] = true
+	for upgrade: Dictionary in upgrades.values():
+		if parts.has(upgrade["id"]):
+			errors.append("upgrade %s: a part has the same id" % upgrade["id"])
+		for failure_id: String in upgrade.get("failure_multipliers", {}):
+			if not failures.has(failure_id):
+				errors.append("upgrade %s: unknown failure \"%s\"" % [upgrade["id"], failure_id])
 	for printer: Dictionary in printers.values():
 		var fitted := {}
 		for part_id: String in printer.get("parts", []):
@@ -87,16 +105,21 @@ func _check_references() -> void:
 				errors.append("printer %s: two parts in the %s slot" % [printer["id"], parts[part_id]["slot"]])
 			else:
 				fitted[parts[part_id]["slot"]] = true
-		for filament_id: String in printer.get("supported_filaments", []):
-			if not filaments.has(filament_id):
-				errors.append("printer %s: unknown filament \"%s\"" % [printer["id"], filament_id])
+	var families := {}
+	for filament: Dictionary in filaments.values():
+		families[filament.get("family", "")] = true
 	for product: Dictionary in products.values():
 		for filament_id: String in product.get("allowed_filaments", []):
-			if not filaments.has(filament_id):
+			if not filaments.has(filament_id) and not families.has(filament_id):
 				errors.append("product %s: unknown filament \"%s\"" % [product["id"], filament_id])
 	for product_id: String in settings.get("start", {}).get("designs", []):
 		if not products.has(product_id):
 			errors.append("game.json: unknown starting design \"%s\"" % product_id)
+	if not premises.has(settings.get("start", {}).get("premises", "")):
+		errors.append("game.json: unknown starting premises \"%s\"" % settings.get("start", {}).get("premises", ""))
+	for place: Dictionary in premises.values():
+		if not ResourceLoader.exists(place.get("scene", "")):
+			errors.append("premises %s: no scene at \"%s\"" % [place["id"], place.get("scene", "")])
 	if not presets.has(settings.get("default_preset", "")):
 		errors.append("game.json: unknown default_preset \"%s\"" % settings.get("default_preset", ""))
 	for failure: Dictionary in failures.values():

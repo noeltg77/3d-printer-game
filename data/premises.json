@@ -1,0 +1,29 @@
+{
+	"schema_version": 1,
+	"premises": [
+		{
+			"id": "garage",
+			"name": "Garage",
+			"description": "Where it all starts: a single garage with a bench, a rack and a draught under the door.",
+			"tier": 1,
+			"scene": "res://scenes/garage/garage.tscn",
+			"move_cost_pence": 0,
+			"rent_pence_per_day": 0,
+			"printer_spots": 2,
+			"shelf_slots": 12,
+			"rack_slots": 24
+		},
+		{
+			"id": "small_unit",
+			"name": "Small unit",
+			"description": "A lock-up unit on the trading estate. A long bench for four printers, twice the shelving and a proper filament rack.",
+			"tier": 2,
+			"scene": "res://scenes/unit/unit.tscn",
+			"move_cost_pence": 39999,
+			"rent_pence_per_day": 999,
+			"printer_spots": 4,
+			"shelf_slots": 24,
+			"rack_slots": 70
+		}
+	]
+}

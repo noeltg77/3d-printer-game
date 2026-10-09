@@ -1,6 +1,6 @@
 extends VBoxContainer
 ## PC app: Printbay, for printers and other hardware. A card per printer with
-## stat bars, plus tabs for packaging, spare parts and (later) upgrades.
+## stat bars, plus tabs for packaging, upgrades and spare parts.
 
 const NAVY := Color("1F3E7A")
 const NAVY_SOFT := Color("2C5096")
@@ -36,6 +36,8 @@ func refresh() -> void:
 			page = _packaging()
 		"parts":
 			page = _parts()
+		"upgrades":
+			page = _upgrades()
 		_:
 			page = _coming_later()
 	var body := Ui.panel(Ui.margin(page, 40, 28, 40, 28), Ui.box(PAGE, 0, 0, 0))
@@ -46,7 +48,7 @@ func refresh() -> void:
 func _header() -> Control:
 	var bench := _bench()
 	var spots := bench.free_spots() + get_tree().get_nodes_in_group(&"printer").size()
-	var tier := Ui.panel(Ui.text("Your tier: Garage · Space for %d printers" % spots, 14, PAGE, 800), Ui.box(NAVY_SOFT, 12, 14, 8))
+	var tier := Ui.panel(Ui.text("Your tier: %s · Space for %d printers" % [Game.tier_name(), spots], 14, PAGE, 800), Ui.box(NAVY_SOFT, 12, 14, 8))
 	tier.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	var top := Ui.hbox([
 		Ui.title(Game.data.settings["supplier"]["hardware_shop"], 32, PAGE, 700),
@@ -89,8 +91,10 @@ func _printer_card(printer_id: String, spec: Dictionary) -> Control:
 	var size: Array = spec["build_volume_mm"]
 	var litres := float(size[0]) * float(size[1]) * float(size[2]) / 1000000.0
 	var materials: PackedStringArray = []
-	for filament_id: String in spec["supported_filaments"]:
-		materials.append(Game.data.filaments[filament_id]["name"])
+	# One name per family it can print: the plain filament the family is named after.
+	for filament: Dictionary in Game.data.filaments.values():
+		if filament["id"] == filament["family"] and FilamentRules.problem(spec, filament) == "":
+			materials.append(filament["name"])
 
 	var column := Ui.vbox([
 		picture,
@@ -107,7 +111,7 @@ func _printer_card(printer_id: String, spec: Dictionary) -> Control:
 	], 12)
 
 	var order := {"printers": {printer_id: 1}}
-	var problem := "Unlocks when you move to a bigger space" if int(spec["unlock_tier"]) > 1 else Game.supplier_problem(order)
+	var problem := Game.supplier_problem(order) if Game.unlocked(spec) else "Unlocks when you move to a bigger space"
 	if problem != "":
 		column.add_child(Ui.panel(Ui.wrap(Ui.text(problem, 13, LOCK_TEXT, 800)), Ui.box(LOCK_BG, 12, 12, 10)))
 	column.add_child(Ui.hbox([
@@ -155,7 +159,7 @@ func _parts() -> Control:
 	for part_id: String in Game.data.parts:
 		var part: Dictionary = Game.data.parts[part_id]
 		var order := {"parts": {part_id: 1}}
-		var problem := Game.supplier_problem(order)
+		var problem := Game.supplier_problem(order) if Game.unlocked(part) else "Unlocks when you move to a bigger space"
 		var pack := int(part["pack_size"])
 		var words := Ui.vbox([
 			Ui.text(part["name"] if pack == 1 else "%s, pack of %d" % [part["name"], pack], 16, Ui.INK, 800),
@@ -168,7 +172,7 @@ func _parts() -> Control:
 		rows.add_child(Ui.panel(Ui.hbox([
 			Ui.icon_tile("wrench", 52, 26, TILE, NAVY),
 			words,
-			Ui.width(_worn_note(StringName(part["slot"])), 150),
+			Ui.width(_worn_note(StringName(part["slot"])) if Game.unlocked(part) else Ui.pill("Needs more space", LOCK_TEXT, LOCK_BG), 150),
 			Ui.pill("On the shelf: %d" % spare, Ui.GREEN_DARK if spare > 0 else Ui.MUTED, Ui.GREEN_SOFT if spare > 0 else TILE),
 			Ui.width(Ui.text(Money.format(int(part["price_pence"])), 17, Ui.INK, 800), 70),
 			buy,
@@ -187,6 +191,45 @@ func _worn_note(slot: StringName) -> Control:
 	if worst < PrinterWear.WORN_BELOW:
 		return Ui.pill("Worn: %d%% left" % maxi(roundi(worst * 100.0), 1), Ui.AMBER_DARK, Ui.AMBER_SOFT)
 	return Ui.spacer()
+
+
+## A row per upgrade kit: what it does, what it fits and how many you have.
+func _upgrades() -> Control:
+	var shelf: StorageShelf = get_tree().get_first_node_in_group(&"print_storage")
+	var printers := get_tree().get_nodes_in_group(&"printer")
+	var rows := Ui.vbox([
+		Ui.wrap(Ui.text("A kit waits on your shelving until you fit it from a printer's Upgrades menu. Each printer needs its own, and it stays on for good.", 14, Ui.MUTED)),
+	], 12)
+	for upgrade_id: String in Game.data.upgrades:
+		var upgrade: Dictionary = Game.data.upgrades[upgrade_id]
+		var order := {"parts": {upgrade_id: 1}}
+		var problem := Game.supplier_problem(order) if Game.unlocked(upgrade) else "Unlocks when you move to a bigger space"
+		var fitted := 0
+		var could_fit := 0
+		for station: PrinterStation in printers:
+			fitted += 1 if station.mods.has(StringName(upgrade_id)) else 0
+			could_fit += 1 if station.mods.problem(StringName(upgrade_id), station.spec) == "" else 0
+		var motions: PackedStringArray = []
+		for motion: String in upgrade["fits_motion"]:
+			motions.append(MOTIONS.get(motion, motion))
+		var words := Ui.vbox([
+			Ui.text(upgrade["name"], 16, Ui.INK, 800),
+			Ui.wrap(Ui.text(upgrade["description"], 13, Ui.MUTED)),
+			Ui.text("Fits: %s · Takes %s to fit" % [", ".join(motions).to_lower() + " printers" if not motions.is_empty() else "any printer",
+				GameClock.duration_label(upgrade["install_minutes"])], 13, NAVY, 800),
+		], 2)
+		words.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var owned := shelf.spare_count(StringName(upgrade_id))
+		var state := Ui.pill("On the shelf: %d" % owned, Ui.GREEN_DARK, Ui.GREEN_SOFT) if owned > 0 else Ui.pill(
+			"Fitted to %d printer%s" % [fitted, "" if fitted == 1 else "s"] if fitted > 0 else "Not fitted", Ui.MUTED, TILE)
+		var buy := _disabled_if(Ui.button("Buy", _buy.bind(order), BLUE, Ui.WHITE, 44, 14), problem != "")
+		buy.tooltip_text = problem
+		var cells: Array = [Ui.icon_tile("wrench", 52, 26, TILE, NAVY), words]
+		if not printers.is_empty() and could_fit == 0 and owned == 0 and fitted == 0:
+			cells.append(Ui.pill("Won't fit your printers", LOCK_TEXT, LOCK_BG))
+		cells.append_array([state, Ui.width(Ui.text(Money.format(int(upgrade["price_pence"])), 17, Ui.INK, 800), 70), buy])
+		rows.add_child(Ui.panel(Ui.hbox(cells, 18), Ui.box(Ui.WHITE, 18, 18, 14, SHADOW, 3)))
+	return Ui.scroll(rows)
 
 
 func _coming_later() -> Control:

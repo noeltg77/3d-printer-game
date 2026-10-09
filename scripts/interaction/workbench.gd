@@ -3,8 +3,9 @@ extends Interactable
 ## The workbench: printers stand on it, and it is the packing station where a
 ## finished item becomes a parcel for an order.
 
-## Where printers go on the bench top, relative to the bench.
-const PRINTER_SPOTS: Array[Vector3] = [Vector3(-0.42, 0.9, 0.03), Vector3(0.42, 0.9, 0.03)]
+## Where printers go on the bench top, relative to the bench. Longer benches
+## set more of them in their scene.
+@export var printer_spots: Array[Vector3] = [Vector3(-0.42, 0.9, 0.03), Vector3(0.42, 0.9, 0.03)]
 
 var _printers: Array[PrinterStation] = []
 
@@ -41,7 +42,7 @@ static func pack_task_name(order: Marketplace.Order) -> String:
 
 
 func free_spots() -> int:
-	return PRINTER_SPOTS.size() - _printers.size()
+	return printer_spots.size() - _printers.size()
 
 
 ## Sets up a new printer on the next free spot. Null if the bench is full.
@@ -51,7 +52,7 @@ func install_printer(printer_id: StringName) -> PrinterStation:
 	var station := PrinterStation.create(printer_id)
 	# A sibling rather than a child, so the bench and printer highlight separately.
 	get_parent().add_child(station)
-	station.global_transform = global_transform * Transform3D(Basis.IDENTITY, PRINTER_SPOTS[_printers.size()])
+	station.global_transform = global_transform * Transform3D(Basis.IDENTITY, printer_spots[_printers.size()])
 	_printers.append(station)
 	Game.changed.emit()
 	return station
@@ -80,7 +81,8 @@ func _pack(agent: Agent, order: Marketplace.Order) -> void:
 	# The item goes in a box and comes back out as a parcel.
 	var item := agent.release() as PrintedItem
 	Game.packaging -= 1
-	Game.market.mark_packed(order, item.durability, item.quality, item.is_flawed())
+	Game.market.mark_packed(order, item.durability, item.quality, item.is_flawed(),
+		float(Game.data.filaments[item.material]["value_multiplier"]))
 	item.queue_free()
 	Game.changed.emit()
 	await agent.reach(func() -> void: agent.carry(Parcel.create(order)))

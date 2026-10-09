@@ -1,0 +1,186 @@
+[gd_scene load_steps=35 format=3]
+
+[ext_resource type="PackedScene" path="res://assets/models/garage/unit.glb" id="1_garage"]
+[ext_resource type="PackedScene" path="res://assets/models/furniture/workbench_long.glb" id="2_workbench"]
+[ext_resource type="PackedScene" path="res://assets/models/furniture/shelving_wide.glb" id="3_shelving"]
+[ext_resource type="PackedScene" path="res://assets/models/furniture/desk.glb" id="4_desk"]
+[ext_resource type="PackedScene" path="res://assets/models/furniture/chair.glb" id="5_chair"]
+[ext_resource type="PackedScene" path="res://assets/models/furniture/filament_rack_large.glb" id="7_rack"]
+[ext_resource type="PackedScene" path="res://assets/models/props/pc.glb" id="9_pc"]
+[ext_resource type="PackedScene" path="res://assets/models/props/desk_lamp.glb" id="10_lamp"]
+[ext_resource type="PackedScene" path="res://assets/models/props/rug.glb" id="11_rug"]
+[ext_resource type="PackedScene" path="res://assets/models/props/plant.glb" id="12_plant"]
+[ext_resource type="PackedScene" path="res://assets/models/props/bin.glb" id="13_bin"]
+[ext_resource type="PackedScene" path="res://assets/models/props/box_closed_01.glb" id="14_box_a"]
+[ext_resource type="PackedScene" path="res://assets/models/props/box_closed_02.glb" id="15_box_b"]
+[ext_resource type="PackedScene" path="res://assets/models/props/box_open_01.glb" id="16_box_open"]
+[ext_resource type="PackedScene" path="res://scenes/characters/player.tscn" id="17_player"]
+[ext_resource type="Script" path="res://scripts/camera/iso_camera.gd" id="18_camera"]
+[ext_resource type="Script" path="res://scripts/world/floor_grid.gd" id="19_grid"]
+[ext_resource type="Script" path="res://scripts/world/cutaway_walls.gd" id="20_cutaway"]
+[ext_resource type="Script" path="res://scripts/interaction/workbench.gd" id="21_workbench"]
+[ext_resource type="Script" path="res://scripts/interaction/filament_rack.gd" id="23_rack"]
+[ext_resource type="Script" path="res://scripts/interaction/storage_shelf.gd" id="24_shelf"]
+[ext_resource type="Script" path="res://scripts/interaction/computer.gd" id="25_computer"]
+[ext_resource type="Script" path="res://scripts/interaction/roller_door.gd" id="26_door"]
+[ext_resource type="Script" path="res://scripts/interaction/interaction_controller.gd" id="27_controller"]
+[ext_resource type="Script" path="res://scripts/ui/hud.gd" id="28_hud"]
+
+[ext_resource type="Script" path="res://scripts/interaction/interactable.gd" id="30_interactable"]
+[ext_resource type="Script" path="res://scripts/world/delivery_zone.gd" id="31_delivery_zone"]
+[ext_resource type="Script" path="res://scripts/interaction/outbox.gd" id="32_outbox"]
+[ext_resource type="PackedScene" path="res://assets/models/props/outbox_mat.glb" id="33_outbox_mat"]
+[ext_resource type="Script" path="res://scripts/ui/pc/pc_screen.gd" id="34_pc_screen"]
+[ext_resource type="Script" path="res://scripts/ui/print_dialog.gd" id="35_print_dialog"]
+[ext_resource type="Script" path="res://scripts/game/world_save.gd" id="36_world_save"]
+[ext_resource type="Script" path="res://scripts/world/day_night.gd" id="37_day_night"]
+
+[sub_resource type="Environment" id="Environment_garage"]
+background_mode = 1
+background_color = Color(0.24, 0.25, 0.33, 1)
+ambient_light_source = 2
+ambient_light_color = Color(1, 0.9, 0.8, 1)
+ambient_light_energy = 0.45
+ssao_enabled = true
+
+[node name="Unit" type="Node3D"]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_garage")
+
+[node name="Sun" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.848, -0.3999, 0.3477, 0, 0.6561, 0.7547, -0.5299, -0.64, 0.5564, 0, 6, 0)
+light_color = Color(1, 0.94, 0.85, 1)
+light_energy = 0.9
+shadow_enabled = true
+directional_shadow_mode = 0
+directional_shadow_max_distance = 60.0
+
+[node name="BenchLight" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.3, 2.3, -3.0)
+light_color = Color(1, 0.86, 0.62, 1)
+light_energy = 1.8
+omni_range = 5.5
+
+[node name="DeskLampLight" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.93, 0.95, -3.2)
+light_color = Color(1, 0.78, 0.42, 1)
+light_energy = 1.2
+omni_range = 1.8
+
+[node name="DayNight" type="Node" parent="."]
+script = ExtResource("37_day_night")
+sun_path = NodePath("../Sun")
+environment_path = NodePath("../WorldEnvironment")
+lamp_paths = Array[NodePath]([NodePath("../BenchLight"), NodePath("../DeskLampLight")])
+window_position = Vector3(2.5, 1.9, -3.35)
+window_target = Vector3(2.1, 0, -1.5)
+
+[node name="Camera" type="Camera3D" parent="."]
+transform = Transform3D(0.7071, -0.4082, 0.5774, 0, 0.8165, 0.5774, -0.7071, -0.4082, 0.5774, 14.43, 15.38, 13.98)
+projection = 1
+current = true
+size = 9.6
+far = 60.0
+script = ExtResource("18_camera")
+max_size = 11.5
+
+[node name="FloorGrid" type="Node3D" parent="."]
+script = ExtResource("19_grid")
+area = Rect2(-3.75, -3.25, 7.5, 6.5)
+
+[node name="Shell" parent="." instance=ExtResource("1_garage")]
+script = ExtResource("20_cutaway")
+
+[node name="Door" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 0, 0)
+script = ExtResource("26_door")
+display_name = "Roller door"
+stand_offset = Vector3(0.9, 0, 0)
+visual_path = NodePath("../Shell/wall_west/roller_door")
+
+[node name="Workbench" parent="." groups=["obstacle"] instance=ExtResource("2_workbench")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.2, 0, -3.13)
+script = ExtResource("21_workbench")
+display_name = "Workbench"
+stand_offset = Vector3(0, 0, 0.75)
+printer_spots = Array[Vector3]([Vector3(-1.26, 0.9, 0.03), Vector3(-0.42, 0.9, 0.03), Vector3(0.42, 0.9, 0.03), Vector3(1.26, 0.9, 0.03)])
+
+[node name="FilamentRack" parent="." groups=["obstacle"] instance=ExtResource("7_rack")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.45, 0, -3.32)
+script = ExtResource("23_rack")
+display_name = "Filament rack"
+stand_offset = Vector3(0, 0, 0.65)
+
+[node name="Desk" parent="." groups=["obstacle"] instance=ExtResource("4_desk")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.5, 0, -3.165)
+
+[node name="PC" parent="." instance=ExtResource("9_pc")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.5, 0.7, -3.165)
+script = ExtResource("25_computer")
+seat_path = NodePath("../Chair")
+display_name = "PC"
+stand_offset = Vector3(-0.12, 0, 1.15)
+
+[node name="DeskLamp" parent="." instance=ExtResource("10_lamp")]
+transform = Transform3D(0.866, 0, 0.5, 0, 1, 0, -0.5, 0, 0.866, 1.95, 0.7, -3.36)
+
+[node name="Chair" parent="." groups=["obstacle"] instance=ExtResource("5_chair")]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 2.38, 0, -2.55)
+
+[node name="Rug" parent="." instance=ExtResource("11_rug")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.2, 0, -1.6)
+
+[node name="Plant" parent="." groups=["obstacle"] instance=ExtResource("12_plant")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.65, 0, -3.15)
+
+[node name="Bin" parent="." groups=["obstacle", "bin"] instance=ExtResource("13_bin")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.7, 0, -2.45)
+script = ExtResource("30_interactable")
+display_name = "Bin"
+
+[node name="DeliveryZone" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.45, 0, -0.85)
+script = ExtResource("31_delivery_zone")
+
+[node name="Outbox" parent="." instance=ExtResource("33_outbox_mat")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.45, 0, 0.6)
+script = ExtResource("32_outbox")
+display_name = "Outbox"
+stand_offset = Vector3(0.8, 0, 0)
+
+[node name="Shelving" parent="." groups=["obstacle"] instance=ExtResource("3_shelving")]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -3.76, 0, 2.25)
+script = ExtResource("24_shelf")
+display_name = "Shelving"
+stand_offset = Vector3(0, 0, 0.7)
+
+[node name="FloorBox1" parent="." groups=["obstacle"] instance=ExtResource("15_box_b")]
+transform = Transform3D(0.9659, 0, 0.2588, 0, 1, 0, -0.2588, 0, 0.9659, 3.4, 0, 2.9)
+
+[node name="FloorBox2" parent="." groups=["obstacle"] instance=ExtResource("16_box_open")]
+transform = Transform3D(0.866, 0, -0.5, 0, 1, 0, 0.5, 0, 0.866, 2.5, 0, 3.0)
+
+[node name="FloorBox3" parent="." groups=["obstacle"] instance=ExtResource("14_box_a")]
+transform = Transform3D(0.9659, 0, -0.2588, 0, 1, 0, 0.2588, 0, 0.9659, 3.5, 0, 1.3)
+
+[node name="Player" parent="." instance=ExtResource("17_player")]
+transform = Transform3D(0.7071, 0, 0.7071, 0, 1, 0, -0.7071, 0, 0.7071, 0.1, 0, 0.3)
+
+[node name="InteractionController" type="Node" parent="."]
+script = ExtResource("27_controller")
+agent_path = NodePath("../Player")
+hud_path = NodePath("../Hud")
+
+[node name="Hud" type="CanvasLayer" parent="."]
+script = ExtResource("28_hud")
+agent_path = NodePath("../Player")
+
+[node name="WorldSave" type="Node" parent="."]
+script = ExtResource("36_world_save")
+
+[node name="PrintDialog" type="CanvasLayer" parent="."]
+script = ExtResource("35_print_dialog")
+
+[node name="PcScreen" type="CanvasLayer" parent="."]
+script = ExtResource("34_pc_screen")

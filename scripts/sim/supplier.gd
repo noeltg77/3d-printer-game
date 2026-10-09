@@ -2,9 +2,10 @@ class_name Supplier
 extends RefCounted
 ## The supplier shop: prices a basket and turns it into deliveries that arrive
 ## after a lead time. A basket is
-##   { printers: { printer_id: qty }, spools: { colour: qty }, packaging: packs,
-##     parts: { part_id: packs } }
-## Each printer ships in its own box; spools, packaging and spare parts share one.
+##   { printers: { printer_id: qty }, spools: { spool key: qty }, packaging: packs,
+##     parts: { part or upgrade id: packs } }
+## A spool key is "material:colour" (FilamentRules.spool_key); a bare colour
+## means PLA. Each printer ships in its own box; spools, packaging and spare parts share one.
 
 
 class Delivery:
@@ -14,11 +15,11 @@ class Delivery:
 	var shop := ""
 	## Empty unless this is a printer box.
 	var printer: StringName = &""
-	## One palette colour name per spool.
+	## One spool key per spool.
 	var spools: Array[StringName] = []
 	## Individual packaging units, not packs.
 	var packaging := 0
-	## Spare parts, part id -> individual parts, not packs.
+	## Spare parts and upgrade kits, id -> how many, not packs.
 	var parts: Dictionary[StringName, int] = {}
 
 	func save() -> Dictionary:
@@ -48,7 +49,7 @@ class Delivery:
 		for count: int in parts.values():
 			spares += count
 		if spares > 0:
-			lines.append("%d spare part%s" % [spares, "" if spares == 1 else "s"])
+			lines.append("%d part%s" % [spares, "" if spares == 1 else "s"])
 		return ", ".join(lines)
 
 
@@ -65,17 +66,18 @@ func price_of(basket: Dictionary) -> int:
 	var total := 0
 	for printer_id: String in basket.get("printers", {}):
 		total += int(data.printers[printer_id]["price_pence"]) * int(basket["printers"][printer_id])
-	total += spool_price() * count_spools(basket)
+	for key: String in basket.get("spools", {}):
+		total += spool_price(FilamentRules.material_of(key)) * int(basket["spools"][key])
 	total += int(_config()["packaging_pack_pence"]) * int(basket.get("packaging", 0))
 	for part_id: String in basket.get("parts", {}):
-		total += int(data.parts[part_id]["price_pence"]) * int(basket["parts"][part_id])
+		total += int(data.kit(part_id)["price_pence"]) * int(basket["parts"][part_id])
 	return total
 
 
-## Price of one PLA spool. PLA is the only filament sold until Phase 6.
-func spool_price() -> int:
-	var pla: Dictionary = data.filaments["pla"]
-	return roundi(pla["price_pence_per_kg"] * pla["spool_grams"] / 1000.0)
+## Price of one spool of a filament.
+func spool_price(material := FilamentRules.DEFAULT_MATERIAL) -> int:
+	var filament: Dictionary = data.filaments[material]
+	return roundi(filament["price_pence_per_kg"] * filament["spool_grams"] / 1000.0)
 
 
 static func count_spools(basket: Dictionary) -> int:
@@ -103,7 +105,7 @@ func place(basket: Dictionary, minute: float, shop := "") -> Array[Delivery]:
 			supplies.spools.append(StringName(colour))
 	supplies.packaging = int(basket.get("packaging", 0)) * int(_config()["packaging_pack_size"])
 	for part_id: String in basket.get("parts", {}):
-		supplies.parts[StringName(part_id)] = int(basket["parts"][part_id]) * int(data.parts[part_id]["pack_size"])
+		supplies.parts[StringName(part_id)] = int(basket["parts"][part_id]) * int(data.kit(part_id).get("pack_size", 1))
 	if supplies.spools.is_empty() and supplies.packaging == 0:
 		supplies.arrive_at = minute + float(_config()["parts_lead_minutes"])
 	if not supplies.spools.is_empty() or supplies.packaging > 0 or not supplies.parts.is_empty():

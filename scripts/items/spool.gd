@@ -14,9 +14,10 @@ var colour: StringName
 var grams := 1000.0
 
 
-static func create(p_colour: StringName, p_grams := 1000.0) -> Spool:
+static func create(p_colour: StringName, p_grams := 1000.0, p_material: StringName = &"pla") -> Spool:
 	var spool := Spool.new()
 	spool.colour = p_colour
+	spool.material = p_material
 	spool.grams = p_grams
 	spool.name = "Spool_%s" % p_colour
 	spool.add_child((load(MODEL_PATH % p_colour) as PackedScene).instantiate())
@@ -27,9 +28,14 @@ func is_empty() -> bool:
 	return grams < EMPTY_GRAMS
 
 
+## "Red PLA" or "Pink Silk PLA"
+func title() -> String:
+	return "%s %s" % [Palette.display_name(colour), Game.data.filaments[material]["name"]]
+
+
 ## "Red PLA, 880 g"
 func describe() -> String:
-	return "%s %s, %d g" % [Palette.display_name(colour), String(material).to_upper(), roundi(grams)]
+	return "%s, %d g" % [title(), roundi(grams)]
 
 
 func save() -> Dictionary:
@@ -37,6 +43,5 @@ func save() -> Dictionary:
 
 
 static func restored(data: Dictionary) -> Spool:
-	var spool := Spool.create(StringName(data["colour"]), float(data["grams"]))
-	spool.material = StringName(data["material"])
-	return spool
+	var saved_material := StringName(data["material"]) if Game.data.filaments.has(data["material"]) else &"pla"
+	return Spool.create(StringName(data["colour"]), float(data["grams"]), saved_material)

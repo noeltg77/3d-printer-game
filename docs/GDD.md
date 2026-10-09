@@ -278,12 +278,12 @@ Build small and prove each step before moving on: assets and garage first, then 
 
 ### Phase 6: Tier 2 expansion
 
-- [ ] More printers and upgrades (hardened nozzle, enclosure, dryer, auto levelling)
-- [ ] PETG, TPU, ABS/ASA, carbon fibre, silk/glow/wood
+- [ ] More printers and upgrades (hardened nozzle, enclosure, dryer, auto levelling). Upgrades system, auto levelling, hardened nozzle and enclosure are in; more printers and the dryer still to do
+- [x] PETG, TPU, ABS/ASA, carbon fibre, silk/glow/wood
 - [ ] Filament moisture and drying
 - [ ] Own designs at the PC with iterations and test prints
 - [ ] More marketplaces, trends and demand
-- [ ] Move to a bigger space
+- [x] Move to a bigger space
 
 ### Phase 7: Multicolour units
 

@@ -49,8 +49,7 @@ Display currencies, keyed by code. Not a table of rows with ids.
 | `wear_multiplier` | How hard this printer is on its parts. Multiplies all part wear |
 | `parts` | Ids from `parts.json` a new one ships with, one per slot |
 | `max_nozzle_temp_c` | Must be at least the filament's `nozzle_temp_c` |
-| `enclosed`, `direct_drive`, `auto_bed_levelling` | Built-in capabilities |
-| `supported_filaments` | Filament ids it can print out of the box |
+| `enclosed`, `direct_drive`, `auto_bed_levelling` | Built-in capabilities. Upgrades can add them. What a printer can print follows from these and the temperature (`FilamentRules.problem`); there is no list of filaments |
 | `power_watts` | Drives electricity cost per print |
 | `upgrade_slots` | Upgrade kinds that can be fitted (upgrades table comes in Phase 4/6) |
 | `model` | Which asset generator, variant and colour builds its mesh |
@@ -60,16 +59,19 @@ Display currencies, keyed by code. Not a table of rows with ids.
 
 | Field | Meaning |
 | --- | --- |
+| `family` | The plain filament this is a variety of. A design that allows a family allows every filament in it |
 | `price_pence_per_kg`, `spool_grams` | Spool cost is derived from these |
 | `nozzle_temp_c` | Minimum nozzle temperature needed |
 | `speed_multiplier` | Below 1.0 prints slower (TPU) |
-| `value_multiplier` | Sale price uplift for items in this material |
+| `value_multiplier` | Sale price uplift for items in this material: the buyer pays the listed price times this |
 | `ease_of_printing` | 1 (fussy) to 5 (easy). Scales the chance of a print failing by (6 - ease) / 3 |
-| `abrasive` | Speeds up nozzle wear, needs a hardened nozzle |
+| `abrasive` | Multiplies nozzle wear by the nozzle's `abrasive_wear_multiplier` |
 | `moisture_sensitivity` | How fast badly stored spools absorb moisture (Phase 6) |
-| `requires` | `enclosure`, `hardened_nozzle`, `direct_drive` |
+| `requires` | `enclosure` and `direct_drive` are hard limits: a printer without one can't load it. `hardened_nozzle` is advice: it prints on brass, at the cost of the nozzle |
 | `failure_modifiers` | Multipliers on the weight of a failure from `failures.json`, by its id, e.g. `{ "warping": 1.6 }` |
 | `colours` | Colours this filament is sold in |
+
+Imported from `docs/design_data/filaments.json` (`materials`): PLA, three special PLAs, carbon PLA, PETG, TPU, ABS and ASA. `failure_modifiers` come from the design's 1 to 5 scores: stringing is `1 + (score - 2) x 0.25`, warping `1 + (score - 1) x 0.2`. The shop only sells a filament once the business has reached its tier and some design in the game can be printed in it.
 
 ## products.json
 
@@ -85,7 +87,7 @@ Generated from `docs/design_data/products.json` by `scripts/dev/import_products.
 | `difficulty` | Adds to failure chance |
 | `needs_supports` | Adds post-processing time and waste |
 | `colour_count` | Above 1 needs a multicolour unit (Phase 7) |
-| `allowed_filaments` | Filament ids the design works in |
+| `allowed_filaments` | Filament ids or families the design works in |
 | `base_price_pence` | Typical marketplace price before demand and rating effects |
 | `demand_per_day` | Orders per game day when listed at the typical price |
 | `licence` | `type` is `one_off` (pay `fee_pence` once), `royalty` (`royalty_pct` of each sale) or `personal_use` (cannot be sold) |
@@ -151,6 +153,20 @@ A ruined print only uses the filament and electricity up to the point it failed.
 
 A failure with `weight` 0 is never rolled. `breakdown` is the one so far: the printer sets it off when a part runs out mid-print, filling `{part}` and `{text}` from the part's `slot_name` and `break_text`.
 
+## upgrades.json
+
+Kits fitted to a printer for good. Imported from `docs/design_data/parts.json` (`upgrades`): so far only the Garage ones whose effects the game models. Bought and delivered like spare parts (one to a pack), so an upgrade id must not match a part id.
+
+| Field | Meaning |
+| --- | --- |
+| `description` | Plain-words pitch on its shop row |
+| `price_pence`, `install_minutes` | Shop price, and character time to fit it |
+| `fits_motion` | Printer `motion` values it fits. Empty for any printer |
+| `grants` | Printer capability fields it switches on, e.g. `auto_bed_levelling`. It can't be fitted to a printer that already has one of them |
+| `failure_multipliers` | Failure id to multiplier on that failure's weight. The chance of a print failing at all shrinks by the share of weight removed (`PrintRisk.upgrade_scale`) |
+| `time_multiplier` | Applied to print time |
+| `wear_multiplier` | Applied to the wear of every part |
+
 ## parts.json
 
 Wear parts. Imported from `docs/design_data/parts.json`: one part for each slot in the GDD's list (nozzle, hotend, build plate, belts, PTFE tube, fans). The other Garage parts, alternative parts for a slot and upgrades are not in yet. Prices are the design's base prices; brand multipliers and own-brand parts are not applied.
@@ -167,13 +183,26 @@ Wear parts. Imported from `docs/design_data/parts.json`: one part for each slot 
 
 Health lost per print hour is `printer wear_multiplier x game wear_rate x preset wear_multiplier / lifespan_print_hours` (`PrinterWear.wear_per_hour`). At nothing the part is broken and the printer can't print until a spare is fitted.
 
+## premises.json
+
+The places the business can run from, smallest first.
+
+| Field | Meaning |
+| --- | --- |
+| `tier` | The tier the business is at once it moves in. Shops sell rows whose `unlock_tier` is no higher |
+| `scene` | The scene for the place. It needs the same parts as the garage scene (see `WorldSave.PARTS`), each with at least as many slots as the place before, so everything fits when the business moves |
+| `move_cost_pence` | Paid once to move in |
+| `rent_pence_per_day` | Charged at midnight every game day |
+| `printer_spots`, `shelf_slots`, `rack_slots` | Shown on the place's card. They describe the scene; they don't set it |
+
 ## game.json
 
 Starting conditions and global rates. Not a table of rows.
 
 | Field | Meaning |
 | --- | --- |
-| `start.cash_pence`, `start.packaging`, `start.designs`, `start.minute_of_day` | What a new game begins with |
+| `tier_names` | What tiers 1 to 4 are called |
+| `start.cash_pence`, `start.packaging`, `start.designs`, `start.premises`, `start.minute_of_day` | What a new game begins with |
 | `electricity_pence_per_kwh` | Charged when a print finishes, from the printer's `power_watts` and the print time |
 | `courier_minute_of_day` | When parcels in the outbox are collected and paid |
 | `courier` | The one courier and packaging so far: `name`, `damage_multiplier`, `delivery_minutes` as `[shortest, longest]`, and the mailer box's `protection` (1 to 5). A parcel arrives broken with chance `(5 - durability) x 2% x (6 - protection) / 3 x damage_multiplier` (`Marketplace.damage_chance`). The packaging and courier tables in `docs/design_data/shipping.json` replace this when there is a choice of either |
@@ -186,4 +215,4 @@ One game day is 1440 game minutes and lasts 10 real minutes at 1x (`GameClock.MI
 
 ## Not drafted yet
 
-Upgrades, packaging and courier choices, contracts, staff and events. Each gets a table when its phase starts.
+Packaging and courier choices, contracts, staff and events. Each gets a table when its phase starts.

@@ -26,6 +26,20 @@ var supplier: Supplier
 var owned_designs: Array[StringName] = []
 ## Mailer boxes in stock, one used per packed order.
 var packaging := 0
+## How far the business has grown: 1 garage to 4 factory. Decides what the
+## shops will sell (each row's `unlock_tier`).
+var tier := 1
+## Dev: the tier a new game starts at, from --tier=<n>.
+var start_tier := 1
+## Id of the place the business runs from (data/premises.json).
+var premises: StringName = &"garage"
+## Dev: the premises a new game starts in, from --premises=<id>.
+var start_premises := ""
+
+## The state of the world being carried from one scene to the next, when the
+## business moves or a save belongs to different premises from the scene loaded.
+var _handover: Dictionary = {}
+var _has_handover := false
 var speed := 1
 var rng := RandomNumberGenerator.new()
 ## Dev: id of a failure the next print is certain to hit. Cleared once used.
@@ -45,6 +59,10 @@ func _ready() -> void:
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--save="):
 			save_path = arg.trim_prefix("--save=")
+		elif arg.begins_with("--tier="):
+			start_tier = arg.trim_prefix("--tier=").to_int()
+		elif arg.begins_with("--premises="):
+			start_premises = arg.trim_prefix("--premises=")
 	new_game()
 
 
@@ -65,6 +83,11 @@ func _process(delta: float) -> void:
 		_settle_delivery(outcome)
 	if clock.crossed(before, data.settings["courier_minute_of_day"]):
 		courier_arrived.emit()
+	var rent := int(premises_row()["rent_pence_per_day"])
+	if rent > 0 and clock.crossed(before, 0.0):
+		bank.charge(rent, "Rent: %s" % premises_row()["name"], clock.minutes)
+		notify("Rent paid on the %s: %s" % [String(premises_row()["name"]).to_lower(), Money.format(rent)])
+		changed.emit()
 
 
 func new_game() -> void:
@@ -78,6 +101,8 @@ func new_game() -> void:
 	supplier = Supplier.new(data)
 	owned_designs.assign(start["designs"])
 	packaging = int(start["packaging"])
+	premises = StringName(start_premises if data.premises.has(start_premises) else start["premises"])
+	tier = maxi(int(premises_row()["tier"]), start_tier)
 	rng.randomize()
 	saved_at = -1.0
 	set_speed(1)
@@ -131,7 +156,7 @@ func delete_save() -> void:
 func save() -> Dictionary:
 	return {
 		"clock": clock.save(), "bank": bank.save(), "market": market.save(), "supplier": supplier.save(),
-		"owned_designs": owned_designs, "packaging": packaging,
+		"owned_designs": owned_designs, "packaging": packaging, "tier": tier, "premises": premises,
 	}
 
 
@@ -146,6 +171,9 @@ func restore(state: Dictionary) -> void:
 		if data.products.has(product):
 			owned_designs.append(StringName(product))
 	packaging = int(state["packaging"])
+	if data.premises.has(state.get("premises", "")):
+		premises = StringName(state["premises"])
+	tier = maxi(maxi(int(state.get("tier", 1)), int(premises_row()["tier"])), start_tier)
 	changed.emit()
 
 
@@ -180,6 +208,69 @@ func notify(text: String, tone: StringName = &"") -> void:
 	notified.emit(text, tone)
 
 
+## Row from data/premises.json for where the business is now.
+func premises_row() -> Dictionary:
+	return data.premises[premises]
+
+
+## Why the business can't move to other premises right now, or "" if it can.
+func move_problem(place: StringName) -> String:
+	var row: Dictionary = data.premises[place]
+	if place == premises:
+		return "You are here"
+	if int(row["tier"]) < tier:
+		return "You have outgrown it"
+	if not bank.can_afford(int(row["move_cost_pence"])):
+		return "Not enough cash"
+	for printer: PrinterStation in get_tree().get_nodes_in_group(&"printer"):
+		if printer.status == PrinterStation.Status.PRINTING:
+			return "Wait for your prints to finish first"
+	return ""
+
+
+## Pays to move the business to other premises. The scene change is the
+## caller's job (WorldSave.move). False if it can't be done.
+func move_to(place: StringName) -> bool:
+	if move_problem(place) != "":
+		return false
+	var row: Dictionary = data.premises[place]
+	bank.spend(int(row["move_cost_pence"]), "Move to the %s" % String(row["name"]).to_lower(), clock.minutes)
+	premises = place
+	tier = maxi(tier, int(row["tier"]))
+	notify("Moved in to the %s" % String(row["name"]).to_lower(), &"good")
+	changed.emit()
+	return true
+
+
+## Leaves the state of the world for the next scene to pick up.
+func hand_over(world: Dictionary) -> void:
+	_handover = world
+	_has_handover = true
+
+
+func has_handover() -> bool:
+	return _has_handover
+
+
+## The world left by hand_over(). It can only be taken once.
+func take_handover() -> Dictionary:
+	var world := _handover
+	_handover = {}
+	_has_handover = false
+	return world
+
+
+## True if the business has grown enough for a data row (anything with an
+## `unlock_tier`) to be on sale.
+func unlocked(row: Dictionary) -> bool:
+	return int(row["unlock_tier"]) <= tier
+
+
+## "Garage", "Spare room" and so on.
+func tier_name() -> String:
+	return data.settings["tier_names"][tier - 1]
+
+
 func product_name(product: StringName) -> String:
 	return data.products[product]["name"]
 
@@ -193,24 +284,40 @@ func print_grams(product: StringName, preset: StringName) -> float:
 	return float(data.products[product]["filament_grams"]) * float(data.presets[preset]["filament_multiplier"])
 
 
-## Chance (0 to 1) that printing a design this way goes wrong. `wear` is the
-## state of the printer's parts, if it has any to count.
-func fail_chance(printer: Dictionary, preset: StringName, filament: StringName, product: StringName, wear: PrinterWear = null) -> float:
-	return PrintRisk.fail_chance(printer, data.presets[preset], data.filaments[filament], data.products[product],
+## Chance (0 to 1) that printing a design this way goes wrong. `wear` and
+## `mods` are the state of the printer's parts and its upgrades, if it has any.
+func fail_chance(printer: Dictionary, preset: StringName, filament: StringName, product: StringName,
+		wear: PrinterWear = null, mods: PrinterMods = null) -> float:
+	var spec := mods.apply(printer) if mods != null else printer
+	var chance := PrintRisk.fail_chance(spec, data.presets[preset], data.filaments[filament], data.products[product],
 		wear.extra_fail_chance() if wear != null else 0.0)
+	if mods == null:
+		return chance
+	var flags := _print_flags(spec, preset, product, wear)
+	return chance * PrintRisk.upgrade_scale(data.failures, flags, data.filaments[filament], mods.failure_multipliers())
 
 
 ## Decides the fate of a print as it starts. Returns {} if it will go well, or
 ## { failure, at } with the failure's row and the progress at which it strikes.
-func roll_print(printer: Dictionary, preset: StringName, filament: StringName, product: StringName, wear: PrinterWear = null) -> Dictionary:
+func roll_print(printer: Dictionary, preset: StringName, filament: StringName, product: StringName,
+		wear: PrinterWear = null, mods: PrinterMods = null) -> Dictionary:
 	if data.failures.has(force_failure):
 		var forced: Dictionary = data.failures[force_failure]
 		force_failure = ""
 		return {"failure": forced, "at": PrintRisk.strike_point(forced, rng)}
-	var flags := PrintRisk.conditions(printer, data.presets[preset], data.products[product])
+	var spec := mods.apply(printer) if mods != null else printer
+	return PrintRisk.roll(fail_chance(printer, preset, filament, product, wear, mods), data.failures,
+		_print_flags(spec, preset, product, wear), data.filaments[filament], rng,
+		mods.failure_multipliers() if mods != null else {})
+
+
+## The condition flags for a print: from the printer, preset and design, plus
+## any worn parts.
+func _print_flags(spec: Dictionary, preset: StringName, product: StringName, wear: PrinterWear) -> Array[StringName]:
+	var flags := PrintRisk.conditions(spec, data.presets[preset], data.products[product])
 	if wear != null:
 		flags.append_array(wear.flags())
-	return PrintRisk.roll(fail_chance(printer, preset, filament, product, wear), data.failures, flags, data.filaments[filament], rng)
+	return flags
 
 
 ## Buys a design licence. False if it can't be afforded or is already owned.

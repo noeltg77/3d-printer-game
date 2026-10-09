@@ -92,7 +92,7 @@ func _confirm(asking: bool) -> void:
 func _start_again() -> void:
 	Game.delete_save()
 	Game.new_game()
-	get_tree().reload_current_scene()
+	get_tree().change_scene_to_file(Game.premises_row()["scene"])
 
 
 ## One currency as a big button: symbol, name and a sample amount in its format.

@@ -140,7 +140,7 @@ func _preset_card(preset_id: StringName) -> Control:
 ## The risk meter: chance of failure as a bar, strength and finish as dots.
 func _meter() -> Control:
 	var preset: Dictionary = Game.data.presets[_preset]
-	var chance := Game.fail_chance(_printer.spec, _preset, _printer.spool.material, _product, _printer.wear)
+	var chance := Game.fail_chance(_printer.spec, _preset, _printer.spool.material, _product, _printer.wear, _printer.mods)
 	var band := PrintRisk.band(chance)
 	var colour: Color = BAND_COLOURS[band]
 	var durability := int(preset["durability"])
@@ -170,6 +170,17 @@ func _meter() -> Control:
 			worn.append(String(_printer.wear.part(slot)["slot_name"]).to_lower())
 	if not worn.is_empty():
 		rows.add_child(Ui.text("Worn parts are adding to the risk: %s." % ", ".join(worn), 13, Ui.RED_DARK, 800))
+	var filament: Dictionary = Game.data.filaments[_printer.spool.material]
+	var nozzle: Dictionary = _printer.wear.part(&"nozzle") if _printer.wear.fitted.has(&"nozzle") else {}
+	if not nozzle.is_empty() and FilamentRules.wears_nozzle(filament, nozzle):
+		rows.add_child(Ui.wrap(Ui.text("%s is gritty: it wears this %s %d times faster. A hardened nozzle shrugs it off." % [
+			filament["name"], String(nozzle["name"]).to_lower(), roundi(float(nozzle["abrasive_wear_multiplier"]))], 13, Ui.RED_DARK, 800)))
+	var helping: PackedStringArray = []
+	for upgrade in _printer.mods.fitted:
+		if not Game.data.upgrades[upgrade]["failure_multipliers"].is_empty():
+			helping.append(String(Game.data.upgrades[upgrade]["name"]).to_lower())
+	if not helping.is_empty():
+		rows.add_child(Ui.text("Upgrades are cutting the risk: %s." % ", ".join(helping), 13, Ui.GREEN_DARK, 800))
 	return Ui.panel(rows, Ui.box(Ui.INSET, 16, 16, 14))
 
 
@@ -180,8 +191,9 @@ func _summary() -> String:
 	var filament: Dictionary = Game.data.filaments[spool.material]
 	var kwh := float(_printer.spec["power_watts"]) / 1000.0 * _printer.print_minutes(_product, _preset) / 60.0
 	var cost := roundi(grams / 1000.0 * float(filament["price_pence_per_kg"]) + kwh * float(Game.data.settings["electricity_pence_per_kwh"]))
-	return "Uses %d g of %s %s, about %s in filament and power." % [
-		roundi(grams), Palette.display_name(spool.colour).to_lower(), filament["name"], Money.format(cost)]
+	var summary := "Uses %d g of %s, about %s in filament and power." % [roundi(grams), spool.title(), Money.format(cost)]
+	var premium := roundi((float(filament["value_multiplier"]) - 1.0) * 100.0)
+	return summary if premium <= 0 else "%s Sells for %d%% more in %s." % [summary, premium, filament["name"]]
 
 
 func _pick(product: StringName, preset: StringName) -> void:

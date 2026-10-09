@@ -46,8 +46,10 @@ func _unpack(agent: Agent) -> void:
 		var rack: FilamentRack = get_tree().get_first_node_in_group(&"filament_rack")
 		await agent.go_to(rack)
 		await agent.reach(func() -> void:
-			for colour in delivery.spools:
-				rack.store(Spool.create(colour))
+			for key in delivery.spools:
+				var material := FilamentRules.material_of(key)
+				rack.store(Spool.create(StringName(FilamentRules.colour_of(key)),
+					float(Game.data.filaments[material]["spool_grams"]), StringName(material)))
 			Game.packaging += delivery.packaging
 			Game.changed.emit())
 	if not delivery.parts.is_empty():

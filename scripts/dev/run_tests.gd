@@ -9,6 +9,8 @@ func _init() -> void:
 	_test_print_job()
 	_test_print_risk()
 	_test_printer_wear()
+	_test_printer_mods()
+	_test_filaments()
 	_test_clock()
 	_test_bank()
 	_test_money()
@@ -159,6 +161,124 @@ func _test_printer_wear() -> void:
 	gritty["abrasive"] = true
 	_check(is_equal_approx(wear.wear_per_hour(&"nozzle", standard, gritty), wear.wear_per_hour(&"nozzle", standard, pla) * 10.0), "abrasive filament eats a brass nozzle ten times faster")
 	_check(is_equal_approx(wear.wear_per_hour(&"belts", standard, gritty), wear.wear_per_hour(&"belts", standard, pla)), "abrasive filament does not wear the belts any faster")
+
+
+func _test_printer_mods() -> void:
+	var data := GameData.load_all()
+	var plodder: Dictionary = data.printers["plodder_mini"]
+	var zippy: Dictionary = data.printers["zippy_x1"]
+	var pla: Dictionary = data.filaments["pla"]
+	var mods := PrinterMods.new(data.upgrades)
+	_check(mods.failure_multipliers().is_empty() and is_equal_approx(mods.time_multiplier(), 1.0) and is_equal_approx(mods.wear_multiplier(), 1.0), "a printer with no upgrades is unchanged")
+	_check(mods.problem(&"auto_bed_levelling_kit", plodder) == "", "bed levelling fits the starter printer")
+	_check(mods.problem(&"auto_bed_levelling_kit", zippy) != "", "but not a printer of the wrong kind, or one that has it already")
+	_check(mods.problem(&"anti_vibration_feet", zippy) == "", "an upgrade that fits anything fits a core XY")
+
+	var flags := PrintRisk.conditions(plodder, data.presets["standard"], data.products["cable_management_clips_x12"])
+	var before := PrintRisk.fail_chance(plodder, data.presets["standard"], pla, data.products["cable_management_clips_x12"])
+	mods.fit(&"auto_bed_levelling_kit")
+	_check(mods.has(&"auto_bed_levelling_kit") and mods.problem(&"auto_bed_levelling_kit", plodder) != "", "an upgrade can only be fitted once")
+	var improved := mods.apply(plodder)
+	_check(improved["auto_bed_levelling"] and not plodder["auto_bed_levelling"], "bed levelling gives the printer the capability without touching its data row")
+	var levelled := PrintRisk.conditions(improved, data.presets["standard"], data.products["cable_management_clips_x12"])
+	_check(flags.has(&"no_auto_level") and not levelled.has(&"no_auto_level"), "so the missing bed levelling flag goes")
+	var scale := PrintRisk.upgrade_scale(data.failures, levelled, pla, mods.failure_multipliers())
+	_check(scale < 0.92 and scale > 0.6, "bed levelling clearly cuts the chance of a failure (to %.2f of what it was)" % scale)
+	_check(before * scale < before, "and the print is less likely to fail")
+	var first_layer: Dictionary = data.failures["first_layer"]
+	_check(is_equal_approx(PrintRisk.weight_of(first_layer, levelled, pla, mods.failure_multipliers()), float(first_layer["weight"]) * 0.4), "first layer failures become much rarer")
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 9
+	var plain := 0
+	var upgraded := 0
+	for attempt in 3000:
+		plain += 1 if PrintRisk.pick(data.failures, flags, pla, rng)["id"] == "first_layer" else 0
+		upgraded += 1 if PrintRisk.pick(data.failures, levelled, pla, rng, mods.failure_multipliers())["id"] == "first_layer" else 0
+	_check(upgraded * 3 < plain, "and are picked far less often (%d against %d)" % [upgraded, plain])
+	_check(is_equal_approx(PrintRisk.upgrade_scale(data.failures, flags, pla, {}), 1.0), "no upgrades means no change to the chance")
+
+	mods.fit(&"frame_stiffening_braces")
+	mods.fit(&"cable_chain_kit")
+	_check(is_equal_approx(mods.time_multiplier(), 0.95) and is_equal_approx(mods.wear_multiplier(), 0.9), "braces speed prints up and a cable chain slows wear")
+	_check(is_equal_approx(float(mods.failure_multipliers()["layer_shift"]), 0.8), "upgrades' effects on failures combine")
+	var wear := PrinterWear.new(data.parts, plodder, 1.0)
+	var plain_wear := wear.wear_per_hour(&"nozzle", data.presets["standard"], pla)
+	wear.upgrade_multiplier = mods.wear_multiplier()
+	_check(is_equal_approx(wear.wear_per_hour(&"nozzle", data.presets["standard"], pla), plain_wear * 0.9), "slower wear reaches every part")
+
+	var saved := _through_file(mods.save())
+	saved["fitted"].append("gone_upgrade")
+	var again := PrinterMods.new(data.upgrades)
+	again.restore(saved)
+	_check(again.fitted == mods.fitted, "upgrades come back from a save, without any the game no longer has")
+
+
+func _test_filaments() -> void:
+	var data := GameData.load_all()
+	var plodder: Dictionary = data.printers["plodder_mini"]
+	var zippy: Dictionary = data.printers["zippy_x1"]
+	var clips: Dictionary = data.products["cable_management_clips_x12"]
+	var standard: Dictionary = data.presets["standard"]
+	_check(FilamentRules.problem(plodder, data.filaments["pla"]) == "", "the starter printer prints PLA")
+	_check(FilamentRules.problem(plodder, data.filaments["petg"]) == "", "and is just hot enough for PETG")
+	_check(FilamentRules.problem(plodder, data.filaments["abs"]) != "", "but not hot enough for ABS")
+	_check(FilamentRules.problem(plodder, data.filaments["tpu"]) != "", "and can't feed TPU without direct drive")
+	_check(FilamentRules.problem(zippy, data.filaments["asa"]) == "" and FilamentRules.problem(zippy, data.filaments["tpu"]) == "", "an enclosed direct drive printer handles ASA and TPU")
+	var mods := PrinterMods.new(data.upgrades)
+	mods.fit(&"direct_drive_conversion")
+	_check(FilamentRules.problem(mods.apply(plodder), data.filaments["tpu"]) == "", "a direct drive conversion lets the starter printer print TPU")
+	var hot_open := plodder.duplicate()
+	hot_open["max_nozzle_temp_c"] = 280
+	_check(FilamentRules.problem(hot_open, data.filaments["abs"]).contains("enclosed"), "ABS on an open printer is refused for want of an enclosure")
+	var tent := PrinterMods.new(data.upgrades)
+	tent.fit(&"snap_on_enclosure")
+	_check(FilamentRules.problem(tent.apply(hot_open), data.filaments["abs"]) == "", "a snap-on enclosure lets it print ABS")
+
+	_check(FilamentRules.suits(clips, data.filaments["pla"]) and FilamentRules.suits(clips, data.filaments["pla_silk"]), "a PLA design prints in any filament of the PLA family")
+	var tough := {"allowed_filaments": ["pla", "petg"]}
+	_check(FilamentRules.suits(tough, data.filaments["petg"]) and not FilamentRules.suits(tough, data.filaments["tpu"]), "and in the other filaments it names, but no others")
+	_check(FilamentRules.suits(data.products["flexi_dragon"], data.filaments["pla_glow"]) and not FilamentRules.suits(data.products["flexi_dragon"], data.filaments["petg"]), "a PLA-only design takes the fancy PLAs but not PETG")
+	_check(FilamentRules.has_a_use(data.products, data.filaments["pla_wood"]) and not FilamentRules.has_a_use(data.products, data.filaments["asa"]), "a filament no design can use is spotted")
+
+	_check(FilamentRules.spool_key("pla_silk", "pink") == "pla_silk:pink", "a spool key names material and colour")
+	_check(FilamentRules.material_of("pla_silk:pink") == "pla_silk" and FilamentRules.colour_of("pla_silk:pink") == "pink", "and can be taken apart again")
+	_check(FilamentRules.material_of("red") == "pla" and FilamentRules.colour_of("red") == "red", "a bare colour is a PLA spool")
+
+	var supplier := Supplier.new(data)
+	_check(supplier.spool_price("pla") == 1599 and supplier.spool_price("pla_cf") == 3399, "each filament has its own spool price")
+	_check(supplier.price_of({"spools": {"red": 1, "pla_cf:ink": 2, "petg:teal": 1}}) == 1599 + 2 * 3399 + 1899, "a mixed basket adds each spool at its own price")
+	var box := supplier.place({"spools": {"pla_cf:ink": 2, "red": 1}}, 0.0)[0]
+	_check(box.spools.size() == 3 and box.spools.has(&"pla_cf:ink") and box.describe() == "3 spools", "a delivery carries each spool's key")
+	_check(Supplier.Delivery.restored(_through_file(box.save())).spools == box.spools, "and keeps them through a save")
+
+	var brass: Dictionary = data.parts["brass_nozzle_0_4mm"]
+	var hardened: Dictionary = data.parts["hardened_steel_nozzle_0_4mm"]
+	_check(FilamentRules.wears_nozzle(data.filaments["pla_glow"], brass), "glow filament chews a brass nozzle")
+	_check(not FilamentRules.wears_nozzle(data.filaments["pla_glow"], hardened) and not FilamentRules.wears_nozzle(data.filaments["pla"], brass), "but not a hardened one, and plain PLA chews nothing")
+	var wear := PrinterWear.new(data.parts, plodder, 1.0)
+	var on_brass := wear.wear_per_hour(&"nozzle", standard, data.filaments["pla_cf"])
+	wear.replace(&"nozzle", &"hardened_steel_nozzle_0_4mm")
+	var on_hardened := wear.wear_per_hour(&"nozzle", standard, data.filaments["pla_cf"])
+	_check(on_brass > on_hardened * 50.0, "carbon filament wears brass far faster than hardened steel")
+	_check(is_equal_approx(on_hardened, wear.wear_per_hour(&"nozzle", standard, data.filaments["pla"])), "a hardened nozzle wears the same whatever is printed")
+
+	_check(PrintRisk.fail_chance(plodder, standard, data.filaments["pla_cf"], clips) > PrintRisk.fail_chance(plodder, standard, data.filaments["pla"], clips) * 2.5, "fussier filaments fail more often")
+	var stringing: Dictionary = data.failures["stringing"]
+	_check(PrintRisk.weight_of(stringing, [], data.filaments["tpu"]) > PrintRisk.weight_of(stringing, [], data.filaments["pla"]), "stringy filaments string more")
+
+	var market := Marketplace.new(data.marketplaces["craftsy"].duplicate(), data.products)
+	market.config["max_open_orders"] = 1000
+	market.set_listing(&"cable_management_clips_x12", true, 400)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 2
+	for step in 2000:
+		market.tick(step, step + 1.0, rng)
+	var plain := market.orders[0]
+	var fancy := market.orders[1]
+	market.mark_packed(plain, 3, 3, false)
+	market.mark_packed(fancy, 3, 3, false, float(data.filaments["pla_cf"]["value_multiplier"]))
+	_check(plain.price == 400 and fancy.price == 560, "a print in a premium filament sells for more than the listed price")
+	_check(market.ship(fancy)["fee"] == market.fee_for(560), "and the marketplace takes its cut of the higher price")
 
 
 func _test_clock() -> void:
@@ -431,5 +551,7 @@ func _test_supplier() -> void:
 	_check(supplier.price_of(spares) == 2 * 699 + 449, "spare parts are priced by the pack")
 	var parts_box := supplier.place(spares, 0.0)
 	_check(parts_box.size() == 1 and parts_box[0].parts[&"brass_nozzle_0_4mm"] == 6 and parts_box[0].parts[&"ptfe_tube"] == 1, "a delivery holds every part in each pack")
-	_check(parts_box[0].describe() == "7 spare parts", "a parts delivery says how many parts it holds")
+	_check(parts_box[0].describe() == "7 parts", "a parts delivery says how many parts it holds")
+	_check(supplier.price_of({"parts": {"auto_bed_levelling_kit": 1}}) == 3899, "upgrade kits are bought the same way as parts")
+	_check(supplier.place({"parts": {"auto_bed_levelling_kit": 2}}, 5000.0)[0].parts[&"auto_bed_levelling_kit"] == 2, "and come one to a pack")
 	_check(supplier.collect_due(120.0).size() == 1, "spare parts arrive after the parts lead time")

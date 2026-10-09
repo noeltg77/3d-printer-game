@@ -24,6 +24,8 @@ def add_arguments(parser):
     parser.add_argument("--colour", default="teal", help="accent colour (chair fabric)")
     parser.add_argument("--tiers", type=int, default=5, help="filament rack rows")
     parser.add_argument("--per-tier", type=int, default=14, help="filament rack spools per row")
+    parser.add_argument("--bays", type=int, default=1, help="shelving bays side by side, 1.2 m each")
+    parser.add_argument("--width", type=float, default=1.6, help="workbench width")
 
 
 def build(args, rng):
@@ -36,19 +38,25 @@ def build(args, rng):
 
 
 def _shelving(builder, args, rng):
-    """Metal rack, 1.2 x 0.45 x 1.8. Shelf tops are at 0.13 + n * 0.55.
+    """Metal rack, 1.2 wide for each bay, 0.45 deep and 1.8 tall. Shelf tops are at 0.13 + n * 0.55.
 
-    Markers `item_slot_1..12`: three across each shelf, top shelf first.
+    Markers `item_slot_1..N`: three across each bay of each shelf, top shelf first.
     """
-    width, depth, height = 1.2, 0.45, 1.8
+    bay = 1.2
+    width, depth, height = bay * args.bays, 0.45, 1.8
     slot = 1
     for level in reversed(range(4)):
-        for x in (-0.36, 0.0, 0.36):
-            _pending_markers.append((f"item_slot_{slot}", (x, 0, 0.13 + level * 0.55), (0.0, 0.0, 0.0)))
-            slot += 1
-    for x in (-1, 1):
+        for index in range(args.bays):
+            for x in (-0.36, 0.0, 0.36):
+                centre = (index - (args.bays - 1) / 2) * bay + x
+                _pending_markers.append((f"item_slot_{slot}", (centre, 0, 0.13 + level * 0.55), (0.0, 0.0, 0.0)))
+                slot += 1
+    # A pair of posts at each end and wherever two bays meet.
+    for index in range(args.bays + 1):
+        x = -width / 2 + index * bay
+        x = min(max(x, -width / 2 + 0.02), width / 2 - 0.02)
         for y in (-1, 1):
-            builder.box((0.04, 0.04, height), (x * (width / 2 - 0.02), y * (depth / 2 - 0.02), height / 2), "metal_dark")
+            builder.box((0.04, 0.04, height), (x, y * (depth / 2 - 0.02), height / 2), "metal_dark")
     for level in range(4):
         z = 0.1 + level * 0.55
         builder.box((width - 0.02, depth - 0.02, 0.03), (0, 0, z + 0.015), "wood_light")
@@ -88,8 +96,8 @@ def _filament_rack(builder, args, rng):
 
 
 def _workbench(builder, args, rng):
-    """Chunky wooden bench, 1.6 x 0.7, top at 0.9, with a pegboard and hung tools."""
-    width, depth, height = 1.6, 0.7, 0.9
+    """Chunky wooden bench, 1.6 x 0.7 unless given a width, top at 0.9, with a pegboard and hung tools."""
+    width, depth, height = args.width, 0.7, 0.9
     builder.box((width, depth, 0.07), (0, 0, height - 0.035), "wood", bevel=0.012)
     for x in (-1, 1):
         for y in (-1, 1):
@@ -104,7 +112,7 @@ def _workbench(builder, args, rng):
     for x in (-1, 1):
         builder.box((0.05, 0.05, 0.64), (x * (width / 2 - 0.025), board_y, height + 0.32), "wood_dark")
     tool_y = board_y - 0.025
-    slots = 6
+    slots = round(6 * width / 1.6)
     for slot in range(slots):
         x = (slot - (slots - 1) / 2) * (width - 0.3) / (slots - 1) + rng.uniform(-0.02, 0.02)
         handle = rng.uniform(0.09, 0.14)
