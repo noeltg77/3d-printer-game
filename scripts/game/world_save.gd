@@ -21,6 +21,7 @@ const PARTS := {
 	"rack": &"filament_rack",
 	"dryer": &"dryer_spot",
 	"shelf": &"print_storage",
+	"conveyor": &"conveyor",
 	"outbox": &"outbox",
 	"deliveries": &"delivery_zone",
 	"character": &"player",

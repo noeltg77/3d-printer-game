@@ -236,6 +236,9 @@ func _upgrades() -> Control:
 			models.append(Game.data.printers[printer_id]["name"])
 		if not models.is_empty():
 			fits = " and ".join(models)
+		var fixture: bool = upgrade.has("fixture")
+		if fixture:
+			fits = "the building, from the conveyor controls"
 		var words := Ui.vbox([
 			Ui.text(upgrade["name"], 16, Ui.INK, 800),
 			Ui.wrap(Ui.text(upgrade["description"], 13, Ui.MUTED)),
@@ -251,10 +254,17 @@ func _upgrades() -> Control:
 		var owned := shelf.spare_count(StringName(upgrade_id))
 		var state := Ui.pill("On the shelf: %d" % owned, Ui.GREEN_DARK, Ui.GREEN_SOFT) if owned > 0 else Ui.pill(
 			"Fitted to %d printer%s" % [fitted, "" if fitted == 1 else "s"] if fitted > 0 else "Not fitted", Ui.MUTED, TILE)
+		if fixture:
+			var conveyor: Conveyor = get_tree().get_first_node_in_group(&"conveyor")
+			if conveyor == null:
+				problem = "There is nowhere to hang it here"
+			elif conveyor.installed:
+				problem = "Already fitted"
+				state = Ui.pill("Fitted", Ui.GREEN_DARK, Ui.GREEN_SOFT)
 		var buy := _disabled_if(Ui.button("Buy", _buy.bind(order), BLUE, Ui.WHITE, 44, 14), problem != "")
 		buy.tooltip_text = problem
 		var cells: Array = [Ui.icon_tile("wrench", 52, 26, TILE, NAVY), words]
-		if not printers.is_empty() and could_fit == 0 and owned == 0 and fitted == 0:
+		if not fixture and not printers.is_empty() and could_fit == 0 and owned == 0 and fitted == 0:
 			cells.append(Ui.pill("Won't fit your printers", LOCK_TEXT, LOCK_BG))
 		cells.append_array([state, Ui.width(Ui.text(Money.format(int(upgrade["price_pence"])), 17, Ui.INK, 800), 70), buy])
 		rows.add_child(Ui.panel(Ui.hbox(cells, 18), Ui.box(Ui.WHITE, 18, 18, 14, SHADOW, 3)))

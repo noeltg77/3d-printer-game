@@ -39,6 +39,8 @@ static func items(tree: SceneTree) -> Array[Dictionary]:
 	for printer: PrinterStation in printers:
 		if printer.status == PrinterStation.Status.DONE:
 			_add(found, "Collect the finished print", "Click the printer and choose Collect. It can't start another until its plate is clear.")
+		if printer.has_auto_eject() and printer.tray.size() >= printer.tray_capacity():
+			_add(found, "Empty the tray on the %s" % printer.display_name, "Its auto-eject plate has nowhere left to throw prints, so it has stopped. Click the printer and choose Empty the tray.")
 		if printer.status == PrinterStation.Status.FAILED:
 			_add(found, "Sort out the failed print on the %s" % printer.display_name,
 				"Click the printer and pick the fix. Prints fail now and then; it costs a little time and plastic.")
@@ -57,6 +59,8 @@ static func items(tree: SceneTree) -> Array[Dictionary]:
 	var shelf: StorageShelf = tree.get_first_node_in_group(&"print_storage")
 	for box in (shelf.spares() if shelf != null else ([] as Array[SparePart])):
 		var kit: Dictionary = Game.data.upgrades.get(box.part, {})
+		if kit.get("fixture", "") == Conveyor.FIXTURE:
+			_add(found, "Fit the conveyor", "It carries prints from every printer with an auto-eject plate to the shelving. Click the control cabinet by the shelving and choose Fit.")
 		if kit.has("multicolour"):
 			_add(found, "Fit the %s" % kit["name"], "It lets one print be several colours. Unload the printer it is made for, then click that printer and open Upgrades. After that, load a spool for each colour.")
 	var spools_coming := Game.supplier.pending.any(func(d: Supplier.Delivery) -> bool: return not d.spools.is_empty())

@@ -300,7 +300,7 @@ Build small and prove each step before moving on: assets and garage first, then 
 
 ### Phase 9: Tier 4 factory
 
-- [ ] Industrial unit, larger farms, automation (auto-eject, conveyors). The factory unit is in, with six benches for 24 printers and room for six staff; automation still to do
+- [x] Industrial unit, larger farms, automation (auto-eject, conveyors)
 - [ ] Resin, SLS and industrial machines
 - [ ] Large contracts, events, milestones
 - [ ] Optional injection moulding endgame

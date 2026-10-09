@@ -21,6 +21,8 @@ const TABLES := {
 const FAILURE_HAPPENS: PackedStringArray = ["start", "mid", "end"]
 const FAILURE_OUTCOMES: PackedStringArray = ["scrap", "stop", "degraded"]
 const SETTINGS := "res://data/game.json"
+## The tray an auto-eject plate throws prints into.
+const TRAY_MODEL := "res://assets/models/automation/eject_tray.glb"
 ## Where the model of a multicolour unit is found.
 const UNIT_MODEL := "res://assets/models/printers/%s.glb"
 const REVIEWS := "res://data/reviews.json"
@@ -120,6 +122,8 @@ func _check_references() -> void:
 		for printer_id: String in upgrade.get("fits_printers", []):
 			if not printers.has(printer_id):
 				errors.append("upgrade %s: unknown printer \"%s\"" % [upgrade["id"], printer_id])
+		if upgrade.has("auto_eject") and not ResourceLoader.exists(TRAY_MODEL):
+			errors.append("upgrade %s: no tray model at %s" % [upgrade["id"], TRAY_MODEL])
 		if upgrade.has("multicolour"):
 			var unit: Dictionary = upgrade["multicolour"]
 			for part_id: String in unit.get("parts", []):

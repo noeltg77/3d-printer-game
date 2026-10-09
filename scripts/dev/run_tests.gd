@@ -220,6 +220,14 @@ func _test_printer_mods() -> void:
 	wear.upgrade_multiplier = mods.wear_multiplier()
 	_check(is_equal_approx(wear.wear_per_hour(&"nozzle", data.presets["standard"], pla), plain_wear * 0.9), "slower wear reaches every part")
 
+	var eject := PrinterMods.new(data.upgrades)
+	_check(eject.block("auto_eject").is_empty() and eject.problem(&"auto_eject_plate", plodder) == "", "an auto-eject plate fits any printer")
+	eject.fit(&"auto_eject_plate")
+	_check(eject.apply(plodder)["auto_eject"] and int(eject.block("auto_eject")["tray"]) > 0, "and gives it a tray that holds a few prints")
+	_check(eject.problem(&"overhead_conveyor", plodder) != "" and eject.problem(&"overhead_conveyor", zippy) != "", "the conveyor goes on the building, never on a printer")
+	var fixtures := data.upgrades.values().filter(func(row: Dictionary) -> bool: return row.has("fixture"))
+	_check(fixtures.size() == 1 and int(fixtures[0]["unlock_tier"]) == 4, "there is one conveyor kit, for the factory")
+
 	var saved := _through_file(mods.save())
 	saved["fitted"].append("gone_upgrade")
 	var again := PrinterMods.new(data.upgrades)

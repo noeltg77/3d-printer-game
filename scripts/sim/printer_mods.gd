@@ -27,6 +27,8 @@ func has(upgrade: StringName) -> bool:
 ## "" if it can.
 func problem(upgrade: StringName, printer: Dictionary) -> String:
 	var row: Dictionary = upgrades[upgrade]
+	if row.has("fixture"):
+		return "Goes on the building, not on a printer"
 	if has(upgrade):
 		# Another of the multicolour unit already on links to it, up to its limit.
 		if not row.has("multicolour"):
@@ -66,9 +68,15 @@ func apply(printer: Dictionary) -> Dictionary:
 ## The multicolour unit fitted (the `multicolour` block of its upgrade row), or
 ## {} if there isn't one.
 func unit() -> Dictionary:
+	return block("multicolour")
+
+
+## The block of that name on the first fitted upgrade that has one, or {}.
+## `auto_eject` is one: what an auto-eject plate's tray holds.
+func block(key: String) -> Dictionary:
 	for upgrade in fitted:
-		if upgrades[upgrade].has("multicolour"):
-			return upgrades[upgrade]["multicolour"]
+		if upgrades[upgrade].has(key):
+			return upgrades[upgrade][key]
 	return {}
 
 

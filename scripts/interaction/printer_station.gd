@@ -25,6 +25,12 @@ extends Interactable
 ##
 ## The printer remembers its last job, so it can be set going again in one
 ## click. With `repeat` on, a print operator on the staff does that unasked.
+##
+## An auto-eject plate (an upgrade with an `auto_eject` block) clears a good
+## print off the plate by itself: onto the conveyor if the building has one
+## and there is shelf space, or else into the tray beside the printer, which
+## somebody has to empty. Freed like that, a printer with `repeat` on starts
+## its last job again with nobody near it.
 
 enum Status { IDLE, PRINTING, DONE, FAILED }
 
@@ -38,6 +44,13 @@ const GANTRY_DROP := 0.175
 ## copy's share of it the copy may fill.
 const PLATE_SIZE := 0.24
 const BATCH_FILL := 0.88
+## Where the auto-eject tray sits beside the printer, how small prints are
+## drawn in it, and how many of them show.
+const TRAY_OFFSET := Vector3(0.36, 0.0, 0.1)
+const TRAY_SCALE := 0.38
+const TRAY_SHOWN := 6
+## Game seconds between a self-running printer's looks at what to do next.
+const AUTO_SECONDS := 1.0
 
 ## Row from data/printers.json.
 var spec: Dictionary
@@ -67,6 +80,10 @@ var wear: PrinterWear
 ## The upgrades fitted to it.
 var mods: PrinterMods
 
+## Prints the auto-eject plate has thrown into the tray, oldest first.
+var tray: Array[PrintedItem] = []
+var _tray_floor: Node3D = null
+var _auto_wait := 0.0
 ## The last job started: { product, preset, slots, copies }. Empty before the first.
 var _last := {}
 ## The slots the current print draws on, one per colour, and the grams it was
@@ -119,6 +136,11 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	if _tray_floor != null and status != Status.PRINTING and status != Status.FAILED:
+		_auto_wait -= delta
+		if _auto_wait <= 0.0:
+			_auto_wait = AUTO_SECONDS
+			_run_itself()
 	var bed_target := _bed_rest
 	var gantry_target := _gantry_rest
 	var toolhead_target := _toolhead_rest
@@ -146,6 +168,28 @@ func _process(delta: float) -> void:
 
 
 func get_actions(_agent: Agent) -> Array[Action]:
+	var actions := _tray_actions()
+	actions.append_array(_status_actions())
+	return actions
+
+
+## Emptying the tray of an auto-eject plate, when there is anything in it.
+func _tray_actions() -> Array[Action]:
+	var actions: Array[Action] = []
+	if tray.is_empty():
+		return actions
+	var label := "Empty the tray: %d print%s" % [tray.size(), "" if tray.size() == 1 else "s"]
+	if not _shelf().has_space():
+		actions.append(Action.info("%s (shelving is full)" % label))
+		return actions
+	var empty := Action.new(label, _empty_tray).for_duty(&"collect")
+	empty.task_name = "Empty the tray on the %s" % display_name
+	actions.append(empty)
+	return actions
+
+
+## What the printer offers for the state it is in.
+func _status_actions() -> Array[Action]:
 	match status:
 		Status.PRINTING:
 			var left := GameClock.duration_label((job.duration - job.elapsed) * GameClock.MINUTES_PER_SECOND)
@@ -191,6 +235,16 @@ func _batch_title(title: String) -> String:
 func max_copies(product: StringName) -> int:
 	var toggle: Dictionary = Game.data.toggles["batch_plate"]
 	return clampi(PrintRisk.copies(spec, Game.data.products[product], float(toggle["gap_mm"])), 1, int(toggle["max_copies"]))
+
+
+## True if an auto-eject plate is fitted.
+func has_auto_eject() -> bool:
+	return _tray_floor != null
+
+
+## How many prints the auto-eject tray holds.
+func tray_capacity() -> int:
+	return int(mods.block("auto_eject").get("tray", 0))
 
 
 func has_unit() -> bool:
@@ -248,8 +302,9 @@ func _again_actions() -> Array[Action]:
 	if repeat:
 		again.for_duty(&"reprint")
 	actions.append(again)
-	if Game.staff.has_duty("reprint"):
-		var switch := Action.new("Staff keep this job going: %s" % ("on" if repeat else "off"), func(_agent: Agent) -> void:
+	# Someone has to do the restarting: a print operator, or the printer's own auto-eject plate.
+	if Game.staff.has_duty("reprint") or has_auto_eject():
+		var switch := Action.new("Keep this job going: %s" % ("on" if repeat else "off"), func(_agent: Agent) -> void:
 			repeat = not repeat
 			Game.changed.emit())
 		switch.immediate = true
@@ -307,7 +362,8 @@ func _upgrades_menu() -> Action:
 		var units := mods.unit_count() if Game.data.upgrades[upgrade].has("multicolour") else 1
 		lines.append(Action.info("Fitted: %s" % Game.data.upgrades[upgrade]["name"] + ("" if units == 1 else " x %d, linked" % units)))
 	for box in _shelf().spares():
-		if not Game.data.upgrades.has(box.part):
+		# A kit for the building (the conveyor) isn't a printer's to fit.
+		if not Game.data.upgrades.has(box.part) or Game.data.upgrades[box.part].has("fixture"):
 			continue
 		var row: Dictionary = Game.data.upgrades[box.part]
 		var problem := upgrade_problem(box.part)
@@ -597,8 +653,55 @@ func _end_print() -> void:
 			display_name, title, String(job.failure["name"]).to_lower(), job.failure["player_text"]], &"bad")
 	else:
 		status = Status.DONE
-		Game.notify("%s finished printing: %s" % [display_name, title], &"good")
+		# A printer that clears its own plate would otherwise announce every print it makes.
+		if not has_auto_eject():
+			Game.notify("%s finished printing: %s" % [display_name, title], &"good")
+	_eject()
 	Game.changed.emit()
+
+
+## What a printer with an auto-eject plate does when left alone: clears a
+## finished print off the plate, and starts the last job again if told to.
+func _run_itself() -> void:
+	_eject()
+	if status != Status.IDLE or not repeat or _last.is_empty() or not Game.printable_designs().has(_last["product"]):
+		return
+	if print_problem(_last["product"], _last["preset"], _last["slots"], _last["copies"]) == "":
+		start_print(_last["product"], _last["preset"], _last["slots"], _last["copies"])
+		Game.changed.emit()
+
+
+## Clears a finished print off the plate if there is an auto-eject plate and
+## somewhere for it to go: the conveyor, or room in the tray. Otherwise it
+## stays where it is, to be collected by hand.
+func _eject() -> void:
+	if status != Status.DONE or not has_auto_eject():
+		return
+	var count := copies()
+	var conveyor: Conveyor = get_tree().get_first_node_in_group(&"conveyor")
+	if conveyor != null and conveyor.can_take(count):
+		conveyor.send(take_items(), _plate.global_position)
+	elif tray.size() + count <= tray_capacity():
+		for copy in take_items():
+			_into_tray(copy)
+	else:
+		return
+	Game.changed.emit()
+
+
+func _into_tray(copy: PrintedItem) -> void:
+	tray.append(copy)
+	Interactable.attach(copy, _tray_floor)
+	_arrange_tray()
+
+
+## Piles what is in the tray, shrunk to fit, with only the top few drawn.
+func _arrange_tray() -> void:
+	for index in tray.size():
+		var copy := tray[index]
+		copy.visible = index < TRAY_SHOWN
+		copy.scale = Vector3.ONE * TRAY_SCALE
+		copy.position = Vector3((index % 2 - 0.5) * 0.09, floori(index / 2.0) * 0.025, (index % 3 - 1) * 0.06)
 
 
 # Tasks. Each checks it still makes sense when its turn comes, because the
@@ -653,13 +756,45 @@ func _collect(agent: Agent) -> void:
 		agent.say("Nothing to collect" if status != Status.DONE else "Not enough room on the shelving")
 		return
 	await agent.go_to(self)
+	await agent.reach(func() -> void: _pick_up(agent, take_items()))
+	await _shelve(agent, shelf)
+
+
+func _empty_tray(agent: Agent) -> void:
+	var shelf := _shelf()
+	if tray.is_empty() or not shelf.has_space():
+		agent.say("Nothing to take from the tray" if tray.is_empty() else "Not enough room on the shelving")
+		return
+	await agent.go_to(self)
 	await agent.reach(func() -> void:
-		# The rest of a batch rides along out of sight, inside the first.
-		var taken := take_items()
-		agent.carry(taken[0])
-		for copy: PrintedItem in taken.slice(1):
-			Interactable.attach(copy, taken[0])
-			copy.visible = false)
+		# As many as there is shelf space for; the rest stay in the tray.
+		var taken: Array[PrintedItem] = []
+		for index in mini(tray.size(), shelf.free_slots()):
+			taken.append(tray.pop_front())
+		for copy in taken:
+			copy.scale = Vector3.ONE
+			copy.visible = true
+		_arrange_tray()
+		_pick_up(agent, taken)
+		Game.changed.emit())
+	await _shelve(agent, shelf)
+
+
+## Gives the character several prints to carry as one: the first in hand and
+## the rest riding along out of sight, inside it.
+func _pick_up(agent: Agent, items: Array[PrintedItem]) -> void:
+	if items.is_empty():
+		return
+	agent.carry(items[0])
+	for copy: PrintedItem in items.slice(1):
+		Interactable.attach(copy, items[0])
+		copy.visible = false
+
+
+## Takes what _pick_up handed over to the shelving and puts each print away.
+func _shelve(agent: Agent, shelf: StorageShelf) -> void:
+	if agent.carried == null:
+		return
 	await agent.go_to(shelf)
 	await agent.reach(func() -> void:
 		var first := agent.release()
@@ -718,8 +853,22 @@ func _fit_upgrade(agent: Agent, upgrade: StringName) -> void:
 		mods.fit(upgrade)
 		wear.upgrade_multiplier = mods.wear_multiplier()
 		_mount_unit()
+		_mount_tray()
 		Game.changed.emit())
 	agent.say("Fitted the %s" % _kit_name(Game.data.upgrades[upgrade]))
+
+
+## Puts the auto-eject tray beside the printer, if the upgrades include the
+## plate and it isn't there already.
+func _mount_tray() -> void:
+	if _tray_floor != null or mods.block("auto_eject").is_empty():
+		return
+	var model: Node3D = (load(GameData.TRAY_MODEL) as PackedScene).instantiate()
+	add_child(model)
+	model.position = TRAY_OFFSET
+	_tray_floor = model.find_child("tray", true, false)
+	remove_collider()
+	_build_collider.call_deferred()
 
 
 ## Sets up the multicolour units among the upgrades that aren't up already.
@@ -775,6 +924,8 @@ func save() -> Dictionary:
 		state["copies"] = copies()
 	if scrap != null:
 		state["scrap"] = {"failure": scrap.failure, "item": scrap.item.save()}
+	if not tray.is_empty():
+		state["tray"] = tray.map(func(copy: PrintedItem) -> Dictionary: return copy.save())
 	return state
 
 
@@ -785,7 +936,13 @@ func restore(state: Dictionary) -> void:
 		mods.restore(state["mods"])
 		wear.upgrade_multiplier = mods.wear_multiplier()
 		_mount_unit()
+		_mount_tray()
 	wear.restore(state["wear"])
+	if _tray_floor != null:
+		for entry: Dictionary in state.get("tray", []):
+			var thrown := PrintedItem.restored(entry)
+			if thrown != null:
+				_into_tray(thrown)
 	# Saves from before multicolour units hold the one spool, and one figure for its grams.
 	var saved_spools: Array = state.get("spools", [state.get("spool")])
 	for slot in mini(saved_spools.size(), spools.size()):

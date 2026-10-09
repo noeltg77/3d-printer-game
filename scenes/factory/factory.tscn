@@ -43,6 +43,9 @@
 [ext_resource type="PackedScene" path="res://assets/models/vehicles/car_yellow.glb" id="44_car_yellow"]
 [ext_resource type="PackedScene" path="res://assets/models/vehicles/car_blue.glb" id="45_car_blue"]
 [ext_resource type="PackedScene" path="res://assets/models/vehicles/van_white.glb" id="46_van"]
+[ext_resource type="PackedScene" path="res://assets/models/automation/control_box.glb" id="47_control_box"]
+[ext_resource type="PackedScene" path="res://assets/models/automation/conveyor.glb" id="48_conveyor"]
+[ext_resource type="Script" path="res://scripts/interaction/conveyor.gd" id="49_conveyor"]
 
 [sub_resource type="Environment" id="Environment_garage"]
 background_mode = 1
@@ -210,6 +213,14 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.8, 0, -5.76)
 script = ExtResource("24_shelf")
 display_name = "Shelving"
 stand_offset = Vector3(0, 0, 0.7)
+
+[node name="Conveyor" parent="." groups=["obstacle"] instance=ExtResource("47_control_box")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.2, 0, -5.62)
+script = ExtResource("49_conveyor")
+display_name = "Conveyor controls"
+stand_offset = Vector3(0, 0, 0.6)
+belt_scene = ExtResource("48_conveyor")
+belt_position = Vector3(0.8, 0, -1.2)
 
 [node name="FloorBox1" parent="." groups=["obstacle"] instance=ExtResource("15_box_b")]
 transform = Transform3D(0.9659, 0, 0.2588, 0, 1, 0, -0.2588, 0, 0.9659, 8.3, 0, 5.3)

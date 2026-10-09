@@ -181,6 +181,8 @@ Kits fitted to a printer for good. Imported from `docs/design_data/parts.json` (
 | `fits_motion` | Printer `motion` values it fits. Empty for any printer |
 | `fits_printers` | Optional. Printer ids it fits, for a kit made for particular machines |
 | `multicolour` | Optional. Makes the kit a multicolour unit; see below |
+| `auto_eject` | Optional, with `grants: ["auto_eject"]`. Makes the kit an auto-eject plate: `tray` is how many prints the tray beside the printer holds. A good or flawed print is thrown off the plate as it finishes, onto the conveyor if the building has one and the shelving has room, or else into the tray. A failed print still has to be cleared by hand. A printer with one, told to keep its job going, restarts itself |
+| `fixture` | Optional. The kit goes on the building, not a printer, and no printer will take it. `conveyor` is the one so far: fitted from the `Conveyor` controls in a scene that has them (the factory), it carries prints from auto-eject plates to the shelving |
 | `grants` | Printer capability fields it switches on, e.g. `auto_bed_levelling`. It can't be fitted to a printer that already has one of them |
 | `failure_multipliers` | Failure id to multiplier on that failure's weight. The chance of a print failing at all shrinks by the share of weight removed (`PrintRisk.upgrade_scale`) |
 | `time_multiplier` | Applied to print time |

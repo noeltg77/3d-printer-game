@@ -178,6 +178,34 @@
 				"parts": ["feeder_rollers_multicolour", "wiper_and_purge_kit"],
 				"model": "multicolour_unit"
 			}
+		},
+		{
+			"id": "auto_eject_plate",
+			"name": "Auto-eject plate",
+			"description": "A plate that flexes when the print is done and flicks it into a tray beside the printer. The printer is free at once, and can be told to keep the same job going by itself.",
+			"unlock_tier": 4,
+			"price_pence": 14999,
+			"install_minutes": 45,
+			"fits_motion": [],
+			"grants": ["auto_eject"],
+			"failure_multipliers": {},
+			"time_multiplier": 1.0,
+			"wear_multiplier": 1.0,
+			"auto_eject": { "tray": 6 }
+		},
+		{
+			"id": "overhead_conveyor",
+			"name": "Overhead conveyor",
+			"description": "A belt hung from the roof that carries prints from every printer with an auto-eject plate to the shelving. Fitted to the building, once, from its control cabinet.",
+			"unlock_tier": 4,
+			"price_pence": 249999,
+			"install_minutes": 240,
+			"fits_motion": [],
+			"fixture": "conveyor",
+			"grants": [],
+			"failure_multipliers": {},
+			"time_multiplier": 1.0,
+			"wear_multiplier": 1.0
 		}
 	]
 }
