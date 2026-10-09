@@ -456,9 +456,10 @@ func anything_listed() -> bool:
 	return false
 
 
-## Buys a design licence. False if it can't be afforded or is already owned.
+## Buys a design licence. False if it is already owned, is for a later tier than the
+## business has reached, or can't be afforded.
 func buy_design(product: StringName) -> bool:
-	if owns(product):
+	if owns(product) or not unlocked(data.products[product]):
 		return false
 	var fee := int(data.products[product]["licence"]["fee_pence"])
 	if not bank.spend(fee, "Design licence: %s" % product_name(product), clock.minutes):

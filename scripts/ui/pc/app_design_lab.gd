@@ -76,6 +76,13 @@ static func matches(row: Dictionary, category: String, search: String) -> bool:
 	return wanted == "" or String(row["name"]).containsn(wanted) or category_label(row).containsn(wanted)
 
 
+## True if a design is shown at all. Designs for a later tier are held back until
+## the business has moved, unless the player already has them.
+static func offered(row: Dictionary) -> bool:
+	var product := StringName(row["id"])
+	return Game.unlocked(row) or Game.owns(product) or Game.studio.has(product)
+
+
 ## The category as shown to the player.
 static func category_label(row: Dictionary) -> String:
 	if row.has("category_name"):
@@ -91,6 +98,8 @@ func _sidebar() -> Control:
 	var total := 0
 	for row: Dictionary in Game.data.products.values():
 		var category: String = row["category"]
+		if not offered(row):
+			continue
 		if not names.has(category):
 			names[category] = category_label(row)
 			counts[category] = 0
@@ -127,20 +136,30 @@ func _catalogue() -> Control:
 	grid.columns = 3
 	grid.add_theme_constant_override(&"h_separation", 20)
 	grid.add_theme_constant_override(&"v_separation", 20)
+	var held_back := 0
 	for product: String in Game.data.products:
-		if matches(Game.data.products[product], _category, _search):
-			grid.add_child(_card(StringName(product), Game.data.products[product]))
+		var row: Dictionary = Game.data.products[product]
+		if not matches(row, _category, _search):
+			continue
+		if offered(row):
+			grid.add_child(_card(StringName(product), row))
+		else:
+			held_back += 1
+	var later := "%d more design%s here once you move to a bigger space." % [held_back, "" if held_back == 1 else "s"]
 	if grid.get_child_count() == 0:
 		grid.free()
 		_designs_scroll = null
 		var nothing := Ui.card(Ui.vbox([
-			Ui.title("No designs match", 20),
-			Ui.text("Try a different search, or pick All designs.", 14, Ui.MUTED),
+			Ui.title("No designs match" if held_back == 0 else "Nothing here yet", 20),
+			Ui.text("Try a different search, or pick All designs." if held_back == 0 else later, 14, Ui.MUTED),
 		], 6), 22, 24, SHADOW)
 		nothing.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		nothing.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 		return nothing
-	_designs_scroll = Ui.scroll(grid)
+	var page := Ui.vbox([grid], 20)
+	if held_back > 0:
+		page.add_child(Ui.panel(Ui.hbox([Ui.icon("box", 24, PURPLE_DARK), Ui.text(later, 14, PURPLE_DARK, 800)], 12), Ui.box(TILE, 16, 18, 14)))
+	_designs_scroll = Ui.scroll(page)
 	return _designs_scroll
 
 
