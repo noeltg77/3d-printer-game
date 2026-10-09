@@ -49,6 +49,8 @@ class Order:
 	var durability := 3
 	var quality := 3
 	var flawed := false
+	## True if a design made for several colours went out in one.
+	var plain := false
 	## Why it was refunded: "damaged" or "returned". Empty otherwise.
 	var refund_reason := ""
 
@@ -56,7 +58,7 @@ class Order:
 		return {
 			"id": id, "market": market, "product": product, "price": price, "placed_at": placed_at, "due_at": due_at,
 			"shipped_at": shipped_at, "deliver_at": deliver_at, "status": status, "durability": durability,
-			"quality": quality, "flawed": flawed, "refund_reason": refund_reason,
+			"quality": quality, "flawed": flawed, "plain": plain, "refund_reason": refund_reason,
 		}
 
 	static func restored(data: Dictionary) -> Order:
@@ -73,6 +75,7 @@ class Order:
 		order.durability = int(data["durability"])
 		order.quality = int(data["quality"])
 		order.flawed = bool(data["flawed"])
+		order.plain = bool(data.get("plain", false))
 		order.refund_reason = String(data["refund_reason"])
 		return order
 
@@ -92,6 +95,8 @@ var trend: Dictionary = {}
 ## The business's own designs: product id -> how well each sells against the
 ## bought design (1.0 the same). Own designs owe no royalty.
 var own_appeal: Dictionary[StringName, float] = {}
+## Stars a buyer knocks off a multicolour design that arrives in one colour.
+var plain_star_penalty := 0.0
 ## Oldest first. Each: { order, product, stars, text, minute }.
 var reviews: Array[Dictionary] = []
 
@@ -186,14 +191,16 @@ func sold_orders() -> Array[Order]:
 
 
 ## Records the order as packed, along with what the item in the parcel is like.
-## `value_multiplier` is the premium for the filament it was printed in: the
-## buyer pays that much more than the listed price.
-func mark_packed(order: Order, durability := 3, quality := 3, flawed := false, value_multiplier := 1.0) -> void:
+## `value_multiplier` is the premium for the filament it was printed in, less
+## the discount for a multicolour design printed in one colour: the buyer pays
+## the listed price times this. `plain` says it was such a print.
+func mark_packed(order: Order, durability := 3, quality := 3, flawed := false, value_multiplier := 1.0, plain := false) -> void:
 	order.status = Status.PACKED
 	order.price = roundi(order.price * value_multiplier)
 	order.durability = durability
 	order.quality = quality
 	order.flawed = flawed
+	order.plain = plain
 
 
 ## Completes a sale and sends it on its way, to arrive at `deliver_at`.
@@ -229,9 +236,10 @@ func return_chance(quality: int, flawed: bool) -> float:
 	return clampf(rough + (float(config["return_chance_flawed"]) if flawed else 0.0), 0.0, 1.0)
 
 
-## Stars (1 to 5) a buyer gives an item that arrived and was kept.
-static func stars_for(quality: int, flawed: bool, rng: RandomNumberGenerator) -> int:
-	var deserved := STARS_BASE + STARS_PER_QUALITY * quality - (FLAW_PENALTY if flawed else 0.0)
+## Stars (1 to 5) a buyer gives an item that arrived and was kept. `penalty` is
+## taken off for anything else that let them down.
+static func stars_for(quality: int, flawed: bool, rng: RandomNumberGenerator, penalty := 0.0) -> int:
+	var deserved := STARS_BASE + STARS_PER_QUALITY * quality - (FLAW_PENALTY if flawed else 0.0) - penalty
 	return clampi(roundi(deserved + rng.randf_range(-STARS_NOISE, STARS_NOISE)), 1, MAX_STARS)
 
 
@@ -254,7 +262,7 @@ func deliver(minute: float, rng: RandomNumberGenerator, shipping: Dictionary) ->
 		else:
 			order.status = Status.DELIVERED
 			if rng.randf() < float(config["review_chance"]):
-				var stars := stars_for(order.quality, order.flawed, rng)
+				var stars := stars_for(order.quality, order.flawed, rng, plain_star_penalty if order.plain else 0.0)
 				outcome["review"] = _review(order, stars, str(stars), minute, rng)
 		outcomes.append(outcome)
 	return outcomes

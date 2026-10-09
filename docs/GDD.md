@@ -287,9 +287,9 @@ Build small and prove each step before moving on: assets and garage first, then 
 
 ### Phase 7: Multicolour units
 
-- [ ] Multicolour unit with 4 slots, linkable units
-- [ ] Colour change waste, batching to reduce swaps
-- [ ] Multicolour products and pricing
+- [x] Multicolour unit with 4 slots, linkable units
+- [x] Colour change waste, batching to reduce swaps
+- [x] Multicolour products and pricing
 
 ### Phase 8: Tier 3 workshop
 

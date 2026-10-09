@@ -120,6 +120,36 @@
 			"price_pence": 699,
 			"pack_size": 1,
 			"break_text": "The part fan has blown its last. Everything now droops."
+		},
+		{
+			"id": "feeder_rollers_multicolour",
+			"name": "Feeder rollers (multicolour)",
+			"slot": "mc_rollers",
+			"slot_name": "Feeder rollers",
+			"description": "Grip the filament inside a multicolour unit. Worn rollers slip, and that means jams.",
+			"unlock_tier": 2,
+			"lifespan_print_hours": 1500,
+			"abrasive_wear_multiplier": 1.0,
+			"max_extra_fail": 0.06,
+			"replace_minutes": 20,
+			"price_pence": 1499,
+			"pack_size": 1,
+			"break_text": "The feeder rollers have gone bald. They spin happily and move nothing."
+		},
+		{
+			"id": "wiper_and_purge_kit",
+			"name": "Wiper and purge kit",
+			"slot": "wiper",
+			"slot_name": "Nozzle wiper",
+			"description": "Cleans the nozzle between colour swaps. A worn one leaves smears of the last colour behind.",
+			"unlock_tier": 2,
+			"lifespan_print_hours": 800,
+			"abrasive_wear_multiplier": 1.0,
+			"max_extra_fail": 0.03,
+			"replace_minutes": 10,
+			"price_pence": 999,
+			"pack_size": 1,
+			"break_text": "The nozzle wiper has worn down to a stub and is now just waving at the nozzle."
 		}
 	]
 }

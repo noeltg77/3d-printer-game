@@ -121,12 +121,15 @@ func _printer_row(number: int, printer: PrinterStation) -> Control:
 	var status := "Idle"
 	var colour := Ui.MUTED
 	var detail := "No filament loaded" if printer.spool == null else "Loaded: %s" % printer.spool.describe()
+	var loaded := printer.spools.filter(func(spool: Spool) -> bool: return spool != null).size()
+	if printer.has_unit() and loaded > 0:
+		detail = "%d of %d slots loaded" % [loaded, printer.spools.size()]
 	var column := Ui.vbox([], 2)
 	match printer.status:
 		PrinterStation.Status.PRINTING:
 			status = "Printing"
 			colour = Ui.GREEN
-			detail = "%s · %s" % [Game.product_name(printer.item.product), printer.spool.title()]
+			detail = "%s · %s" % [Game.product_name(printer.item.product), printer.printing_in()]
 		PrinterStation.Status.DONE:
 			status = "Needs you"
 			colour = Ui.RED

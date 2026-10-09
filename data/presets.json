@@ -41,6 +41,25 @@
 			"quality": 3
 		}
 	],
+	"toggles": [
+		{
+			"id": "multicolour",
+			"name": "Full colour",
+			"description": "Each part in its own colour, as the design intends. Needs a multicolour unit with a spool for every colour.",
+			"off_name": "One colour",
+			"off_description": "The whole thing in a single colour. No swaps and no waste, but it sells for less and buyers like it less.",
+			"off_price_multiplier": 0.7,
+			"off_star_penalty": 0.5
+		},
+		{
+			"id": "batch_plate",
+			"name": "Copies",
+			"description": "Print several at once. Quicker than one at a time, and a multicolour unit changes colour for all of them together, so each one wastes less. If the print fails, they all do.",
+			"time_multiplier": 0.85,
+			"max_copies": 6,
+			"gap_mm": 5
+		}
+	],
 	"durability_labels": {
 		"1": "Fragile. Snaps easily, high chance of damage in the post.",
 		"2": "Light duty. Fine for decor, risky for anything handled.",
