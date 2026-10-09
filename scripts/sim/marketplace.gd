@@ -92,6 +92,9 @@ var listings: Dictionary[StringName, Dictionary] = {}
 var orders: Array[Order] = []
 ## What is in or out of fashion: product category -> demand multiplier (Trends).
 var trend: Dictionary = {}
+## What is happening to particular designs just now: product id -> demand
+## multiplier (a design gone viral, or undercut by a rival). See Events.
+var boost: Dictionary[StringName, float] = {}
 ## The business's own designs: product id -> how well each sells against the
 ## bought design (1.0 the same). Own designs owe no royalty.
 var own_appeal: Dictionary[StringName, float] = {}
@@ -138,7 +141,7 @@ func demand_multiplier(product: StringName, price: int) -> float:
 func orders_per_day(product: StringName, price: int) -> float:
 	return (products[product]["demand_per_day"] * demand_multiplier(product, price) * rating_multiplier()
 		* float(own_appeal.get(product, 1.0)) * float(config.get("audience", 1.0))
-		* float(trend.get(products[product]["category"], 1.0)))
+		* float(trend.get(products[product]["category"], 1.0)) * float(boost.get(product, 1.0)))
 
 
 ## Rolls for new orders over a span of game minutes. Returns the ones placed.

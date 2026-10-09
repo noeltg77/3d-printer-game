@@ -168,7 +168,7 @@ func offer(minute: float, rng: RandomNumberGenerator, designs: Array[StringName]
 	contract.offered_at = minute
 	contract.expires_at = minute + float(_rules()["offer_minutes"])
 	# Time to print them all on a few printers, with some slack, and never less than a day.
-	var print_minutes := float(row["print_minutes"]) * contract.quantity / float(_rules()["assumed_printers"])
+	var print_minutes := float(row["print_minutes"]) * contract.quantity / float(client.get("assumed_printers", _rules()["assumed_printers"]))
 	contract.allowed_minutes = maxf(print_minutes * rng.randf_range(client["slack"][0], client["slack"][1]), GameClock.DAY)
 	all.append(contract)
 	return contract
@@ -289,6 +289,18 @@ func fail_overdue(minute: float) -> Array[Dictionary]:
 			contract.paid = roundi(contract.delivered * contract.unit_price * float(_rules()["failed_pay_multiplier"]))
 			lost.append({"contract": contract, "payment": contract.paid})
 	return lost
+
+
+## Ends a contract because the client has gone under. Returns the pence the
+## administrators pay for what had arrived, at the same cut rate as a contract
+## cancelled for lateness.
+func bust(contract: Contract, minute: float) -> int:
+	if contract.status != Status.ACTIVE:
+		return 0
+	contract.status = Status.FAILED
+	contract.closed_at = minute
+	contract.paid = roundi(contract.delivered * contract.unit_price * float(_rules()["failed_pay_multiplier"]))
+	return contract.paid
 
 
 ## The plain filament a design is made in: the first it allows.

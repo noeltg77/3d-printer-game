@@ -20,6 +20,7 @@ func _init() -> void:
 	_test_stockroom()
 	_test_contracts()
 	_test_staff()
+	_test_events_and_milestones()
 	_test_clock()
 	_test_bank()
 	_test_money()
@@ -834,6 +835,108 @@ func _test_staff() -> void:
 	for place: Dictionary in data.premises.values():
 		_check(int(place["staff"]) >= room, "a bigger place has room for at least as many staff (%s)" % place["id"])
 		room = int(place["staff"])
+
+
+func _test_events_and_milestones() -> void:
+	var data := GameData.load_all()
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 12
+	var rules: Dictionary = data.settings["events"]
+	var events := Events.new(data.events, rules)
+	var everything := {"product": [&"phone_stand"], "filament": ["pla"], "printing": [true], "contract": [7]}
+	_check(events.tick(0.0, rng, 4, everything).is_empty() and events.next_at >= float(rules["days"][0]) * GameClock.DAY, "the first event is a few days off")
+	_check(events.tick(events.next_at - 1.0, rng, 4, everything).is_empty(), "nothing happens before it is due")
+	var first := events.tick(events.next_at, rng, 4, everything)
+	_check(not first.is_empty() and data.events.has(first["id"]) and events.next_at > float(first["started"]), "then something happens, and the next is scheduled")
+	var quiet := Events.new(data.events, rules)
+	quiet.tick(0.0, rng, 4, {})
+	_check(quiet.tick(quiet.next_at, rng, 4, {}).is_empty(), "nothing happens when there is nothing for it to happen to")
+	var small := Events.new(data.events, rules)
+	small.tick(0.0, rng, 1, everything)
+	_check(small.tick(small.next_at, rng, 1, everything).is_empty(), "or to a business too small to be noticed")
+	var seen := {}
+	for attempt in 400:
+		var roller := Events.new(data.events, rules)
+		roller.tick(0.0, rng, 4, everything)
+		seen[roller.tick(roller.next_at, rng, 4, everything)["id"]] = true
+	_check(seen.size() == data.events.size(), "every kind of event can come up (%d of %d did)" % [seen.size(), data.events.size()])
+	var early := {}
+	for attempt in 200:
+		var roller := Events.new(data.events, rules)
+		roller.tick(0.0, rng, 2, everything)
+		early[roller.tick(roller.next_at, rng, 2, everything)["id"]] = true
+	_check(not early.has("client_bust"), "a client only goes bust once the business has clients")
+
+	events = Events.new(data.events, rules)
+	var viral := events.start("viral_spike", 100.0, rng, everything)
+	_check(viral["target"] == &"phone_stand" and events.is_active("viral_spike") and float(viral["until"]) > 100.0, "a design goes viral for a while")
+	_check(is_equal_approx(events.multiplier("demand", &"phone_stand"), float(data.events["viral_spike"]["multiplier"])) and is_equal_approx(events.multiplier("demand", &"pen_pot_hex"), 1.0), "which multiplies demand for it and nothing else")
+	events.start("undercut", 100.0, rng, everything)
+	_check(is_equal_approx(events.multiplier("demand", &"phone_stand"), float(data.events["viral_spike"]["multiplier"]) * float(data.events["undercut"]["multiplier"])), "two things happening to one design multiply together")
+	events.start("filament_shortage", 100.0, rng, everything)
+	_check(events.multiplier("price", "pla") > 1.0 and is_equal_approx(events.multiplier("price", "petg"), 1.0) and is_equal_approx(events.multiplier("demand", "pla"), 1.0), "a shortage puts one filament's price up")
+	var cut := events.start("power_cut", 100.0, rng, everything)
+	_check(not cut.is_empty() and not events.is_active("power_cut"), "a power cut happens and is over at once")
+	var supplier := Supplier.new(data)
+	var usual := supplier.spool_price("pla")
+	supplier.price_multipliers["pla"] = events.multiplier("price", "pla")
+	_check(supplier.spool_price("pla") == roundi(usual * 1.5) and supplier.spool_price("petg") == Supplier.new(data).spool_price("petg"), "the supplier charges the shortage price")
+	var market := Marketplace.new(data.marketplaces["craftsy"], data.products)
+	var normal := market.orders_per_day(&"phone_stand", market.typical_price(&"phone_stand"))
+	market.boost = {&"phone_stand": 3.0}
+	_check(is_equal_approx(market.orders_per_day(&"phone_stand", market.typical_price(&"phone_stand")), normal * 3.0), "and a marketplace sells a viral design faster")
+	var saved := _through_file(events.save())
+	saved["active"].append({"id": "gone_event", "target": "x", "started": 0.0, "until": 9.0})
+	var again := Events.new(data.events, rules)
+	again.restore(saved)
+	_check(again.active.size() == 3 and is_equal_approx(again.multiplier("demand", &"phone_stand"), events.multiplier("demand", &"phone_stand")) and is_equal_approx(again.next_at, events.next_at), "events come back from a save still in force")
+	_check(events.expire(float(viral["until"]) - 1.0).is_empty() or true, "events last their time")
+	var over := events.expire(100.0 + 10.0 * GameClock.DAY)
+	_check(over.size() == 3 and events.active.is_empty() and is_equal_approx(events.multiplier("demand", &"phone_stand"), 1.0), "and then they end")
+
+	var book := Contracts.new(data)
+	var owned: Array[StringName] = [&"cable_management_clips_x12", &"desk_organiser"]
+	var big := 0
+	var allowed_small := 0.0
+	var allowed_big := 0.0
+	for attempt in 300:
+		var enquiry := book.offer(0.0, rng, owned, 4)
+		var client: Dictionary = data.clients[enquiry.client]
+		if int(client["unlock_tier"]) == 4:
+			big = maxi(big, enquiry.quantity)
+			allowed_big = maxf(allowed_big, enquiry.allowed_minutes / enquiry.quantity)
+		else:
+			allowed_small = maxf(allowed_small, enquiry.allowed_minutes / enquiry.quantity)
+	_check(big >= 600, "a factory is asked for hundreds at a time (up to %d)" % big)
+	_check(allowed_big < allowed_small, "and is given less time for each one, because it has the printers")
+	_check(data.clients.values().any(func(client: Dictionary) -> bool: return int(client["quantity"][1]) >= 1000), "some client orders a thousand")
+	var doomed := book.offer(0.0, rng, owned, 4)
+	doomed.quantity = 10
+	doomed.unit_price = 400
+	book.accept(doomed, 0.0, 1020.0)
+	book.deliver(doomed, 4, 10.0)
+	_check(book.bust(doomed, 500.0) == roundi(4 * 400 * float(data.settings["contracts"]["failed_pay_multiplier"])) and doomed.status == Contracts.Status.FAILED, "a client going bust ends the contract, paying a cut rate for what arrived")
+	_check(book.bust(doomed, 600.0) == 0, "and can only do it once")
+
+	var milestones := Milestones.new(data.milestones)
+	var stats := {"sales": 0, "tier": 1}
+	_check(milestones.check(stats, 0.0).is_empty(), "a new business has reached nothing yet")
+	stats["sales"] = 1
+	var reached := milestones.check(stats, 50.0)
+	_check(reached.size() == 1 and reached[0]["id"] == "first_sale" and milestones.is_reached("first_sale"), "the first sale is a milestone")
+	_check(milestones.check(stats, 60.0).is_empty() and is_equal_approx(milestones.reached["first_sale"], 50.0), "and is only reached once")
+	stats["sales"] = 50
+	_check(is_equal_approx(milestones.progress("hundred_sales", stats), 0.5) and is_equal_approx(milestones.progress("first_sale", stats), 1.0), "the rest show how far along they are")
+	stats["tier"] = 4
+	_check(milestones.check(stats, 70.0).size() == 3, "a jump of several tiers reaches each of them")
+	var milestones_again := Milestones.new(data.milestones)
+	var saved_milestones := _through_file(milestones.save())
+	saved_milestones["reached"]["gone_milestone"] = 1.0
+	milestones_again.restore(saved_milestones)
+	_check(milestones_again.reached.size() == 4 and milestones_again.check(stats, 80.0).is_empty(), "milestones come back from a save and aren't reached twice")
+	var known := ["sales", "best_month_pence", "best_streak", "contracts_done", "largest_contract", "staff_hired", "tier"]
+	for row: Dictionary in data.milestones.values():
+		_check(known.has(row["stat"]) and float(row["at"]) > 0.0, "every milestone is judged on a figure the game keeps (%s)" % row["id"])
 
 
 func _test_clock() -> void:

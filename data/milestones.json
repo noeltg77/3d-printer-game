@@ -1,0 +1,16 @@
+{
+	"schema_version": 1,
+	"milestones": [
+		{ "id": "first_sale", "name": "First sale", "description": "Somebody you have never met paid for something you made.", "stat": "sales", "at": 1 },
+		{ "id": "five_star_streak", "name": "Five in a row", "description": "Five five-star reviews, one after another.", "stat": "best_streak", "at": 5 },
+		{ "id": "hundred_sales", "name": "A hundred sold", "description": "A hundred parcels have gone out of the door.", "stat": "sales", "at": 100 },
+		{ "id": "first_thousand_month", "name": "A thousand in a month", "description": "The business took {amount} in thirty days.", "stat": "best_month_pence", "at": 100000 },
+		{ "id": "move_to_a_unit", "name": "Out of the garage", "description": "Moved the business into a unit of its own.", "stat": "tier", "at": 2 },
+		{ "id": "first_hire", "name": "First hire", "description": "Somebody else is on the payroll.", "stat": "staff_hired", "at": 1 },
+		{ "id": "first_contract", "name": "First business order", "description": "Finished a contract for a client.", "stat": "contracts_done", "at": 1 },
+		{ "id": "open_the_workshop", "name": "A proper workshop", "description": "Running a print farm from a rented workshop.", "stat": "tier", "at": 3 },
+		{ "id": "open_the_factory", "name": "The factory", "description": "Moved into an industrial unit.", "stat": "tier", "at": 4 },
+		{ "id": "ten_thousand_month", "name": "Ten thousand in a month", "description": "The business took {amount} in thirty days.", "stat": "best_month_pence", "at": 1000000 },
+		{ "id": "thousand_unit_contract", "name": "A thousand of the same thing", "description": "Finished a contract for a thousand items.", "stat": "largest_contract", "at": 1000 }
+	]
+}

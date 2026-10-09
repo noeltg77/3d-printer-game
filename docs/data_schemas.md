@@ -267,6 +267,31 @@ The places the business can run from, smallest first.
 | `min_quality`, `min_durability` | The lowest finish and strength (1 to 5) it takes. `min_durability` is optional. It never takes a flawed item, or a multicolour design printed in one colour |
 | `late_pct_per_day` | Share of the whole price knocked off for each day, or part of one, past the deadline |
 | `asks` | Things it writes, one picked at random for each enquiry |
+| `assumed_printers` | Optional. How many printers this client assumes when working out the time to allow, in place of the game's `contracts.assumed_printers`. The factory's clients assume a farm, so they allow less time for each item |
+
+## events.json
+
+`events`: things that happen to the business from outside (`Events`). One starts every few days. Written for the game, from the list in the GDD.
+
+| Field | Meaning |
+| --- | --- |
+| `kind` | What it does. `demand` scales orders for one design and `price` the price of one filament, both by `multiplier` for as long as it lasts. `power_cut` stops every print in progress (the `power_cut` failure). `client_bust` ends one contract, paid at the cut rate for what had arrived |
+| `target` | What it happens to, and so what there has to be for it to happen at all: `product` (a design listed for sale), `filament` (one in stock), `printing` (a print running) or `contract` (one in progress) |
+| `weight` | How often it is the one picked, relative to the others |
+| `days` | `[shortest, longest]` it lasts, in game days. `[0, 0]` for one that is over at once |
+| `multiplier` | For `demand` and `price` |
+| `tone` | `good` or `bad`, for the colour of its message and its card in the Inbox |
+| `text`, `over` | What the player is told when it starts and when it ends. `{what}` is the design, filament or client |
+
+## milestones.json
+
+`milestones`: the firsts and totals the sandbox points the player at (`Milestones`), in the order the Stats app lists them.
+
+| Field | Meaning |
+| --- | --- |
+| `name`, `description` | Shown in the Stats app and when it is reached. `{amount}` in the description is `at` as money |
+| `stat` | The figure it is judged on: `sales`, `best_month_pence`, `best_streak`, `contracts_done`, `largest_contract`, `staff_hired` (`Game.stats`) or `tier` |
+| `at` | The value the figure has to reach |
 
 ## staff.json
 
@@ -298,6 +323,7 @@ Starting conditions and global rates. Not a table of rows.
 | `default_preset` | The preset the print dialog opens on |
 | `moisture` | `gain_per_day`: moisture (0 to 1) a filament with sensitivity 1.0 gains in a day in the open. `wet_at`: the level at which a spool is wet. Every `step` beyond that adds `extra_fail_per_step` to the chance of a print failing, and wet filament raises the `wet_filament` flag for failures |
 | `multicolour` | `main_colour_share`: the share of a multicolour print's filament its first colour takes. `contrast_purge`: how much more a colour change purges going from black to white. `many_swaps`: colour changes at which a print raises `many_colour_swaps`. `reference_jam_chance`: the `jam_chance_per_swap` of a unit that jams as often as the jam failure's `weight` says |
+| `events` | `unlock_tier`: the tier from which events happen. `days`: `[shortest, longest]` gap between one starting and the next |
 | `contracts` | `unlock_tier`: the tier at which clients start writing. `offers_per_day`: enquiries a day, while fewer than `max_offers` are waiting; each waits `offer_minutes` for an answer. `max_active`: contracts that can run at once. `assumed_printers`: printers a client assumes when working out how long to allow. `colour_chance`: chance an enquiry for a single colour design names the colour. `max_late_days`: days late past which the client cancels, paying `failed_pay_multiplier` of the price for what arrived. `pack_minutes_per_item`: character time to crate each item |
 | `stock` | `unlock_tier`: the tier at which the Stockroom app's reorder rules switch on. `check_minutes`: how often, in game minutes, the rules are checked |
 | `design` | Rules for the business's own designs (`DesignStudio`). `unlock_tier`: when they become possible. `base_minutes`: PC time for a V1, times (1 + the item's difficulty); an iteration takes `iteration_time` of that, a fix `fix_minutes`. Quality starts at `base_quality` plus a skill level for every `designs_per_skill_level` designs finished (to `max_skill`), rises by one per iteration to `max_version`, and stops at `max_quality`. `fault_chance`, less `fault_chance_per_skill` per skill level, is the chance a new version hides a fault. Demand for an own design is `appeal_base + appeal_per_quality x quality` times the bought design's |
@@ -310,4 +336,4 @@ One game day is 1440 game minutes and lasts 10 real minutes at 1x (`GameClock.MI
 
 ## Not drafted yet
 
-Packaging and courier choices, staff and events. Each gets a table when its phase starts.
+Packaging and courier choices. They get a table when there is a choice of either.

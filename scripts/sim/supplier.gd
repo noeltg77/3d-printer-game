@@ -60,6 +60,8 @@ class Delivery:
 
 
 var data: GameData
+## Filament id -> what a shortage is doing to its price, as a multiplier. See Events.
+var price_multipliers: Dictionary[String, float] = {}
 ## Not yet arrived, soonest first.
 var pending: Array[Delivery] = []
 
@@ -85,7 +87,7 @@ func price_of(basket: Dictionary) -> int:
 ## Price of one spool of a filament.
 func spool_price(material := FilamentRules.DEFAULT_MATERIAL) -> int:
 	var filament: Dictionary = data.filaments[material]
-	return roundi(filament["price_pence_per_kg"] * filament["spool_grams"] / 1000.0)
+	return roundi(filament["price_pence_per_kg"] * filament["spool_grams"] / 1000.0 * float(price_multipliers.get(material, 1.0)))
 
 
 static func count_spools(basket: Dictionary) -> int:

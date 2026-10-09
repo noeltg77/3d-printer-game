@@ -28,7 +28,12 @@ func refresh() -> void:
 	add_child(banner)
 
 	var contracts := Game.contracts
-	var enquiries := Ui.vbox([Ui.title("Enquiries", 20)], 12)
+	var enquiries := Ui.vbox([], 12)
+	if not Game.events.active.is_empty():
+		enquiries.add_child(Ui.title("In the news", 20))
+		for event in Game.events.active:
+			enquiries.add_child(_news(event))
+	enquiries.add_child(Ui.title("Enquiries", 20))
 	if not Game.contracts_unlocked():
 		enquiries.add_child(Ui.panel(Ui.wrap(Ui.text("Nobody has written yet. Businesses start asking for batches once you are running from a %s: they want to know you can make a lot of something." % String(
 			Game.data.settings["tier_names"][int(Game.data.settings["contracts"]["unlock_tier"]) - 1]).to_lower(), 14, LOCK_TEXT, 800)), Ui.box(LOCK_BG, 14, 16, 12)))
@@ -53,6 +58,17 @@ func refresh() -> void:
 	var page := Ui.panel(Ui.margin(Ui.hbox([left, right], 32), 40, 24, 40, 24), Ui.box(PAGE, 0, 0, 0))
 	page.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	add_child(page)
+
+
+## Something going on that is changing demand or prices, and how long it has left.
+func _news(event: Dictionary) -> Control:
+	var row: Dictionary = Game.data.events[event["id"]]
+	var good: bool = row["tone"] == "good"
+	return Ui.panel(Ui.vbox([
+		Ui.hbox([Ui.text(row["name"], 15, Ui.INK, 800), null,
+			Ui.pill("%s left" % GameClock.duration_label(float(event["until"]) - Game.clock.minutes), Ui.GREEN_DARK if good else Ui.RED_DARK, Ui.GREEN_SOFT if good else Ui.RED_SOFT)]),
+		Ui.wrap(Ui.text(String(row["text"]).format({"what": Game.event_target_name(event)}), 13, Ui.MUTED)),
+	], 6), Ui.box(Ui.WHITE, 16, 18, 14, SHADOW, 3))
 
 
 func _empty(words: String) -> Control:

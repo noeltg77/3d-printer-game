@@ -15,6 +15,8 @@ const TABLES := {
 	"premises": "res://data/premises.json",
 	"dryers": "res://data/dryers.json",
 	"clients": "res://data/contracts.json",
+	"events": "res://data/events.json",
+	"milestones": "res://data/milestones.json",
 	"roles": "res://data/staff.json",
 	"shifts": "res://data/staff.json",
 }
@@ -44,6 +46,10 @@ var premises: Dictionary = {}
 var dryers: Dictionary = {}
 ## Clients who send contract enquiries, by id (data/contracts.json).
 var clients: Dictionary = {}
+## Things that happen to the business from outside (data/events.json), and
+## the milestones it works towards (data/milestones.json), by id.
+var events: Dictionary = {}
+var milestones: Dictionary = {}
 ## Staff roles and the shifts they can work, by id, and the whole of data/staff.json.
 var roles: Dictionary = {}
 var shifts: Dictionary = {}
@@ -171,6 +177,11 @@ func _check_references() -> void:
 		for filament_id: String in product.get("allowed_filaments", []):
 			if not filaments.has(filament_id) and not families.has(filament_id):
 				errors.append("product %s: unknown filament \"%s\"" % [product["id"], filament_id])
+	for event: Dictionary in events.values():
+		if not ["demand", "price", "power_cut", "client_bust"].has(event.get("kind", "")):
+			errors.append("event %s: unknown kind \"%s\"" % [event["id"], event.get("kind", "")])
+		if event.get("kind", "") == "power_cut" and not failures.has("power_cut"):
+			errors.append("event %s: no \"power_cut\" failure for it to cause" % event["id"])
 	if shifts.is_empty():
 		errors.append("staff.json: no shifts")
 	if staff_config.get("names", []).size() < int(staff_config.get("applicants", 0)) or staff_config.get("looks", []).is_empty():

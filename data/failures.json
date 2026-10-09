@@ -205,6 +205,18 @@
 			"visual": "stalled",
 			"fix": "Mop up and check the screen",
 			"player_text": "There is resin where resin should never be."
+		},
+		{
+			"id": "power_cut",
+			"name": "Power cut",
+			"happens": "mid",
+			"outcome": "stop",
+			"weight": 0,
+			"causes": {},
+			"clear_minutes": 2,
+			"visual": "stalled",
+			"fix": "Clear the half-finished print",
+			"player_text": "The lights went out, and the print went with them."
 		}
 	]
 }

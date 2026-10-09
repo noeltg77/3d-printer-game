@@ -127,6 +127,60 @@
 				"A touring exhibition is coming and each school group gets one to pass round.",
 				"The gift shop sold out of the last lot in a week, to the trustees' surprise."
 			]
+		},
+		{
+			"id": "northgate_retail",
+			"name": "Northgate Retail Group",
+			"about": "Forty shops on forty high streets, and a buyer who counts in pallets.",
+			"unlock_tier": 4,
+			"categories": ["home_organisation", "desk_and_office", "kitchen", "home_decor", "bathroom"],
+			"quantity": [120, 300],
+			"price_multiplier": [0.6, 0.75],
+			"slack": [1.5, 2.5],
+			"assumed_printers": 12,
+			"min_quality": 3,
+			"late_pct_per_day": 0.1,
+			"asks": [
+				"We would like to trial these in every branch. If they sell, the next order will be bigger.",
+				"Our own supplier has let us down for the season. Can you fill the gap?",
+				"One box for each shop, all identical, all on the same day."
+			]
+		},
+		{
+			"id": "fairground_events",
+			"name": "Fairground Events Ltd",
+			"about": "They run festivals, fun days and conferences, and give something away at every one.",
+			"unlock_tier": 4,
+			"categories": ["party_and_events", "toys_and_fidgets", "gaming_and_tabletop", "personalised_and_custom", "halloween", "christmas"],
+			"quantity": [200, 500],
+			"price_multiplier": [0.55, 0.7],
+			"slack": [1.5, 2.5],
+			"assumed_printers": 16,
+			"min_quality": 3,
+			"late_pct_per_day": 0.15,
+			"asks": [
+				"One in every goody bag. The event will not move, so nor can the date.",
+				"Giveaways for the whole weekend. They only have to last until Monday.",
+				"The sponsor wants them on every seat before the doors open."
+			]
+		},
+		{
+			"id": "bellwether_promotions",
+			"name": "Bellwether Promotions",
+			"about": "A promotional goods firm. Whatever it is, they want a thousand, cheaper.",
+			"unlock_tier": 4,
+			"categories": ["tech_accessories", "desk_and_office", "jewellery_and_fashion", "personalised_and_custom", "fidget_toys", "toys_and_fidgets"],
+			"quantity": [600, 1000],
+			"price_multiplier": [0.5, 0.65],
+			"slack": [2.0, 3.0],
+			"assumed_printers": 20,
+			"min_quality": 1,
+			"late_pct_per_day": 0.08,
+			"asks": [
+				"A client of ours wants a mountain of these for a product launch. Finish matters less than the date.",
+				"We need them by the thousand and we need them plain. Can you do it?",
+				"Trade show season. Everybody gives the same thing away and this year it is this."
+			]
 		}
 	]
 }

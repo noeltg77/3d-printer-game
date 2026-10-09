@@ -33,7 +33,8 @@ const APPS: Array[Dictionary] = [
 		"script": preload("res://scripts/ui/pc/app_inbox.gd")},
 	{"id": "rota", "name": "Rota", "colour": "B5582E", "dark": "8A3F1D", "url": "rota.jobs/your-team",
 		"script": preload("res://scripts/ui/pc/app_rota.gd")},
-	{"id": "stats", "name": "Stats", "colour": "D9A23A", "dark": "A87A22"},
+	{"id": "stats", "name": "Stats", "colour": "D9A23A", "dark": "A87A22", "url": "plateos://stats",
+		"script": preload("res://scripts/ui/pc/app_stats.gd")},
 	{"id": "settings", "name": "Settings", "colour": "5C6B73", "dark": "3E4A50", "url": "plateos://settings",
 		"script": preload("res://scripts/ui/pc/app_settings.gd")},
 ]
@@ -166,19 +167,19 @@ func _build_chrome(current: String) -> Control:
 	home.tooltip_text = "Back to the desktop"
 	home.add_child(_inset(Ui.icon("home", 20, Ui.INK), 8))
 
-	var tabs := Ui.hbox([], 6)
+	var tabs := Ui.hbox([], 4)
 	tabs.size_flags_vertical = Control.SIZE_SHRINK_END
 	for entry in APPS:
 		if not entry.has("script"):
 			continue
 		var active: bool = entry["id"] == current
-		var style := Ui.box(Ui.CREAM if active else Ui.CLEAR, 12, 18, 0)
+		var style := Ui.box(Ui.CREAM if active else Ui.CLEAR, 12, 13, 0)
 		style.corner_radius_bottom_left = 0
 		style.corner_radius_bottom_right = 0
 		var hover := style.duplicate() as StyleBoxFlat
 		hover.bg_color = Ui.CREAM if active else Color(Ui.CREAM, 0.5)
 		var tab := Button.new()
-		tab.text = "      %s" % app_name(entry)
+		tab.text = "     %s" % app_name(entry)
 		tab.custom_minimum_size.y = 42
 		tab.focus_mode = Control.FOCUS_NONE
 		tab.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
@@ -194,7 +195,7 @@ func _build_chrome(current: String) -> Control:
 		dot.add_theme_stylebox_override(&"panel", Ui.box(Color.html(entry["colour"]), 6, 0, 0))
 		dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		dot.size = Vector2(12, 12)
-		dot.position = Vector2(18, 15)
+		dot.position = Vector2(13, 15)
 		tab.add_child(dot)
 		tabs.add_child(tab)
 

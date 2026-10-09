@@ -34,6 +34,11 @@ var stock: Stockroom
 var contracts: Contracts
 ## The team, and who has applied to join it (the Rota app).
 var staff: Staff
+## What is happening to the business from outside, and the milestones it has reached.
+var events: Events
+var milestones: Milestones
+## Running totals the milestones are judged on. See stat_view() for the rest.
+var stats: Dictionary[String, int] = {}
 var owned_designs: Array[StringName] = []
 ## Mailer boxes in stock, one used per packed order.
 var packaging := 0
@@ -118,6 +123,11 @@ func _process(delta: float) -> void:
 		changed.emit()
 	if contracts_unlocked():
 		_run_contracts(before)
+	if tier >= int(data.settings["events"]["unlock_tier"]):
+		_run_events()
+	for row in milestones.check(stat_view(), clock.minutes):
+		notify("Milestone: %s. %s" % [row["name"], milestone_text(row)], &"good")
+		changed.emit()
 	var stock_check := float(data.settings["stock"]["check_minutes"])
 	if stock_unlocked() and floorf(clock.minutes / stock_check) != floorf(before / stock_check):
 		restock()
@@ -142,6 +152,10 @@ func new_game() -> void:
 	stock = Stockroom.new(data)
 	contracts = Contracts.new(data)
 	staff = Staff.new(data)
+	events = Events.new(data.events, data.settings["events"])
+	milestones = Milestones.new(data.milestones)
+	stats = {"sales": 0, "month": 0, "month_pence": 0, "best_month_pence": 0, "streak": 0, "best_streak": 0,
+		"contracts_done": 0, "largest_contract": 0, "staff_hired": 0}
 	_stock_blocked.clear()
 	owned_designs.assign(start["designs"])
 	packaging = int(start["packaging"])
@@ -205,6 +219,7 @@ func save() -> Dictionary:
 		"stock": stock.save(),
 		"contracts": contracts.save(),
 		"staff": staff.save(),
+		"events": events.save(), "milestones": milestones.save(), "stats": stats,
 		"owned_designs": owned_designs, "packaging": packaging, "tier": tier, "premises": premises,
 	}
 
@@ -231,6 +246,14 @@ func restore(state: Dictionary) -> void:
 		contracts.restore(state["contracts"])
 	if state.has("staff"):
 		staff.restore(state["staff"])
+	if state.has("events"):
+		events.restore(state["events"])
+	if state.has("milestones"):
+		milestones.restore(state["milestones"])
+	for stat: String in state.get("stats", {}):
+		if stats.has(stat):
+			stats[stat] = int(state["stats"][stat])
+	_share_events()
 	_share_own_designs()
 	owned_designs.clear()
 	for product: String in state["owned_designs"]:
@@ -561,6 +584,110 @@ func place_supplier_order(basket: Dictionary, shop := "", quiet := false) -> boo
 	return true
 
 
+## Starts and ends events, and does what each one does.
+func _run_events() -> void:
+	for over in events.expire(clock.minutes):
+		var row: Dictionary = data.events[over["id"]]
+		_share_events()
+		if row["over"] != "":
+			notify(String(row["over"]).format({"what": event_target_name(over)}))
+		changed.emit()
+	var event := events.tick(clock.minutes, rng, tier, _event_candidates())
+	if not event.is_empty():
+		_begin_event(event)
+
+
+## Carries out an event that has just started and tells the player.
+func _begin_event(event: Dictionary) -> void:
+	var row: Dictionary = data.events[event["id"]]
+	var what := event_target_name(event)
+	match row["kind"]:
+		"power_cut":
+			for printer: PrinterStation in get_tree().get_nodes_in_group(&"printer"):
+				printer.power_cut()
+		"client_bust":
+			var contract := contracts.by_id(int(event["target"]))
+			var paid := contracts.bust(contract, clock.minutes)
+			if paid > 0:
+				bank.earn(paid, "Contract wound up: %s" % client_name(contract), clock.minutes)
+	_share_events()
+	notify(String(row["text"]).format({"what": what}), StringName(row["tone"]))
+	changed.emit()
+
+
+## What each kind of event could happen to right now (Events.tick).
+func _event_candidates() -> Dictionary:
+	var listed: Array[StringName] = []
+	for shop in open_markets():
+		for product in shop.listings:
+			if shop.listings[product]["listed"] and not listed.has(product):
+				listed.append(product)
+	# A shortage is of something the business uses: what it has in stock, or failing that anything on sale.
+	var filaments: Array[String] = []
+	for key: String in stock_levels():
+		var material := FilamentRules.material_of(key.trim_prefix(Stockroom.SPOOL))
+		if Stockroom.is_spool(key) and not filaments.has(material):
+			filaments.append(material)
+	if filaments.is_empty():
+		for filament: Dictionary in data.filaments.values():
+			if unlocked(filament) and FilamentRules.has_a_use(data.products, filament):
+				filaments.append(filament["id"])
+	var printing := get_tree().get_nodes_in_group(&"printer").filter(
+		func(printer: PrinterStation) -> bool: return printer.status == PrinterStation.Status.PRINTING)
+	return {"product": listed, "filament": filaments, "printing": printing.slice(0, 1),
+		"contract": contracts.active().map(func(contract: Contracts.Contract) -> int: return contract.id)}
+
+
+## What an event is happening to, by name: a design, a filament or a client.
+func event_target_name(event: Dictionary) -> String:
+	match data.events[event["id"]]["target"]:
+		"product":
+			return product_name(event["target"]) if data.products.has(event["target"]) else "design"
+		"filament":
+			return data.filaments[event["target"]]["name"] if data.filaments.has(event["target"]) else "filament"
+		"contract":
+			var contract := contracts.by_id(int(event["target"]))
+			return client_name(contract) if contract != null else "A client"
+	return ""
+
+
+## Tells the marketplaces and the supplier what the events going on are doing
+## to demand and to prices.
+func _share_events() -> void:
+	var boost: Dictionary[StringName, float] = {}
+	supplier.price_multipliers.clear()
+	for event in events.active:
+		match data.events[event["id"]]["kind"]:
+			"demand":
+				boost[StringName(event["target"])] = events.multiplier("demand", event["target"])
+			"price":
+				supplier.price_multipliers[String(event["target"])] = events.multiplier("price", event["target"])
+	for shop: Marketplace in markets.values():
+		shop.boost = boost
+
+
+## The figures milestones are judged on: the running totals, and how things stand now.
+func stat_view() -> Dictionary:
+	var view: Dictionary = stats.duplicate()
+	view["tier"] = tier
+	return view
+
+
+## A milestone's description, with any amount of money in the player's currency.
+func milestone_text(row: Dictionary) -> String:
+	return String(row["description"]).format({"amount": Money.format(int(row["at"]))})
+
+
+## Counts money taken towards the best thirty days the business has had.
+func _count_takings(pence: int) -> void:
+	var month := floori(clock.minutes / GameClock.DAY / 30.0)
+	if month != stats["month"]:
+		stats["month"] = month
+		stats["month_pence"] = 0
+	stats["month_pence"] += pence
+	stats["best_month_pence"] = maxi(stats["best_month_pence"], stats["month_pence"])
+
+
 ## How many staff the premises have room for. None until there is a workshop.
 func staff_capacity() -> int:
 	return int(premises_row().get("staff", 0))
@@ -571,6 +698,7 @@ func hire_staff(index: int) -> bool:
 	var member := staff.hire(index, clock.minutes, staff_capacity())
 	if member.is_empty():
 		return false
+	stats["staff_hired"] += 1
 	notify("%s has joined as your %s" % [member["name"], String(data.roles[member["role"]]["name"]).to_lower()], &"good")
 	changed.emit()
 	return true
@@ -654,6 +782,9 @@ func ship_contract(id: int, count: int) -> void:
 	var outcome := contracts.deliver(contract, count, clock.minutes)
 	if not outcome.is_empty():
 		bank.earn(outcome["payment"], "Contract: %s" % client_name(contract), clock.minutes)
+		stats["contracts_done"] += 1
+		stats["largest_contract"] = maxi(stats["largest_contract"], contract.quantity)
+		_count_takings(outcome["payment"])
 		if outcome["penalty"] > 0:
 			notify("%s have their %d x %s, late. They paid %s, after taking off %s." % [client_name(contract), contract.quantity,
 				product_name(contract.product), Money.format(outcome["payment"]), Money.format(outcome["penalty"])], &"bad")
@@ -783,6 +914,8 @@ func complete_sale(order: Marketplace.Order) -> void:
 	var sale := shop.ship(order, clock.minutes, clock.minutes + rng.randf_range(transit[0], transit[1]))
 	var market_name: String = shop.config["name"]
 	bank.earn(sale["price"], "Sale: %s (%s)" % [product_name(order.product), market_name], clock.minutes)
+	stats["sales"] += 1
+	_count_takings(sale["price"])
 	bank.charge(sale["fee"], "%s fees" % market_name, clock.minutes)
 	bank.charge(sale["royalty"], "Design royalty: %s" % product_name(order.product), clock.minutes)
 	changed.emit()
@@ -808,9 +941,12 @@ func _settle_delivery(outcome: Dictionary) -> void:
 			bank.earn(refund["fee"], "%s fees returned" % market_name, clock.minutes)
 		if refund["royalty"] > 0:
 			bank.earn(refund["royalty"], "Design royalty returned: %s" % title, clock.minutes)
+		stats["streak"] = 0
 		notify("Order %s %s: %s refunded. \"%s\"" % [market_of(order).order_label(order), why, Money.format(refund["price"]), review["text"]], &"bad")
 	elif not review.is_empty():
 		var stars := int(review["stars"])
+		stats["streak"] = stats["streak"] + 1 if stars >= Marketplace.MAX_STARS else 0
+		stats["best_streak"] = maxi(stats["best_streak"], stats["streak"])
 		notify("%d star review for %s: \"%s\"" % [stars, title, review["text"]], &"good" if stars >= 4 else (&"bad" if stars <= 2 else &""))
 	changed.emit()
 

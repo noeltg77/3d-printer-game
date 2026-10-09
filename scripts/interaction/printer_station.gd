@@ -615,6 +615,12 @@ func _grow(progress: float) -> void:
 		copy.scale = Vector3(_plate_scale, _plate_scale * maxf(progress, 0.02), _plate_scale)
 
 
+## The power has gone: a print in progress stops where it is and is lost.
+func power_cut() -> void:
+	if status == Status.PRINTING and not job.is_finished():
+		job.fail(Game.data.failures["power_cut"], job.progress)
+
+
 ## Hands over the ruined print, leaving the printer ready to use again.
 func take_scrap() -> FailedPrint:
 	var taken := scrap

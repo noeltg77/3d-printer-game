@@ -1,0 +1,70 @@
+{
+	"schema_version": 1,
+	"events": [
+		{
+			"id": "viral_spike",
+			"name": "Gone viral",
+			"kind": "demand",
+			"target": "product",
+			"unlock_tier": 2,
+			"weight": 3,
+			"days": [1.0, 2.0],
+			"multiplier": 3.0,
+			"tone": "good",
+			"text": "Somebody with a lot of followers has posted your {what}. Orders are pouring in while it lasts.",
+			"over": "The fuss over your {what} has died down."
+		},
+		{
+			"id": "undercut",
+			"name": "Undercut",
+			"kind": "demand",
+			"target": "product",
+			"unlock_tier": 2,
+			"weight": 3,
+			"days": [2.0, 4.0],
+			"multiplier": 0.4,
+			"tone": "bad",
+			"text": "A rival has listed a {what} for less than yours, and buyers have noticed.",
+			"over": "The rival selling a cheap {what} has sold out. Buyers are coming back."
+		},
+		{
+			"id": "filament_shortage",
+			"name": "Filament shortage",
+			"kind": "price",
+			"target": "filament",
+			"unlock_tier": 2,
+			"weight": 2,
+			"days": [2.0, 4.0],
+			"multiplier": 1.5,
+			"tone": "bad",
+			"text": "The suppliers have run short of {what}. It costs half as much again until the next shipment lands.",
+			"over": "{what} is back in stock at its usual price."
+		},
+		{
+			"id": "power_cut",
+			"name": "Power cut",
+			"kind": "power_cut",
+			"target": "printing",
+			"unlock_tier": 2,
+			"weight": 1,
+			"days": [0.0, 0.0],
+			"multiplier": 1.0,
+			"tone": "bad",
+			"text": "A power cut. Every print that was running has stopped where it was.",
+			"over": ""
+		},
+		{
+			"id": "client_bust",
+			"name": "Client gone bust",
+			"kind": "client_bust",
+			"target": "contract",
+			"unlock_tier": 3,
+			"weight": 1,
+			"days": [0.0, 0.0],
+			"multiplier": 1.0,
+			"tone": "bad",
+			"text": "{what} have gone into administration. Their contract is off, and the administrators paid what they could for what had arrived.",
+			"over": ""
+		}
+	]
+}

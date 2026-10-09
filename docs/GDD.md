@@ -302,7 +302,7 @@ Build small and prove each step before moving on: assets and garage first, then 
 
 - [x] Industrial unit, larger farms, automation (auto-eject, conveyors)
 - [ ] Resin, SLS and industrial machines. Resin is in (three printers, three resins, their parts and failures, the resin products), with a large format machine, a production machine and a belt printer. SLS still to do: the design data has machines for it but no powder and no products
-- [ ] Large contracts, events, milestones
+- [x] Large contracts, events, milestones
 - [ ] Optional injection moulding endgame
 
 ### Phase 10: Release
