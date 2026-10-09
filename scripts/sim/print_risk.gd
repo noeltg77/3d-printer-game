@@ -24,6 +24,33 @@ const BEDSLINGER_TALL_MM := 150.0
 const WHEN := {"start": [0.01, 0.05], "mid": [0.1, 0.9], "end": [1.0, 1.0]}
 
 
+## True if a design fits a printer's build volume, turned either way round on the bed.
+static func fits(printer: Dictionary, product: Dictionary) -> bool:
+	var size: Array = product["size_mm"]
+	var bed: Array = printer["build_volume_mm"]
+	if float(size[2]) > float(bed[2]):
+		return false
+	var straight: bool = float(size[0]) <= float(bed[0]) and float(size[1]) <= float(bed[1])
+	var turned: bool = float(size[1]) <= float(bed[0]) and float(size[0]) <= float(bed[1])
+	return straight or turned
+
+
+## How many copies of a design fit on a printer's bed at once, `gap_mm` apart
+## and all turned the same way. 0 if it doesn't fit at all.
+static func copies(printer: Dictionary, product: Dictionary, gap_mm := 5.0) -> int:
+	if not fits(printer, product):
+		return 0
+	var size: Array = product["size_mm"]
+	var bed: Array = printer["build_volume_mm"]
+	var straight := _in_a_row(bed[0], size[0], gap_mm) * _in_a_row(bed[1], size[1], gap_mm)
+	var turned := _in_a_row(bed[0], size[1], gap_mm) * _in_a_row(bed[1], size[0], gap_mm)
+	return maxi(straight, turned)
+
+
+static func _in_a_row(bed: float, size: float, gap: float) -> int:
+	return floori((bed + gap) / (size + gap))
+
+
 ## Chance (0 to 1) that a print goes wrong in any way. `extra` is added on top
 ## for things outside the print itself, such as worn parts.
 static func fail_chance(printer: Dictionary, preset: Dictionary, filament: Dictionary, product: Dictionary, extra := 0.0) -> float:
@@ -64,7 +91,10 @@ static func conditions(printer: Dictionary, preset: Dictionary, product: Diction
 ## How heavily a failure counts when choosing which one happens: its weight,
 ## times every cause that applies, times the filament's own modifier for it,
 ## times what the printer's upgrades do to it (`multipliers`, by failure id).
+## A failure that `requires` a condition counts for nothing without it.
 static func weight_of(failure: Dictionary, flags: Array[StringName], filament: Dictionary, multipliers := {}) -> float:
+	if failure.has("requires") and not flags.has(StringName(failure["requires"])):
+		return 0.0
 	var weight := float(failure["weight"])
 	for cause: String in failure["causes"]:
 		if flags.has(StringName(cause)):

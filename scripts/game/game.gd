@@ -112,6 +112,7 @@ func new_game() -> void:
 	for market_id: String in data.marketplaces:
 		var shop := Marketplace.new(data.marketplaces[market_id], data.products)
 		shop.comments = data.review_comments
+		shop.plain_star_penalty = float(data.toggles["multicolour"]["off_star_penalty"])
 		markets[StringName(market_id)] = shop
 	market = markets.values()[0]
 	trends = Trends.new(data.products, data.settings["trends"])
@@ -317,40 +318,56 @@ func print_grams(product: StringName, preset: StringName) -> float:
 
 ## Chance (0 to 1) that printing a design this way goes wrong. `wear` and
 ## `mods` are the state of the printer's parts and its upgrades, if it has any.
+## `swaps` is how many times its multicolour unit changes colour in the print.
 func fail_chance(printer: Dictionary, preset: StringName, filament: StringName, product: StringName,
-		wear: PrinterWear = null, mods: PrinterMods = null, moisture := 0.0) -> float:
+		wear: PrinterWear = null, mods: PrinterMods = null, moisture := 0.0, swaps := 0) -> float:
 	var spec := mods.apply(printer) if mods != null else printer
 	var extra := Moisture.extra_fail_chance(moisture, data.settings["moisture"]) + (wear.extra_fail_chance() if wear != null else 0.0)
+	if mods != null:
+		extra += Multicolour.jam_chance(mods.unit(), swaps)
 	var chance := PrintRisk.fail_chance(spec, data.presets[preset], data.filaments[filament], data.products[product], extra)
 	if mods == null:
 		return chance
-	var flags := _print_flags(spec, preset, product, wear, moisture)
-	return chance * PrintRisk.upgrade_scale(data.failures, flags, data.filaments[filament], mods.failure_multipliers())
+	var flags := _print_flags(spec, preset, product, wear, moisture, filament, mods, swaps)
+	return chance * PrintRisk.upgrade_scale(data.failures, flags, data.filaments[filament], _failure_multipliers(mods))
 
 
 ## Decides the fate of a print as it starts. Returns {} if it will go well, or
 ## { failure, at } with the failure's row and the progress at which it strikes.
 func roll_print(printer: Dictionary, preset: StringName, filament: StringName, product: StringName,
-		wear: PrinterWear = null, mods: PrinterMods = null, moisture := 0.0) -> Dictionary:
+		wear: PrinterWear = null, mods: PrinterMods = null, moisture := 0.0, swaps := 0) -> Dictionary:
 	if data.failures.has(force_failure):
 		var forced: Dictionary = data.failures[force_failure]
 		force_failure = ""
 		return {"failure": forced, "at": PrintRisk.strike_point(forced, rng)}
 	var spec := mods.apply(printer) if mods != null else printer
-	return PrintRisk.roll(fail_chance(printer, preset, filament, product, wear, mods, moisture), data.failures,
-		_print_flags(spec, preset, product, wear, moisture), data.filaments[filament], rng,
-		mods.failure_multipliers() if mods != null else {})
+	return PrintRisk.roll(fail_chance(printer, preset, filament, product, wear, mods, moisture, swaps), data.failures,
+		_print_flags(spec, preset, product, wear, moisture, filament, mods, swaps), data.filaments[filament], rng,
+		_failure_multipliers(mods))
 
 
 ## The condition flags for a print: from the printer, preset and design, plus
-## any worn parts and wet filament.
-func _print_flags(spec: Dictionary, preset: StringName, product: StringName, wear: PrinterWear, moisture := 0.0) -> Array[StringName]:
+## any worn parts, wet filament and what a multicolour unit adds.
+func _print_flags(spec: Dictionary, preset: StringName, product: StringName, wear: PrinterWear, moisture := 0.0,
+		filament: StringName = &"pla", mods: PrinterMods = null, swaps := 0) -> Array[StringName]:
 	var flags := PrintRisk.conditions(spec, data.presets[preset], data.products[product])
 	if Moisture.is_wet(moisture, data.settings["moisture"]):
 		flags.append(&"wet_filament")
 	if wear != null:
 		flags.append_array(wear.flags())
+	if mods != null:
+		flags.append_array(Multicolour.flags(mods.unit(), data.filaments[filament], swaps, data.settings["multicolour"]))
 	return flags
+
+
+## Failure id -> multiplier on its weight, from a printer's upgrades and how
+## prone its multicolour unit is to jamming.
+func _failure_multipliers(mods: PrinterMods) -> Dictionary:
+	if mods == null:
+		return {}
+	var multipliers := mods.failure_multipliers()
+	multipliers.merge(Multicolour.failure_multipliers(mods.unit(), data.settings["multicolour"]))
+	return multipliers
 
 
 ## True once the business is big enough to make its own designs.

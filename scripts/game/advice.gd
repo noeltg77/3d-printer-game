@@ -47,13 +47,18 @@ static func items(tree: SceneTree) -> Array[Dictionary]:
 			_add(found, "Fit a new %s to the %s" % [part, printer.display_name],
 				"Parts wear out with use. Buy a spare at %s, then click the printer and open Parts." % shops["hardware_shop"])
 		if printer.spool != null:
-			spools.append(printer.spool)
+			spools.append_array(printer.spools.filter(func(loaded: Spool) -> bool: return loaded != null))
 		elif rack != null and not rack.spools().is_empty():
 			_add(found, "Load filament into the %s" % printer.display_name,
 				"Filament is the plastic a printer melts to build things. Click the printer and choose Load filament.")
 		if printer.status == PrinterStation.Status.IDLE and printer.spool != null and printer.wear.broken().is_empty() \
 				and not Game.owned_designs.is_empty() and _nothing_to_sell(market):
 			_add(found, "Print something to sell", "Click the printer and choose Print. Standard is a safe way to print most things.")
+	var shelf: StorageShelf = tree.get_first_node_in_group(&"print_storage")
+	for box in (shelf.spares() if shelf != null else ([] as Array[SparePart])):
+		var kit: Dictionary = Game.data.upgrades.get(box.part, {})
+		if kit.has("multicolour"):
+			_add(found, "Fit the %s" % kit["name"], "It lets one print be several colours. Unload the printer it is made for, then click that printer and open Upgrades. After that, load a spool for each colour.")
 	var spools_coming := Game.supplier.pending.any(func(d: Supplier.Delivery) -> bool: return not d.spools.is_empty())
 	if spools.is_empty() and not spools_coming and not boxes_waiting:
 		_add(found, "Order filament from %s" % shops["filament_shop"],

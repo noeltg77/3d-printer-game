@@ -10,20 +10,30 @@ const TARGET := "res://data/products.json"
 const MODEL_PATH := "res://assets/models/prints/%s.glb"
 
 ## Catalogue tiers imported so far, and the number the game uses for each.
-const TIERS := {"Garage": 1}
+const TIERS := {"Garage": 1, "Spare room": 2}
+## Tiers whose every product must have a model. The others come in a few at a
+## time: a product there with no model yet is left out, and counted.
+const COMPLETE_TIERS: Array[String] = ["Garage"]
 ## Contract work has no marketplace demand. These wait for the contracts phase.
 const SKIPPED_PATTERNS: Array[String] = ["Contracts"]
 ## Rows from before the catalogue that it places in a later tier. Kept exactly as
 ## they are until that tier is imported, because tests and the starting game use them.
 const LEGACY: Array[String] = ["desk_organiser", "flexi_dragon"]
 
+## Catalogue materials whose filament id in data/filaments.json is not just the name in lower case.
+const FILAMENTS := {"Silk": "pla_silk", "Glow": "pla_glow", "Wood": "pla_wood", "Carbon PLA": "pla_cf"}
+
 ## Orders per game day at the typical price for the cheapest design in each catalogue
 ## size band. Small, cheap things sell fastest.
-const DEMAND_PER_DAY := {"XS": 3.0, "S": 2.5, "M": 2.0, "L": 1.5}
+const DEMAND_PER_DAY := {"XS": 3.0, "S": 2.5, "M": 2.0, "L": 1.5, "XL": 1.0}
 ## Dearer designs in a band sell slower: demand is multiplied by (cheapest price in
 ## the band / this price) to this power. At 1.0 every design in a band takes the same
 ## money in a day; at 0.0 price makes no difference to demand.
 const DEMAND_PRICE_POWER := 0.5
+## The catalogue's `purge_waste_g` is the filament a design's colour changes
+## waste on a unit that purges this much each time. Dividing gives the number
+## of changes, which the game then prices by the unit actually fitted.
+const REFERENCE_PURGE_GRAMS := 4.0
 ## Game difficulty (0 to 1) for catalogue difficulty 1, and the step for each level above.
 const DIFFICULTY_BASE := 0.05
 const DIFFICULTY_STEP := 0.1
@@ -36,20 +46,28 @@ const SIZE_STEP_MM := 5
 ## What each design's card says in the Design Lab, by product id. Written by hand.
 const DESCRIPTIONS := "res://data/import/product_descriptions.json"
 
-## Per product values that replace what the rules give.
+## Per product values that replace what the rules give. The names are for
+## catalogue entries called after a real brand, which the game doesn't use.
 const OVERRIDES := {
 	"cable_management_clips_x12": {"licence": {"type": "one_off", "fee_pence": 0, "royalty_pct": 0.0}},
+	"raspberry_pi_case": {"name": "Mini computer case"},
+	"life_counter_mtg": {"name": "Life counter (card games)"},
+	"infinity_style_gauntlet": {"name": "Gem gauntlet"},
+	"replica_lightsaber_hilt": {"name": "Energy sword hilt"},
+	"spotify_code_plaque": {"name": "Music code plaque"},
+	"elf_on_the_shelf_props_set": {"name": "Shelf elf props set"},
 }
 
 ## Field order in the output, and which numbers are written as whole numbers.
 const FIELDS: Array[String] = [
 	"id", "name", "category", "category_name", "description", "unlock_tier", "filament_grams", "print_minutes", "size_mm",
-	"difficulty", "needs_supports", "colour_count", "allowed_filaments", "base_price_pence", "demand_per_day", "licence",
+	"difficulty", "needs_supports", "colour_count", "colour_swaps", "allowed_filaments", "base_price_pence", "demand_per_day", "licence",
 ]
-const WHOLE: Array[String] = ["unlock_tier", "filament_grams", "print_minutes", "size_mm", "colour_count", "base_price_pence", "fee_pence"]
+const WHOLE: Array[String] = ["unlock_tier", "filament_grams", "print_minutes", "size_mm", "colour_count", "colour_swaps", "base_price_pence", "fee_pence"]
 
 
-## Cheapest catalogue price in each size band, in pounds.
+## Cheapest catalogue price in each size band, in pounds. Taken from the complete
+## tiers only, so bringing in a later tier doesn't move the demand of an earlier one.
 var _band_floor := {}
 var _descriptions := {}
 ## Imported products with nothing written for them, which fall back to their category name.
@@ -59,20 +77,33 @@ var _undescribed: PackedStringArray = []
 func _init() -> void:
 	var catalogue: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(SOURCE))
 	for entry: Dictionary in catalogue["products"]:
-		if TIERS.has(entry["unlock_tier"]) and not SKIPPED_PATTERNS.has(entry["demand_pattern"]):
+		if COMPLETE_TIERS.has(entry["unlock_tier"]) and not SKIPPED_PATTERNS.has(entry["demand_pattern"]):
 			_band_floor[entry["size"]] = minf(_band_floor.get(entry["size"], INF), float(entry["base_price_gbp"]))
+	# A band the complete tiers have nothing in (XL) takes its floor from the tiers that do.
+	var later_floor := {}
+	for entry: Dictionary in catalogue["products"]:
+		if TIERS.has(entry["unlock_tier"]) and not SKIPPED_PATTERNS.has(entry["demand_pattern"]):
+			later_floor[entry["size"]] = minf(later_floor.get(entry["size"], INF), float(entry["base_price_gbp"]))
+	for band: String in later_floor:
+		if not _band_floor.has(band):
+			_band_floor[band] = later_floor[band]
 	_descriptions = JSON.parse_string(FileAccess.get_file_as_string(DESCRIPTIONS))
 	var rows: Array[Dictionary] = []
 	var skipped := 0
+	var waiting := 0
 	var missing_models: PackedStringArray = []
 	for entry: Dictionary in catalogue["products"]:
-		if not TIERS.has(entry["unlock_tier"]):
+		# A row kept from before the catalogue stays as it is until its tier is complete.
+		if not TIERS.has(entry["unlock_tier"]) or LEGACY.has(entry["id"]):
 			continue
 		if SKIPPED_PATTERNS.has(entry["demand_pattern"]):
 			skipped += 1
 			continue
 		if not ResourceLoader.exists(MODEL_PATH % entry["id"]):
-			missing_models.append(entry["id"])
+			if COMPLETE_TIERS.has(entry["unlock_tier"]):
+				missing_models.append(entry["id"])
+			else:
+				waiting += 1
 			continue
 		rows.append(_convert(entry))
 	if not missing_models.is_empty():
@@ -92,7 +123,8 @@ func _init() -> void:
 	var file := FileAccess.open(TARGET, FileAccess.WRITE)
 	file.store_string("{\n\t\"schema_version\": 1,\n\t\"products\": [\n%s\n\t]\n}\n" % ",\n".join(blocks))
 	file.close()
-	print("Imported %d products, kept %d from before the catalogue, skipped %d contract only." % [imported, rows.size() - imported, skipped])
+	print("Imported %d products, kept %d from before the catalogue, skipped %d contract only and %d from later tiers with no model yet." % [
+		imported, rows.size() - imported, skipped, waiting])
 	if not _undescribed.is_empty():
 		print("No description yet for: ", ", ".join(_undescribed))
 	quit(0)
@@ -113,12 +145,15 @@ func _convert(entry: Dictionary) -> Dictionary:
 		"difficulty": snappedf(DIFFICULTY_BASE + (float(entry["difficulty"]) - 1.0) * DIFFICULTY_STEP, 0.01),
 		"needs_supports": false,
 		"colour_count": entry["colours"],
-		"allowed_filaments": [String(entry["material"]).to_lower()],
+		"allowed_filaments": [FILAMENTS.get(entry["material"], String(entry["material"]).to_lower())],
 		"base_price_pence": price,
 		"demand_per_day": snappedf(DEMAND_PER_DAY[entry["size"]]
 			* pow(_band_floor[entry["size"]] / float(entry["base_price_gbp"]), DEMAND_PRICE_POWER), 0.05),
 		"licence": {"type": "one_off", "fee_pence": roundi(price * LICENCE_FEE_MULTIPLE / 100.0) * 100 - 1, "royalty_pct": 0.0},
 	}
+	# Only designs in more than one colour carry the field, so the rest of the table is unchanged.
+	if int(entry["colours"]) > 1:
+		row["colour_swaps"] = maxi(roundi(float(entry["purge_waste_g"]) / REFERENCE_PURGE_GRAMS), 1)
 	if not _descriptions.has(entry["id"]):
 		_undescribed.append(entry["id"])
 	row.merge(OVERRIDES.get(entry["id"], {}), true)

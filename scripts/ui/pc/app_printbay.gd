@@ -111,6 +111,20 @@ func _printer_card(printer_id: String, spec: Dictionary) -> Control:
 		], 8),
 		Ui.text("Prints: %s" % ", ".join(materials), 13, Ui.MUTED),
 	], 12)
+	var too_big := 0
+	for product: Dictionary in Game.data.products.values():
+		too_big += 0 if PrintRisk.fits(spec, product) else 1
+	var extras: PackedStringArray = []
+	if spec["auto_bed_levelling"]:
+		extras.append("levels its own bed")
+	if spec["direct_drive"]:
+		extras.append("direct drive")
+	if spec["enclosed"]:
+		extras.append("enclosed")
+	if not extras.is_empty():
+		column.add_child(Ui.wrap(Ui.text("Built in: %s" % ", ".join(extras), 13, Ui.GREEN_DARK, 800)))
+	if too_big > 0:
+		column.add_child(Ui.wrap(Ui.text("Too small for %d of the %d designs" % [too_big, Game.data.products.size()], 13, LOCK_TEXT, 800)))
 
 	var order := {"printers": {printer_id: 1}}
 	var problem := Game.supplier_problem(order) if Game.unlocked(spec) else "Unlocks when you move to a bigger space"
@@ -209,17 +223,30 @@ func _upgrades() -> Control:
 		var fitted := 0
 		var could_fit := 0
 		for station: PrinterStation in printers:
+			# A second multicolour unit can go on a printer that has one, so "fitted" and "could fit" overlap.
 			fitted += 1 if station.mods.has(StringName(upgrade_id)) else 0
 			could_fit += 1 if station.mods.problem(StringName(upgrade_id), station.spec) == "" else 0
 		var motions: PackedStringArray = []
 		for motion: String in upgrade["fits_motion"]:
 			motions.append(MOTIONS.get(motion, motion))
+		var fits := ", ".join(motions).to_lower() + " printers" if not motions.is_empty() else "any printer"
+		# A kit made for particular printers names them.
+		var models: PackedStringArray = []
+		for printer_id: String in upgrade.get("fits_printers", []):
+			models.append(Game.data.printers[printer_id]["name"])
+		if not models.is_empty():
+			fits = " and ".join(models)
 		var words := Ui.vbox([
 			Ui.text(upgrade["name"], 16, Ui.INK, 800),
 			Ui.wrap(Ui.text(upgrade["description"], 13, Ui.MUTED)),
-			Ui.text("Fits: %s · Takes %s to fit" % [", ".join(motions).to_lower() + " printers" if not motions.is_empty() else "any printer",
-				GameClock.duration_label(upgrade["install_minutes"])], 13, NAVY, 800),
+			Ui.text("Fits: %s · Takes %s to fit" % [fits, GameClock.duration_label(upgrade["install_minutes"])], 13, NAVY, 800),
 		], 2)
+		if upgrade.has("multicolour"):
+			var unit: Dictionary = upgrade["multicolour"]
+			var links := int(unit["max_linked"])
+			words.add_child(Ui.text("Holds %d spools%s · Throws away about %s g on each colour change%s" % [int(unit["slots"]),
+				"" if links <= 1 else ", or %d with %d linked" % [int(unit["slots"]) * links, links],
+				String.num(float(unit["purge_grams_per_swap"]), 1), " · Keeps its spools dry" if unit["keeps_dry"] else ""], 13, NAVY, 800))
 		words.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		var owned := shelf.spare_count(StringName(upgrade_id))
 		var state := Ui.pill("On the shelf: %d" % owned, Ui.GREEN_DARK, Ui.GREEN_SOFT) if owned > 0 else Ui.pill(

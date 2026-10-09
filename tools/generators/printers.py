@@ -3,7 +3,8 @@
 Moving parts are separate objects so the game can animate them:
   open_frame: frame > bed (slides Y), frame > gantry (lifts Z) > toolhead (slides X)
   enclosed:   frame > bed (drops Z), frame > gantry (slides Y) > toolhead (slides X)
-Markers: `plate` (where prints grow), `spool_mount`, `unit_mount`, `spool_slot_1..4`.
+Markers: `plate` (where prints grow), `spool_mount`, `unit_mount`, and on the
+multicolour unit `spool_slot_1..4` and `link_mount` (where the next unit stacks).
 
 blender --background --factory-startup --python tools/generators/printers.py -- \
     --variant open_frame --colour orange --out assets/models/printers/printer_open_frame.glb
@@ -64,6 +65,7 @@ def _open_frame(args):
     frame.box((0.1, 0.09, 0.02), (0, 0.05, 0.63), "charcoal")
     frame_obj = frame.finish("frame")
     marker("spool_mount", (0, 0.05, 0.64), frame_obj)
+    marker("unit_mount", (0, 0.05, 0.64), frame_obj)
 
     bed = MeshBuilder()
     bed.box((0.08, 0.3, 0.02), (0, 0, 0.092), "metal_dark")
@@ -127,6 +129,8 @@ def _multicolour_unit(args):
     for slot in range(4):
         x = (slot - 1.5) * 0.085
         marker(f"spool_slot_{slot + 1}", (x, 0, 0.03), unit_obj, rotation=QUARTER_TURN)
+    # Where a second unit linked to this one sits: clear of the spools.
+    marker("link_mount", (0, 0, 0.24), unit_obj)
 
 
 VARIANTS = {"open_frame": _open_frame, "enclosed": _enclosed, "multicolour_unit": _multicolour_unit}

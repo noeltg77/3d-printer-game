@@ -81,8 +81,11 @@ func _pack(agent: Agent, order: Marketplace.Order) -> void:
 	# The item goes in a box and comes back out as a parcel.
 	var item := agent.release() as PrintedItem
 	Game.packaging -= 1
-	Game.market_of(order).mark_packed(order, item.durability, item.quality, item.is_flawed(),
-		float(Game.data.filaments[item.material]["value_multiplier"]))
+	var value := float(Game.data.filaments[item.material]["value_multiplier"])
+	if item.is_plain():
+		value *= float(Game.data.toggles["multicolour"]["off_price_multiplier"])
+		Game.notify("Order %s is going out in one colour, so the buyer pays less" % Game.market_of(order).order_label(order))
+	Game.market_of(order).mark_packed(order, item.durability, item.quality, item.is_flawed(), value, item.is_plain())
 	item.queue_free()
 	Game.changed.emit()
 	await agent.reach(func() -> void: agent.carry(Parcel.create(order)))

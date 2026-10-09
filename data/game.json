@@ -25,7 +25,7 @@
 		"hot_multiplier": 1.8,
 		"cool_multiplier": 0.6,
 		"min_designs": 4,
-		"seasonal": ["christmas", "halloween", "easter", "valentines_day", "mothers_day", "bonfire_night", "back_to_school"]
+		"seasonal": ["christmas", "halloween", "easter", "valentines_day", "mothers_day", "fathers_day", "new_year", "summer", "bonfire_night", "back_to_school"]
 	},
 	"design": {
 		"unlock_tier": 2,
@@ -47,6 +47,12 @@
 		"wet_at": 0.4,
 		"step": 0.2,
 		"extra_fail_per_step": 0.03
+	},
+	"multicolour": {
+		"main_colour_share": 0.6,
+		"contrast_purge": 1.0,
+		"many_swaps": 6,
+		"reference_jam_chance": 0.001
 	},
 	"supplier": {
 		"filament_shop": "Spoolhouse",

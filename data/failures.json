@@ -7,7 +7,7 @@
 			"happens": "start",
 			"outcome": "scrap",
 			"weight": 14,
-			"causes": { "no_auto_level": 2.0, "draft_preset": 1.2, "worn_build_plate": 2.0 },
+			"causes": { "no_auto_level": 2.0, "draft_preset": 1.2, "worn_build_plate": 2.0, "worn_wiper": 1.5 },
 			"clear_minutes": 2,
 			"visual": "noodles",
 			"fix": "Clean the plate and restart",
@@ -148,10 +148,23 @@
 			"happens": "end",
 			"outcome": "degraded",
 			"weight": 12,
-			"causes": { "wet_filament": 1.3, "draft_preset": 1.8, "worn_part_fan": 1.5 },
+			"causes": { "wet_filament": 1.3, "draft_preset": 1.8, "worn_part_fan": 1.5, "worn_wiper": 1.5 },
 			"quality_loss": 1,
 			"fix": "A finer preset gives a smoother finish",
 			"player_text": "It works, but it has the texture of a cheese grater."
+		},
+		{
+			"id": "filament_jam_feeder",
+			"name": "Multicolour jam",
+			"happens": "mid",
+			"outcome": "stop",
+			"weight": 6,
+			"requires": "multicolour_unit",
+			"causes": { "tpu_in_multicolour": 5.0, "worn_mc_rollers": 3.0, "many_colour_swaps": 1.5 },
+			"clear_minutes": 10,
+			"visual": "stalled",
+			"fix": "Clear the jam in the multicolour unit",
+			"player_text": "The colour unit has jammed and is flashing at you like it's your fault."
 		}
 	]
 }

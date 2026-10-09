@@ -58,11 +58,12 @@ func store(item: Node3D) -> bool:
 
 
 ## Removes one item of a design from the shelf and returns it, or null if there
-## is none. Good ones go first; a flawed one only when nothing else is left.
+## is none. Good ones go first: a flawed one only when nothing else is left, and
+## one printed in a single colour only when there is none in full colour.
 func take(product: StringName) -> PrintedItem:
 	var found: PrintedItem = null
 	for item in _items():
-		if item.product == product and (found == null or (found.is_flawed() and not item.is_flawed())):
+		if item.product == product and (found == null or _rank(item) < _rank(found)):
 			found = item
 	if found != null:
 		found.get_parent().remove_child(found)
@@ -131,6 +132,11 @@ func _bin(agent: Agent, item: PrintedItem) -> void:
 		Game.changed.emit())
 	await agent.walk_to(get_tree().get_first_node_in_group(&"bin").global_position)
 	await agent.reach(func() -> void: agent.release().queue_free())
+
+
+## How far down the queue to be sold an item is: 0 for one as it should be.
+func _rank(item: PrintedItem) -> int:
+	return (2 if item.is_flawed() else 0) + (1 if item.is_plain() else 0)
 
 
 func _spare_box(part: StringName) -> SparePart:
