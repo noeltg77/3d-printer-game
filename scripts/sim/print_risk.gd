@@ -24,6 +24,17 @@ const BEDSLINGER_TALL_MM := 150.0
 const WHEN := {"start": [0.01, 0.05], "mid": [0.1, 0.9], "end": [1.0, 1.0]}
 
 
+## True if a design fits a printer's build volume, turned either way round on the bed.
+static func fits(printer: Dictionary, product: Dictionary) -> bool:
+	var size: Array = product["size_mm"]
+	var bed: Array = printer["build_volume_mm"]
+	if float(size[2]) > float(bed[2]):
+		return false
+	var straight: bool = float(size[0]) <= float(bed[0]) and float(size[1]) <= float(bed[1])
+	var turned: bool = float(size[1]) <= float(bed[0]) and float(size[0]) <= float(bed[1])
+	return straight or turned
+
+
 ## Chance (0 to 1) that a print goes wrong in any way. `extra` is added on top
 ## for things outside the print itself, such as worn parts.
 static func fail_chance(printer: Dictionary, preset: Dictionary, filament: Dictionary, product: Dictionary, extra := 0.0) -> float:

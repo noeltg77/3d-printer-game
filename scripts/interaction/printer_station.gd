@@ -15,7 +15,10 @@ extends Interactable
 
 enum Status { IDLE, PRINTING, DONE, FAILED }
 
-const MODEL_PATH := "res://assets/models/printers/printer_%s.glb"
+const MODEL_PATH := "res://assets/models/printers/%s.glb"
+## How far a core XY printer's bed rises from rest to meet the nozzle, before
+## sinking again as the print grows.
+const CORE_XY_LIFT := 0.14
 ## How far the gantry drops from its parked height to put the nozzle on the plate.
 const GANTRY_DROP := 0.175
 
@@ -55,7 +58,7 @@ static func create(printer_id: StringName) -> PrinterStation:
 	station.mods = PrinterMods.new(Game.data.upgrades)
 	station.display_name = station.spec["name"]
 	station.stand_offset = Vector3(0.0, 0.0, 0.72)
-	station.add_child((load(MODEL_PATH % station.spec["model"]["variant"]) as PackedScene).instantiate())
+	station.add_child((load(MODEL_PATH % station.spec["model"]["asset"]) as PackedScene).instantiate())
 	return station
 
 
@@ -81,9 +84,15 @@ func _process(delta: float) -> void:
 		# The item grows from the plate while the nozzle rides just above it.
 		var ended := job.advance(delta)
 		item.scale.y = maxf(job.progress, 0.02)
-		gantry_target.y += item.height * job.progress - GANTRY_DROP
-		toolhead_target.x += sin(_time * 5.0) * 0.09 - 0.05
-		bed_target.z += sin(_time * 3.1) * 0.05
+		if spec["motion"] == "core_xy":
+			# The head stays up and darts about; the bed sinks as the print grows.
+			bed_target.y += CORE_XY_LIFT - item.height * job.progress
+			toolhead_target.x += sin(_time * 5.0) * 0.09 - 0.05
+			toolhead_target.z += sin(_time * 3.7) * 0.07 + 0.03
+		else:
+			gantry_target.y += item.height * job.progress - GANTRY_DROP
+			toolhead_target.x += sin(_time * 5.0) * 0.09 - 0.05
+			bed_target.z += sin(_time * 3.1) * 0.05
 		if ended:
 			_end_print()
 	var weight := 1.0 - exp(-10.0 * delta)
@@ -201,6 +210,8 @@ func print_problem(product: StringName, p_preset: StringName) -> String:
 		return "The printer is busy"
 	for slot in wear.broken():
 		return "The %s is worn out. Fit a new one first" % String(wear.part(slot)["slot_name"]).to_lower()
+	if not PrintRisk.fits(spec, Game.data.products[product]):
+		return "Too big for this printer"
 	var filament: Dictionary = Game.data.filaments[spool.material]
 	if not FilamentRules.suits(Game.data.products[product], filament):
 		return "This design can't be printed in %s" % filament["name"]

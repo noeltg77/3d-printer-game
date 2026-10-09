@@ -111,6 +111,20 @@ func _printer_card(printer_id: String, spec: Dictionary) -> Control:
 		], 8),
 		Ui.text("Prints: %s" % ", ".join(materials), 13, Ui.MUTED),
 	], 12)
+	var too_big := 0
+	for product: Dictionary in Game.data.products.values():
+		too_big += 0 if PrintRisk.fits(spec, product) else 1
+	var extras: PackedStringArray = []
+	if spec["auto_bed_levelling"]:
+		extras.append("levels its own bed")
+	if spec["direct_drive"]:
+		extras.append("direct drive")
+	if spec["enclosed"]:
+		extras.append("enclosed")
+	if not extras.is_empty():
+		column.add_child(Ui.wrap(Ui.text("Built in: %s" % ", ".join(extras), 13, Ui.GREEN_DARK, 800)))
+	if too_big > 0:
+		column.add_child(Ui.wrap(Ui.text("Too small for %d of the %d designs" % [too_big, Game.data.products.size()], 13, LOCK_TEXT, 800)))
 
 	var order := {"printers": {printer_id: 1}}
 	var problem := Game.supplier_problem(order) if Game.unlocked(spec) else "Unlocks when you move to a bigger space"

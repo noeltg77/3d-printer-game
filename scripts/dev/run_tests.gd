@@ -66,6 +66,11 @@ func _test_print_risk() -> void:
 	var standard: Dictionary = data.presets["standard"]
 	var strong: Dictionary = data.presets["strong"]
 
+	_check(PrintRisk.fits(plodder, clips) and PrintRisk.fits({"build_volume_mm": [100, 60, 20]}, {"size_mm": [60, 100, 20]}), "a design fits if it goes on the bed either way round")
+	_check(not PrintRisk.fits({"build_volume_mm": [150, 150, 150]}, {"size_mm": [160, 40, 40]}) and not PrintRisk.fits({"build_volume_mm": [150, 150, 150]}, {"size_mm": [40, 40, 160]}), "but not if it is too long or too tall")
+	for printer: Dictionary in data.printers.values():
+		_check(PrintRisk.fits(printer, clips), "every printer can print the starter design (%s)" % printer["id"])
+		_check(ResourceLoader.exists("res://assets/models/printers/%s.glb" % printer["model"]["asset"]), "every printer has its model (%s)" % printer["id"])
 	var base := PrintRisk.fail_chance(plodder, standard, pla, clips)
 	_check(base > 0.02 and base < 0.08, "a simple PLA print on the starter printer fails a few times in a hundred (got %.3f)" % base)
 	_check(is_equal_approx(PrintRisk.fail_chance(plodder, draft, pla, clips), base * 1.5), "Draft is half as risky again as Standard")

@@ -2,6 +2,11 @@
 	"assets": [
 		{ "generator": "printers", "out": "assets/models/printers/printer_open_frame.glb", "args": { "variant": "open_frame", "colour": "orange" } },
 		{ "generator": "printers", "out": "assets/models/printers/printer_enclosed.glb", "args": { "variant": "enclosed", "colour": "orange" } },
+		{ "generator": "printers", "out": "assets/models/printers/printer_open_frame_red.glb", "args": { "variant": "open_frame", "colour": "red" } },
+		{ "generator": "printers", "out": "assets/models/printers/printer_open_frame_teal.glb", "args": { "variant": "open_frame", "colour": "teal" } },
+		{ "generator": "printers", "out": "assets/models/printers/printer_open_frame_green.glb", "args": { "variant": "open_frame", "colour": "green" } },
+		{ "generator": "printers", "out": "assets/models/printers/printer_open_frame_yellow.glb", "args": { "variant": "open_frame", "colour": "yellow" } },
+		{ "generator": "printers", "out": "assets/models/printers/printer_enclosed_sky.glb", "args": { "variant": "enclosed", "colour": "sky", "body": "white" } },
 		{ "generator": "printers", "out": "assets/models/printers/multicolour_unit.glb", "args": { "variant": "multicolour_unit", "colour": "green" } },
 
 		{ "generator": "spools", "out": "assets/models/filament/spool_red.glb", "args": { "seed": 1, "colour": "red" } },

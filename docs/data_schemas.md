@@ -44,15 +44,14 @@ Display currencies, keyed by code. Not a table of rows with ids.
 | `motion` | `bed_slinger` or `core_xy` |
 | `price_pence` | Supplier shop price |
 | `speed_multiplier` | Divides a product's `print_minutes` |
-| `build_volume_mm` | `[x, y, z]`. A product must fit to be printable |
+| `build_volume_mm` | `[x, y, z]`. A product must fit, either way round on the bed, to be printable (`PrintRisk.fits`) |
 | `reliability` | Base chance a print succeeds before wear, filament and preset modifiers |
 | `wear_multiplier` | How hard this printer is on its parts. Multiplies all part wear |
 | `parts` | Ids from `parts.json` a new one ships with, one per slot |
 | `max_nozzle_temp_c` | Must be at least the filament's `nozzle_temp_c` |
 | `enclosed`, `direct_drive`, `auto_bed_levelling` | Built-in capabilities. Upgrades can add them. What a printer can print follows from these and the temperature (`FilamentRules.problem`); there is no list of filaments |
 | `power_watts` | Drives electricity cost per print |
-| `upgrade_slots` | Upgrade kinds that can be fitted (upgrades table comes in Phase 4/6) |
-| `model` | Which asset generator, variant and colour builds its mesh |
+| `model` | `asset` is the model file in `assets/models/printers/`; `generator` and `variant` say what built it. `variant` also picks how it moves while printing |
 | `shop_colours` | `top`, `left`, `right` hex colours for the flat printer drawing on its shop card |
 
 ## filaments.json

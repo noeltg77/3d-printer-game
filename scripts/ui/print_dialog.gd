@@ -112,7 +112,9 @@ func _design_row(product: StringName) -> Control:
 	var fg := Ui.PAPER if chosen else Ui.INK
 	var note := "%d g · %s" % [roundi(Game.print_grams(product, _preset)),
 		GameClock.duration_label(_printer.print_minutes(product, _preset))]
-	if not printable:
+	if not PrintRisk.fits(_printer.spec, Game.data.products[product]):
+		note += " · too big for this printer"
+	elif not printable:
 		note += " · can't print now"
 	var row := Ui.panel(Ui.vbox([
 		Ui.text(Game.product_name(product), 15, fg, 800),
