@@ -21,7 +21,11 @@ const SAVE_VERSION := 1
 var data: GameData
 var clock: GameClock
 var bank: Bank
+## Every marketplace in the data, by id. Only the unlocked ones take orders.
+var markets: Dictionary[StringName, Marketplace] = {}
+## The first marketplace: the one a new business starts on.
 var market: Marketplace
+var trends: Trends
 var supplier: Supplier
 var studio: DesignStudio
 var owned_designs: Array[StringName] = []
@@ -74,14 +78,21 @@ func _process(delta: float) -> void:
 		delivery_arrived.emit(delivery)
 		notify("Delivery arrived: %s" % delivery.describe())
 		changed.emit()
-	for order in market.tick(before, clock.minutes, rng):
-		notify("New order: %s for %s" % [product_name(order.product), Money.format(order.price)])
+	if trends.tick(clock.minutes, rng):
+		_share_trends()
+		notify("In demand this week: %s. Gone quiet: %s." % [trends.category_name(trends.hot), trends.category_name(trends.cool).to_lower()])
 		changed.emit()
-	for order in market.expire(clock.minutes):
-		notify("Order #%d was cancelled: not dispatched in time" % order.id, &"bad")
-		changed.emit()
-	for outcome in market.deliver(clock.minutes, rng, data.settings["courier"]):
-		_settle_delivery(outcome)
+	for shop: Marketplace in markets.values():
+		if not unlocked(shop.config):
+			continue
+		for order in shop.tick(before, clock.minutes, rng):
+			notify("New order on %s: %s for %s" % [shop.config["name"], product_name(order.product), Money.format(order.price)])
+			changed.emit()
+		for order in shop.expire(clock.minutes):
+			notify("Order %s was cancelled: not dispatched in time" % shop.order_label(order), &"bad")
+			changed.emit()
+		for outcome in shop.deliver(clock.minutes, rng, data.settings["courier"]):
+			_settle_delivery(outcome)
 	if clock.crossed(before, data.settings["courier_minute_of_day"]):
 		courier_arrived.emit()
 	var rent := int(premises_row()["rent_pence_per_day"])
@@ -97,8 +108,13 @@ func new_game() -> void:
 	clock = GameClock.new()
 	clock.minutes = start["minute_of_day"]
 	bank = Bank.new(int(start["cash_pence"]))
-	market = Marketplace.new(data.marketplaces["craftsy"], data.products)
-	market.comments = data.review_comments
+	markets.clear()
+	for market_id: String in data.marketplaces:
+		var shop := Marketplace.new(data.marketplaces[market_id], data.products)
+		shop.comments = data.review_comments
+		markets[StringName(market_id)] = shop
+	market = markets.values()[0]
+	trends = Trends.new(data.products, data.settings["trends"])
 	supplier = Supplier.new(data)
 	studio = DesignStudio.new(data.products, data.settings["design"])
 	owned_designs.assign(start["designs"])
@@ -157,7 +173,8 @@ func delete_save() -> void:
 ## The business as plain data: everything here that a save needs.
 func save() -> Dictionary:
 	return {
-		"clock": clock.save(), "bank": bank.save(), "market": market.save(), "supplier": supplier.save(),
+		"clock": clock.save(), "bank": bank.save(), "markets": _save_markets(), "supplier": supplier.save(),
+		"trends": trends.save(),
 		"studio": studio.save(),
 		"owned_designs": owned_designs, "packaging": packaging, "tier": tier, "premises": premises,
 	}
@@ -167,7 +184,15 @@ func save() -> Dictionary:
 func restore(state: Dictionary) -> void:
 	clock.restore(state["clock"])
 	bank.restore(state["bank"])
-	market.restore(state["market"])
+	# Saves from before there was more than one marketplace hold just the first.
+	if state.has("market"):
+		market.restore(state["market"])
+	for market_id: String in state.get("markets", {}):
+		if markets.has(StringName(market_id)):
+			markets[StringName(market_id)].restore(state["markets"][market_id])
+	if state.has("trends"):
+		trends.restore(state["trends"])
+	_share_trends()
 	supplier.restore(state["supplier"])
 	if state.has("studio"):
 		studio.restore(state["studio"])
@@ -362,11 +387,56 @@ func finish_design_fix(product: StringName) -> void:
 	changed.emit()
 
 
-## Tells the marketplace which designs are the business's own.
+## Tells the marketplaces which designs are the business's own.
 func _share_own_designs() -> void:
-	market.own_appeal.clear()
-	for product in studio.designs:
-		market.own_appeal[product] = studio.appeal(product)
+	for shop: Marketplace in markets.values():
+		shop.own_appeal.clear()
+		for product in studio.designs:
+			shop.own_appeal[product] = studio.appeal(product)
+
+
+## Tells the marketplaces what is in and out of fashion.
+func _share_trends() -> void:
+	for shop: Marketplace in markets.values():
+		shop.trend = trends.multipliers()
+
+
+func _save_markets() -> Dictionary:
+	var saved := {}
+	for market_id in markets:
+		saved[market_id] = markets[market_id].save()
+	return saved
+
+
+## The marketplaces the business can sell on now.
+func open_markets() -> Array[Marketplace]:
+	var found: Array[Marketplace] = []
+	for shop: Marketplace in markets.values():
+		if unlocked(shop.config):
+			found.append(shop)
+	return found
+
+
+## The marketplace an order was placed on.
+func market_of(order: Marketplace.Order) -> Marketplace:
+	return markets.get(order.market, market)
+
+
+## Orders waiting to be packed, across every marketplace, most urgent first.
+func open_orders() -> Array[Marketplace.Order]:
+	var found: Array[Marketplace.Order] = []
+	for shop in open_markets():
+		found.append_array(shop.open_orders())
+	found.sort_custom(func(a: Marketplace.Order, b: Marketplace.Order) -> bool: return a.due_at < b.due_at)
+	return found
+
+
+## True if any design is up for sale anywhere.
+func anything_listed() -> bool:
+	for shop in open_markets():
+		if shop.listings.values().any(func(entry: Dictionary) -> bool: return entry["listed"]):
+			return true
+	return false
 
 
 ## Buys a design licence. False if it can't be afforded or is already owned.
@@ -445,9 +515,12 @@ func unit_cost(product: StringName) -> int:
 	return roundi(filament + kwh * float(data.settings["electricity_pence_per_kwh"]) + mailer)
 
 
-## What is left from one sale at `price` after costs, marketplace fees and royalty.
-func unit_profit(product: StringName, price: int) -> int:
-	return price - unit_cost(product) - market.fee_for(price) - market.royalty_for(product, price)
+## What is left from one sale at `price` after costs and a marketplace's fees
+## and royalty. The first marketplace's, unless told which.
+func unit_profit(product: StringName, price: int, shop: Marketplace = null) -> int:
+	if shop == null:
+		shop = market
+	return price - unit_cost(product) - shop.fee_for(price) - shop.royalty_for(product, price)
 
 
 ## Finished items of a design on the shelves.
@@ -459,8 +532,9 @@ func stock_of(product: StringName) -> int:
 ## Takes payment for a dispatched order, less the marketplace's cut.
 func complete_sale(order: Marketplace.Order) -> void:
 	var transit: Array = data.settings["courier"]["delivery_minutes"]
-	var sale := market.ship(order, clock.minutes, clock.minutes + rng.randf_range(transit[0], transit[1]))
-	var market_name: String = market.config["name"]
+	var shop := market_of(order)
+	var sale := shop.ship(order, clock.minutes, clock.minutes + rng.randf_range(transit[0], transit[1]))
+	var market_name: String = shop.config["name"]
 	bank.earn(sale["price"], "Sale: %s (%s)" % [product_name(order.product), market_name], clock.minutes)
 	bank.charge(sale["fee"], "%s fees" % market_name, clock.minutes)
 	bank.charge(sale["royalty"], "Design royalty: %s" % product_name(order.product), clock.minutes)
@@ -480,14 +554,14 @@ func _settle_delivery(outcome: Dictionary) -> void:
 	var review: Dictionary = outcome["review"]
 	if not outcome["refund"].is_empty():
 		var refund: Dictionary = outcome["refund"]
-		var market_name: String = market.config["name"]
+		var market_name: String = market_of(order).config["name"]
 		var why := "arrived broken" if order.refund_reason == "damaged" else "sent back"
 		bank.charge(refund["price"], "Refund: %s (%s)" % [title, why], clock.minutes)
 		if refund["fee"] > 0:
 			bank.earn(refund["fee"], "%s fees returned" % market_name, clock.minutes)
 		if refund["royalty"] > 0:
 			bank.earn(refund["royalty"], "Design royalty returned: %s" % title, clock.minutes)
-		notify("Order #%d %s: %s refunded. \"%s\"" % [order.id, why, Money.format(refund["price"]), review["text"]], &"bad")
+		notify("Order %s %s: %s refunded. \"%s\"" % [market_of(order).order_label(order), why, Money.format(refund["price"]), review["text"]], &"bad")
 	elif not review.is_empty():
 		var stars := int(review["stars"])
 		notify("%d star review for %s: \"%s\"" % [stars, title, review["text"]], &"good" if stars >= 4 else (&"bad" if stars <= 2 else &""))

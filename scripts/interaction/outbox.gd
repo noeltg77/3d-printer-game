@@ -42,11 +42,17 @@ func _on_courier_arrived() -> void:
 
 
 func save() -> Dictionary:
-	return {"orders": _parcels.map(func(parcel: Parcel) -> int: return parcel.order.id)}
+	return {"parcels": _parcels.map(func(parcel: Parcel) -> Dictionary: return {"market": parcel.order.market, "id": parcel.order.id})}
 
 
 func restore(data: Dictionary) -> void:
-	for id: float in data["orders"]:
-		var order := Game.market.order_by_id(int(id))
+	# Saves from before there was more than one marketplace list bare order ids.
+	for id: float in data.get("orders", []):
+		var early := Game.market.order_by_id(int(id))
+		if early != null:
+			add(Parcel.create(early))
+	for entry: Dictionary in data.get("parcels", []):
+		var shop: Marketplace = Game.markets.get(StringName(entry["market"]))
+		var order := shop.order_by_id(int(entry["id"])) if shop != null else null
 		if order != null:
 			add(Parcel.create(order))

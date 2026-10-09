@@ -282,7 +282,7 @@ Build small and prove each step before moving on: assets and garage first, then 
 - [x] PETG, TPU, ABS/ASA, carbon fibre, silk/glow/wood
 - [x] Filament moisture and drying
 - [x] Own designs at the PC with iterations and test prints
-- [ ] More marketplaces, trends and demand
+- [x] More marketplaces, trends and demand
 - [x] Move to a bigger space
 
 ### Phase 7: Multicolour units

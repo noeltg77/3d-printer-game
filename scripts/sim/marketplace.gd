@@ -33,6 +33,8 @@ const FINE_QUALITY := 3
 class Order:
 	extends RefCounted
 	var id: int
+	## Id of the marketplace it was placed on.
+	var market: StringName
 	var product: StringName
 	var price: int
 	var placed_at: float
@@ -52,7 +54,7 @@ class Order:
 
 	func save() -> Dictionary:
 		return {
-			"id": id, "product": product, "price": price, "placed_at": placed_at, "due_at": due_at,
+			"id": id, "market": market, "product": product, "price": price, "placed_at": placed_at, "due_at": due_at,
 			"shipped_at": shipped_at, "deliver_at": deliver_at, "status": status, "durability": durability,
 			"quality": quality, "flawed": flawed, "refund_reason": refund_reason,
 		}
@@ -60,6 +62,7 @@ class Order:
 	static func restored(data: Dictionary) -> Order:
 		var order := Order.new()
 		order.id = int(data["id"])
+		order.market = StringName(data.get("market", ""))
 		order.product = StringName(data["product"])
 		order.price = int(data["price"])
 		order.placed_at = float(data["placed_at"])
@@ -84,6 +87,8 @@ var comments: Dictionary = {}
 ## product id -> { listed: bool, price: int, sold: int }
 var listings: Dictionary[StringName, Dictionary] = {}
 var orders: Array[Order] = []
+## What is in or out of fashion: product category -> demand multiplier (Trends).
+var trend: Dictionary = {}
 ## The business's own designs: product id -> how well each sells against the
 ## bought design (1.0 the same). Own designs owe no royalty.
 var own_appeal: Dictionary[StringName, float] = {}
@@ -101,7 +106,7 @@ func _init(p_config: Dictionary, p_products: Dictionary) -> void:
 ## The listing for a design, created at its typical price and unlisted if new.
 func listing(product: StringName) -> Dictionary:
 	if not listings.has(product):
-		listings[product] = {"listed": false, "price": int(products[product]["base_price_pence"]), "sold": 0}
+		listings[product] = {"listed": false, "price": typical_price(product), "sold": 0}
 	return listings[product]
 
 
@@ -111,9 +116,15 @@ func set_listing(product: StringName, listed: bool, price: int) -> void:
 	entry["price"] = maxi(price, 1)
 
 
+## What buyers here expect to pay for a design: its usual price, scaled by how
+## cheap or dear this marketplace's buyers are.
+func typical_price(product: StringName) -> int:
+	return roundi(float(products[product]["base_price_pence"]) * float(config.get("price_expectation", 1.0)))
+
+
 ## How demand scales at `price`: 1.0 at the typical price, more when cheaper.
 func demand_multiplier(product: StringName, price: int) -> float:
-	var typical: float = products[product]["base_price_pence"]
+	var typical := float(typical_price(product))
 	var multiplier := pow(typical / maxf(price, 1.0), config["price_sensitivity"])
 	return minf(multiplier, config["max_demand_multiplier"])
 
@@ -121,7 +132,8 @@ func demand_multiplier(product: StringName, price: int) -> float:
 ## Expected orders per game day for a design at a price, at the current rating.
 func orders_per_day(product: StringName, price: int) -> float:
 	return (products[product]["demand_per_day"] * demand_multiplier(product, price) * rating_multiplier()
-		* float(own_appeal.get(product, 1.0)))
+		* float(own_appeal.get(product, 1.0)) * float(config.get("audience", 1.0))
+		* float(trend.get(products[product]["category"], 1.0)))
 
 
 ## Rolls for new orders over a span of game minutes. Returns the ones placed.
@@ -137,6 +149,7 @@ func tick(from_minute: float, to_minute: float, rng: RandomNumberGenerator) -> A
 		if rng.randf() < orders_per_day(product, entry["price"]) * days:
 			var order := Order.new()
 			order.id = _next_id
+			order.market = StringName(config["id"])
 			order.product = product
 			order.price = entry["price"]
 			order.placed_at = to_minute
@@ -305,6 +318,11 @@ func save() -> Dictionary:
 	}
 
 
+## "#CR-1004": an order's number as buyers and the player see it.
+func order_label(order: Order) -> String:
+	return "#%s-%d" % [config.get("order_prefix", "OR"), 1000 + order.id]
+
+
 ## Puts back a saved shop. Listings, orders and reviews for designs the game
 ## no longer has are dropped.
 func restore(data: Dictionary) -> void:
@@ -317,7 +335,9 @@ func restore(data: Dictionary) -> void:
 			listings[StringName(product)] = {"listed": bool(entry["listed"]), "price": int(entry["price"]), "sold": int(entry["sold"])}
 	for entry: Dictionary in data["orders"]:
 		if products.has(entry["product"]):
-			orders.append(Order.restored(entry))
+			var order := Order.restored(entry)
+			order.market = StringName(config["id"])
+			orders.append(order)
 	for entry: Dictionary in data["reviews"]:
 		if products.has(entry["product"]):
 			reviews.append({

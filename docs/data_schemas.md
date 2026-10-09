@@ -97,6 +97,9 @@ Generated from `docs/design_data/products.json` by `scripts/dev/import_products.
 
 | Field | Meaning |
 | --- | --- |
+| `order_prefix` | Letters in this marketplace's order numbers, e.g. `CR` for `#CR-1004` |
+| `audience` | Multiplies all demand: how many buyers the marketplace has |
+| `price_expectation` | Multiplies each design's `base_price_pence` to give the price buyers here think is normal. New listings start at it, and demand is judged against it |
 | `fee_pct`, `fee_fixed_pence` | Taken from every sale |
 | `dispatch_minutes` | How long an order can wait before it is cancelled |
 | `max_open_orders` | No new orders arrive while this many are waiting to be packed |
@@ -221,6 +224,7 @@ Starting conditions and global rates. Not a table of rows.
 | `default_preset` | The preset the print dialog opens on |
 | `moisture` | `gain_per_day`: moisture (0 to 1) a filament with sensitivity 1.0 gains in a day in the open. `wet_at`: the level at which a spool is wet. Every `step` beyond that adds `extra_fail_per_step` to the chance of a print failing, and wet filament raises the `wet_filament` flag for failures |
 | `design` | Rules for the business's own designs (`DesignStudio`). `unlock_tier`: when they become possible. `base_minutes`: PC time for a V1, times (1 + the item's difficulty); an iteration takes `iteration_time` of that, a fix `fix_minutes`. Quality starts at `base_quality` plus a skill level for every `designs_per_skill_level` designs finished (to `max_skill`), rises by one per iteration to `max_version`, and stops at `max_quality`. `fault_chance`, less `fault_chance_per_skill` per skill level, is the chance a new version hides a fault. Demand for an own design is `appeal_base + appeal_per_quality x quality` times the bought design's |
+| `trends` | One product category is in demand and one has gone quiet, for a random `days` range (`[shortest, longest]`), scaling its orders by `hot_multiplier` or `cool_multiplier`. Only categories with at least `min_designs` designs take part, and never those listed in `seasonal`, which wait for a calendar (`Trends`) |
 | `wear_rate` | Multiplies all part wear. Above 1 because the design's lifespans are in real printer hours, which would take many sessions to matter. A balancing knob |
 | `bank_name`, `business_name` | Names shown on the PC |
 | `supplier` | The filament and hardware shop names, lead times in game minutes (filament, printers, spare parts), and the packaging pack size and price |
