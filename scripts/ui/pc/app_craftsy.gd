@@ -176,7 +176,7 @@ func _listing_row(product: StringName) -> Control:
 	toggle.custom_minimum_size.x = 76
 	toggle.tooltip_text = "Click to take it down" if listed else "Click to put it up for sale"
 	return _table_row([
-		Ui.text(Game.product_name(product), 15, Ui.INK, 800),
+		Ui.hbox([ModelPicture.of_product(product, 40), Ui.wrap(Ui.text(Game.product_name(product), 15, Ui.INK, 800))], 10),
 		Ui.hbox([cheaper, Ui.width(Ui.text(Money.format(price), 15), 66),
 			Ui.button("+", _update.bind(product, listed, price + PRICE_STEP), Ui.WHITE, Ui.INK, 30, 10)], 4),
 		Ui.text(Money.format(Game.unit_cost(product)), 15),

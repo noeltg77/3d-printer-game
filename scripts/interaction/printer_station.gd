@@ -40,7 +40,8 @@ const MODEL_PATH := "res://assets/models/printers/%s.glb"
 const CORE_XY_LIFT := 0.14
 ## How far the gantry drops from its parked height to put the nozzle on the plate.
 const GANTRY_DROP := 0.175
-## Width of the plate a batch is laid out on, in metres, and how much of each
+## Width of the plate a batch is laid out on, in metres, on a model that doesn't
+## say how big its own is (with a `plate_corner` marker), and how much of each
 ## copy's share of it the copy may fill.
 const PLATE_SIZE := 0.24
 const BATCH_FILL := 0.88
@@ -101,6 +102,8 @@ var _unit_models: Array[Node3D] = []
 ## How far the copies on the plate are shrunk so they all fit. 1 for a single print.
 var _plate_scale := 1.0
 var _plate: Node3D
+## Width of this printer's plate, in metres. The head and bed move to suit.
+var _plate_size := PLATE_SIZE
 var _bed: Node3D
 var _gantry: Node3D
 var _toolhead: Node3D
@@ -127,6 +130,10 @@ func _ready() -> void:
 	_spool_mount = find_child("spool_mount", true, false)
 	_mounts = [_spool_mount]
 	_plate = find_child("plate", true, false)
+	var corner: Node3D = find_child("plate_corner", true, false)
+	if corner != null:
+		var reach := (corner.position - _plate.position).abs()
+		_plate_size = 2.0 * minf(reach.x, reach.z)
 	_bed = find_child("bed", true, false)
 	_gantry = find_child("gantry", true, false)
 	_toolhead = find_child("toolhead", true, false)
@@ -151,18 +158,19 @@ func _process(delta: float) -> void:
 		var ended := job.advance(delta)
 		_grow(job.progress)
 		var built := item.height * _plate_scale * job.progress
+		var reach := _plate_size / PLATE_SIZE
 		if spec["motion"] == "resin_lift":
 			# The arm lifts the build plate clear as the print grows in the vat.
 			gantry_target.y += built
 		elif spec["motion"] == "core_xy":
-			# The head stays up and darts about; the bed sinks as the print grows.
+			# The head stays up and darts about on its bar; the bed sinks as the print grows.
+			toolhead_target.x += (sin(_time * 5.0) * 0.09 - 0.05) * reach
 			bed_target.y += CORE_XY_LIFT - built
-			toolhead_target.x += sin(_time * 5.0) * 0.09 - 0.05
-			toolhead_target.z += sin(_time * 3.7) * 0.07 + 0.03
+			gantry_target.z += (sin(_time * 3.7) * 0.07 + 0.03) * reach
 		else:
+			toolhead_target.x += (sin(_time * 5.0) * 0.09 - 0.05) * reach
 			gantry_target.y += built - GANTRY_DROP
-			toolhead_target.x += sin(_time * 5.0) * 0.09 - 0.05
-			bed_target.z += sin(_time * 3.1) * 0.05
+			bed_target.z += sin(_time * 3.1) * 0.05 * reach
 		if ended:
 			_end_print()
 	var weight := 1.0 - exp(-10.0 * delta)
@@ -597,7 +605,7 @@ func _lay_out() -> void:
 		var best := 0.0
 		for across in range(1, count + 1):
 			var deep := ceili(float(count) / across)
-			var fit := minf(PLATE_SIZE / across / size.x, PLATE_SIZE / deep / size.y) * BATCH_FILL
+			var fit := minf(_plate_size / across / size.x, _plate_size / deep / size.y) * BATCH_FILL
 			if fit > best:
 				best = fit
 				columns = across
@@ -605,8 +613,8 @@ func _lay_out() -> void:
 	var rows := ceili(float(count) / columns)
 	for index in count:
 		Interactable.attach(on_plate[index], _plate)
-		on_plate[index].position = Vector3(((index % columns) - (columns - 1) / 2.0) * PLATE_SIZE / columns, 0.0,
-			(floori(float(index) / columns) - (rows - 1) / 2.0) * PLATE_SIZE / rows) if count > 1 else Vector3.ZERO
+		on_plate[index].position = Vector3(((index % columns) - (columns - 1) / 2.0) * _plate_size / columns, 0.0,
+			(floori(float(index) / columns) - (rows - 1) / 2.0) * _plate_size / rows) if count > 1 else Vector3.ZERO
 
 
 ## Shows every copy at the height the print has reached (0 to 1).

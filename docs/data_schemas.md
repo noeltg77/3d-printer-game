@@ -52,8 +52,7 @@ Display currencies, keyed by code. Not a table of rows with ids.
 | `max_nozzle_temp_c` | Must be at least the filament's `nozzle_temp_c` |
 | `enclosed`, `direct_drive`, `auto_bed_levelling` | Built-in capabilities. Upgrades can add them. What a printer can print follows from these and the temperature (`FilamentRules.problem`); there is no list of filaments |
 | `power_watts` | Drives electricity cost per print |
-| `model` | `asset` is the model file in `assets/models/printers/`; `generator` and `variant` say what built it. `variant` also picks how it moves while printing |
-| `shop_colours` | `top`, `left`, `right` hex colours for the flat printer drawing on its shop card |
+| `model` | `asset` is the model file in `assets/models/printers/`; `generator` and `variant` say what built it. Each printer has its own variant, named for its id |
 
 ## filaments.json
 
@@ -182,6 +181,7 @@ Kits fitted to a printer for good. Imported from `docs/design_data/parts.json` (
 | Field | Meaning |
 | --- | --- |
 | `description` | Plain-words pitch on its shop row |
+| `model` | Optional. Its model file in `assets/models/parts/`, shown in the shop and on the shelving. A multicolour unit has none: it waits in a plain box, and its `multicolour.model` is what goes on the printer |
 | `price_pence`, `install_minutes` | Shop price, and character time to fit it |
 | `fits_motion` | Printer `motion` values it fits. Empty for any printer |
 | `fits_printers` | Optional. Printer ids it fits, for a kit made for particular machines |
@@ -208,7 +208,7 @@ A unit is an upgrade with `grants: ["multicolour"]` (so a printer takes only one
 | `soft_filament` | True if it is built for TPU. Otherwise TPU through it raises `tpu_in_multicolour` |
 | `keeps_dry` | True if spools in it take up no moisture |
 | `parts` | Ids from `parts.json` that come with it and wear alongside the printer's own |
-| `model` | Its model file in `assets/models/printers/` |
+| `model` | Its model file in `assets/models/printers/`. Each unit has its own (`unit_<id>`) |
 
 A full colour print of a design changes colour `colour_swaps` times. Each change purges `purge_grams_per_swap x (1 + contrast_purge x contrast)`, where contrast is the average step up in lightness from one colour to the next, going round them in order (`Multicolour.contrast`): dark next to light wastes more than two close shades. The first colour takes `main_colour_share` of the design's filament and the others share the rest; the purged filament is split evenly between the spools.
 
@@ -219,6 +219,7 @@ Wear parts. Imported from `docs/design_data/parts.json`: one part for each slot 
 | Field | Meaning |
 | --- | --- |
 | `slot`, `slot_name` | Where it fits (a printer has one part per slot) and what to call that in text |
+| `model` | Its model file in `assets/models/parts/`, shown in the shop and on the shelving |
 | `lifespan_print_hours` | Print hours from new to broken on a 1.0 wear printer at Standard, before the game's `wear_rate` |
 | `abrasive_wear_multiplier` | Applied to wear when printing a filament with `abrasive` set |
 | `max_extra_fail` | Added to the chance of every print failing when the part is at 0%. Nothing is added above 30% health, rising evenly below it |
@@ -234,7 +235,8 @@ Filament dryers. Imported from `docs/design_data/accessories.json` (`dryers`): o
 
 | Field | Meaning |
 | --- | --- |
-| `capacity` | Spools it holds at once (the model has room for two) |
+| `capacity` | Spools it holds at once. Its model needs a `spool_slot_<n>` marker for each |
+| `model` | Its model file in `assets/models/props/` |
 | `hours_to_dry` | Game hours to take a soaked spool of plain PLA to dry. A spool takes its share of that, times its filament's `drying_multiplier` |
 | `power_watts` | Charged as electricity for the time it spends drying |
 | `dries` | Filament families it gets hot enough for |

@@ -20,8 +20,7 @@
 			"direct_drive": false,
 			"auto_bed_levelling": false,
 			"power_watts": 120,
-			"model": { "generator": "printers", "variant": "open_frame", "asset": "printer_open_frame" },
-			"shop_colours": { "top": "#D9DEE6", "left": "#A9B3C2", "right": "#C3CBD7" }
+			"model": { "generator": "printers", "variant": "plodder_mini", "asset": "printer_plodder_mini" }
 		},
 		{
 			"id": "plodder_mini_pro",
@@ -42,8 +41,7 @@
 			"direct_drive": true,
 			"auto_bed_levelling": true,
 			"power_watts": 200,
-			"model": { "generator": "printers", "variant": "open_frame", "asset": "printer_open_frame_red" },
-			"shop_colours": { "top": "#D9DEE6", "left": "#A9B3C2", "right": "#C3CBD7" }
+			"model": { "generator": "printers", "variant": "plodder_mini_pro", "asset": "printer_plodder_mini_pro" }
 		},
 		{
 			"id": "snapbox_junior",
@@ -64,8 +62,7 @@
 			"direct_drive": false,
 			"auto_bed_levelling": false,
 			"power_watts": 120,
-			"model": { "generator": "printers", "variant": "enclosed", "asset": "printer_enclosed_sky" },
-			"shop_colours": { "top": "#E4F2F8", "left": "#6FB3D2", "right": "#96C9E0" }
+			"model": { "generator": "printers", "variant": "snapbox_junior", "asset": "printer_snapbox_junior" }
 		},
 		{
 			"id": "zippy_a1_mini",
@@ -86,8 +83,7 @@
 			"direct_drive": true,
 			"auto_bed_levelling": true,
 			"power_watts": 150,
-			"model": { "generator": "printers", "variant": "open_frame", "asset": "printer_open_frame_teal" },
-			"shop_colours": { "top": "#CFE0FF", "left": "#5D86D6", "right": "#7FA2E6" }
+			"model": { "generator": "printers", "variant": "zippy_a1_mini", "asset": "printer_zippy_a1_mini" }
 		},
 		{
 			"id": "kestrel_core_one_mini",
@@ -108,8 +104,7 @@
 			"direct_drive": true,
 			"auto_bed_levelling": true,
 			"power_watts": 150,
-			"model": { "generator": "printers", "variant": "open_frame", "asset": "printer_open_frame_green" },
-			"shop_colours": { "top": "#DDF0DE", "left": "#5E9E5B", "right": "#84B981" }
+			"model": { "generator": "printers", "variant": "kestrel_core_one_mini", "asset": "printer_kestrel_core_one_mini" }
 		},
 		{
 			"id": "plodder_bigslinger_350",
@@ -130,8 +125,7 @@
 			"direct_drive": false,
 			"auto_bed_levelling": true,
 			"power_watts": 350,
-			"model": { "generator": "printers", "variant": "open_frame", "asset": "printer_open_frame_yellow" },
-			"shop_colours": { "top": "#D9DEE6", "left": "#A9B3C2", "right": "#C3CBD7" }
+			"model": { "generator": "printers", "variant": "plodder_bigslinger_350", "asset": "printer_plodder_bigslinger_350" }
 		},
 		{
 			"id": "snapbox_adventurer_5",
@@ -152,8 +146,7 @@
 			"direct_drive": true,
 			"auto_bed_levelling": true,
 			"power_watts": 300,
-			"model": { "generator": "printers", "variant": "enclosed", "asset": "printer_enclosed_sky" },
-			"shop_colours": { "top": "#E4F2F8", "left": "#6FB3D2", "right": "#96C9E0" }
+			"model": { "generator": "printers", "variant": "snapbox_adventurer_5", "asset": "printer_snapbox_adventurer_5" }
 		},
 		{
 			"id": "zippy_x1",
@@ -174,8 +167,7 @@
 			"direct_drive": true,
 			"auto_bed_levelling": true,
 			"power_watts": 200,
-			"model": { "generator": "printers", "variant": "enclosed", "asset": "printer_enclosed" },
-			"shop_colours": { "top": "#CFE0FF", "left": "#5D86D6", "right": "#7FA2E6" }
+			"model": { "generator": "printers", "variant": "zippy_x1", "asset": "printer_zippy_x1" }
 		},
 		{
 			"id": "kestrel_mk4",
@@ -196,8 +188,7 @@
 			"direct_drive": true,
 			"auto_bed_levelling": true,
 			"power_watts": 250,
-			"model": { "generator": "printers", "variant": "open_frame", "asset": "printer_open_frame_green" },
-			"shop_colours": { "top": "#DDF0DE", "left": "#5E9E5B", "right": "#84B981" }
+			"model": { "generator": "printers", "variant": "kestrel_mk4", "asset": "printer_kestrel_mk4" }
 		},
 		{
 			"id": "lumina_mars_mini",
@@ -218,8 +209,7 @@
 			"direct_drive": false,
 			"auto_bed_levelling": true,
 			"power_watts": 80,
-			"model": { "generator": "printers", "variant": "resin", "asset": "printer_resin" },
-			"shop_colours": { "top": "#F1EDF8", "left": "#8A57C4", "right": "#A57BD3" }
+			"model": { "generator": "printers", "variant": "lumina_mars_mini", "asset": "printer_lumina_mars_mini" }
 		},
 		{
 			"id": "lumina_saturn_4_ultra",
@@ -240,8 +230,7 @@
 			"direct_drive": false,
 			"auto_bed_levelling": true,
 			"power_watts": 150,
-			"model": { "generator": "printers", "variant": "resin", "asset": "printer_resin" },
-			"shop_colours": { "top": "#F1EDF8", "left": "#8A57C4", "right": "#A57BD3" }
+			"model": { "generator": "printers", "variant": "lumina_saturn_4_ultra", "asset": "printer_lumina_saturn_4_ultra" }
 		},
 		{
 			"id": "lumina_jupiter_xl",
@@ -262,8 +251,7 @@
 			"direct_drive": false,
 			"auto_bed_levelling": true,
 			"power_watts": 300,
-			"model": { "generator": "printers", "variant": "resin", "asset": "printer_resin" },
-			"shop_colours": { "top": "#F1EDF8", "left": "#8A57C4", "right": "#A57BD3" }
+			"model": { "generator": "printers", "variant": "lumina_jupiter_xl", "asset": "printer_lumina_jupiter_xl" }
 		},
 		{
 			"id": "forge_industrial_600",
@@ -284,8 +272,7 @@
 			"direct_drive": true,
 			"auto_bed_levelling": true,
 			"power_watts": 2400,
-			"model": { "generator": "printers", "variant": "enclosed", "asset": "printer_enclosed_industrial" },
-			"shop_colours": { "top": "#E8E2D0", "left": "#4A4F58", "right": "#6A707A" }
+			"model": { "generator": "printers", "variant": "forge_industrial_600", "asset": "printer_forge_industrial_600" }
 		},
 		{
 			"id": "colossus_titan_1000",
@@ -306,8 +293,7 @@
 			"direct_drive": false,
 			"auto_bed_levelling": true,
 			"power_watts": 1500,
-			"model": { "generator": "printers", "variant": "open_frame", "asset": "printer_open_frame_dark" },
-			"shop_colours": { "top": "#E9E3C8", "left": "#2E3A2F", "right": "#4A5A4C" }
+			"model": { "generator": "printers", "variant": "colossus_titan_1000", "asset": "printer_colossus_titan_1000" }
 		},
 		{
 			"id": "conveyo_beltbot_pro",
@@ -330,8 +316,7 @@
 			"auto_eject": true,
 			"auto_eject_tray": 12,
 			"power_watts": 500,
-			"model": { "generator": "printers", "variant": "open_frame", "asset": "printer_open_frame_sky" },
-			"shop_colours": { "top": "#DCEBF6", "left": "#3E4C59", "right": "#5F7386" }
+			"model": { "generator": "printers", "variant": "conveyo_beltbot_pro", "asset": "printer_conveyo_beltbot_pro" }
 		}
 	]
 }

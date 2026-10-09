@@ -119,38 +119,57 @@ def _desk_lamp(builder, args, rng):
     builder.cylinder(0.06, 0.004, (0, -0.16, 0.298), "white", segments=8)
 
 
-def _dryer(builder, args, rng):
-    """Filament dryer: a warm box on short legs with a cradle for two spools on top.
+def _dryer(builder, args, width, slots, top):
+    """Filament dryer: a warm box on short legs with a cradle for its spools on top.
 
-    Markers `spool_slot_1` and `spool_slot_2` sit side by side in the cradle.
+    A marker `spool_slot_<n>` for each spool, side by side in the cradle.
+    Returns where its front face is, for the controls.
     """
-    width, depth, top = 0.4, 0.32, 0.52
+    depth = 0.32
     for x in (-1, 1):
         for y in (-1, 1):
             builder.box((0.04, 0.04, 0.12), (x * (width / 2 - 0.04), y * (depth / 2 - 0.04), 0.06), "charcoal")
     builder.box((width, depth, top - 0.12), (0, 0, 0.12 + (top - 0.12) / 2), "cream", bevel=0.02, bevel_segments=2)
     builder.box((width + 0.02, depth + 0.02, 0.03), (0, 0, 0.135), "charcoal", bevel=0.008)
-    # Front: vent slots, a dial and a little warm display.
-    front = -depth / 2 - 0.004
-    for index in range(4):
-        builder.box((0.16, 0.01, 0.014), (-0.08, front, 0.24 + index * 0.035), "charcoal")
-    builder.cylinder(0.035, 0.02, (0.1, front - 0.006, 0.3), args.colour, segments=10, axis="Y")
-    builder.box((0.012, 0.012, 0.03), (0.1, front - 0.018, 0.312), "white")
-    builder.box((0.09, 0.01, 0.04), (0.1, front, 0.4), "ink")
-    builder.box((0.06, 0.012, 0.018), (0.1, front - 0.002, 0.4), args.colour)
     # Cradle on top: two end cheeks and a pair of rails the spools rest on.
+    reach = 0.045 * slots + 0.025
     for x in (-1, 1):
-        builder.box((0.02, 0.2, 0.07), (x * 0.115, 0, top + 0.035), "charcoal", bevel=0.006)
+        builder.box((0.02, 0.2, 0.07), (x * reach, 0, top + 0.035), "charcoal", bevel=0.006)
     rail_gap, rail_radius, spool_radius = 0.06, 0.012, 0.1
     for y in (-rail_gap, rail_gap):
-        builder.cylinder(rail_radius, 0.23, (0, y, top + 0.04), "charcoal", segments=6, axis="X")
+        builder.cylinder(rail_radius, reach * 2, (0, y, top + 0.04), "charcoal", segments=6, axis="X")
     rest = (spool_radius + rail_radius) ** 2 - rail_gap ** 2
     drop = spool_radius - rest ** 0.5
-    for slot, x in enumerate((-0.045, 0.045), start=1):
-        _pending_markers.append((f"spool_slot_{slot}", (x, 0, top + 0.04 - drop), SIDEWAYS))
+    for slot in range(slots):
+        x = (slot - (slots - 1) / 2) * 0.09
+        _pending_markers.append((f"spool_slot_{slot + 1}", (x, 0, top + 0.04 - drop), SIDEWAYS))
+    return -depth / 2 - 0.004
 
 
-VARIANTS = {"dryer": _dryer, "pc": _pc, "bin": _bin, "plant": _plant, "rug": _rug, "desk_lamp": _desk_lamp, "floor_mat": _floor_mat}
+def _dryer_mini(builder, args, rng):
+    """The one spool dryer: a small cube with a dial."""
+    front = _dryer(builder, args, 0.27, 1, 0.4)
+    for index in range(3):
+        builder.box((0.1, 0.01, 0.014), (-0.055, front, 0.22 + index * 0.035), "charcoal")
+    builder.cylinder(0.035, 0.02, (0.065, front - 0.006, 0.26), args.colour, segments=10, axis="Y")
+    builder.box((0.012, 0.012, 0.03), (0.065, front - 0.018, 0.272), "white")
+
+
+def _dryer_duo(builder, args, rng):
+    """The two spool dryer: wider and taller, with a display and a chimney for the damp air."""
+    front = _dryer(builder, args, 0.42, 2, 0.52)
+    for index in range(5):
+        builder.box((0.17, 0.01, 0.014), (-0.09, front, 0.22 + index * 0.035), "charcoal")
+    builder.box((0.13, 0.01, 0.07), (0.11, front, 0.39), "ink")
+    builder.box((0.1, 0.012, 0.04), (0.11, front - 0.002, 0.39), args.colour)
+    for x in (0.08, 0.14):
+        builder.cylinder(0.022, 0.02, (x, front - 0.006, 0.27), args.colour, segments=10, axis="Y")
+    builder.box((0.42, 0.012, 0.03), (0, front, 0.47), args.colour)
+    builder.cylinder(0.03, 0.09, (0.165, 0.11, 0.565), "charcoal", segments=8)
+    builder.cylinder(0.036, 0.014, (0.165, 0.11, 0.613), "ink", segments=8)
+
+
+VARIANTS = {"dryer_mini": _dryer_mini, "dryer_duo": _dryer_duo, "pc": _pc, "bin": _bin, "plant": _plant, "rug": _rug, "desk_lamp": _desk_lamp, "floor_mat": _floor_mat}
 
 if __name__ == "__main__":
     common.run(sys.modules[__name__])
