@@ -232,6 +232,123 @@ def _rc_boat_hull(builder):
     builder.box((0.04, 0.03, 0.025), (0, -0.11, 0.02), COLOUR)
 
 
+# Spare room tier: Music, Photography and film
+
+def _guitar_pick_set_x10(builder):
+    """Ten guitar picks in two rows."""
+    pick = [(0, -0.016), (0.013, 0.004), (0.008, 0.014), (-0.008, 0.014), (-0.013, 0.004)]
+    for x, y in print_shapes.grid(5, 2, 0.032, 0.038):
+        builder.plate(pick, 0.003, COLOUR, centre=(x, y, 0))
+    builder.enlarge(1.2)
+
+
+def _guitar_wall_hanger(builder):
+    """Wall plate with an arm that ends in a padded yoke, two prongs turned up at the tips."""
+    builder.box((0.07, 0.012, 0.11), (0, 0.07, 0.055), COLOUR, bevel=0.004)
+    builder.box((0.022, 0.08, 0.022), (0, 0.025, 0.06), COLOUR)
+    for side in (-1, 1):
+        builder.box((0.016, 0.07, 0.016), (side * 0.035, -0.04, 0.06), COLOUR, rotation=(0, 0, side * 0.35))
+        builder.box((0.016, 0.016, 0.03), (side * 0.047, -0.07, 0.072), COLOUR)
+
+
+def _capo(builder):
+    """C-shaped clamp with a pad along the top jaw and a lever to squeeze."""
+    builder.plate([(-0.04, 0.0), (0.04, 0.0), (0.04, 0.012), (-0.028, 0.012), (-0.028, 0.04), (0.04, 0.04), (0.04, 0.052), (-0.04, 0.052)],
+                  0.02, COLOUR, upright=True)
+    builder.box((0.06, 0.022, 0.006), (0.008, 0, 0.037), COLOUR)
+    print_shapes.strut(builder, (-0.036, 0, 0.01), (-0.075, 0, 0.045), 0.012)
+    builder.enlarge(1.4)
+
+
+def _drum_stick_holder(builder):
+    """Clamp block with two open tubes side by side for a pair of sticks."""
+    builder.box((0.07, 0.03, 0.04), (0, 0.03, 0.02), COLOUR)
+    for side in (-1, 1):
+        builder.shell(0.02, 0.07, 0.005, COLOUR, segments=6, centre=(side * 0.02, -0.004, 0))
+    builder.cylinder(0.006, 0.02, (0, 0.05, 0.02), COLOUR, segments=6, axis="Y")
+
+
+def _headphone_hook_studio(builder):
+    """Desk-edge clamp with a screw underneath and a J hook hanging off the front."""
+    builder.box((0.04, 0.06, 0.01), (0, 0.01, 0.105), COLOUR)
+    builder.box((0.04, 0.01, 0.05), (0, 0.035, 0.08), COLOUR)
+    builder.box((0.04, 0.06, 0.01), (0, 0.01, 0.06), COLOUR)
+    builder.cylinder(0.006, 0.03, (0, 0.0, 0.072), COLOUR, segments=6)
+    builder.box((0.03, 0.01, 0.06), (0, -0.02, 0.035), COLOUR)
+    builder.box((0.03, 0.05, 0.01), (0, -0.04, 0.005), COLOUR)
+    builder.box((0.03, 0.01, 0.03), (0, -0.06, 0.02), COLOUR)
+
+
+def _pedalboard_cable_clips_x10(builder):
+    """Ten small cable clips in two rows: a stick-down pad with a hoop over it."""
+    for x, y in print_shapes.grid(5, 2, 0.028, 0.03):
+        builder.box((0.02, 0.02, 0.004), (x, y, 0.002), COLOUR)
+        builder.box((0.02, 0.008, 0.012), (x, y, 0.009), COLOUR, taper=(0.6, 1.0))
+    builder.enlarge(1.2)
+
+
+def _speaker_stand_bookshelf_pair(builder):
+    """Two wedge stands that tilt a speaker back, each with a lip along the low edge."""
+    for side in (-1, 1):
+        builder.plate([(-0.07, 0.0), (0.07, 0.0), (0.07, 0.05), (-0.07, 0.012)], 0.11, COLOUR, centre=(0, side * 0.065, 0), upright=True)
+        builder.box((0.01, 0.11, 0.014), (-0.066, side * 0.065, 0.02), COLOUR)
+
+
+def _camera_hot_shoe_mount(builder):
+    """Foot that slides into a camera's shoe, with a locking wheel and a threaded stud on top."""
+    builder.box((0.024, 0.024, 0.004), (0, 0, 0.002), COLOUR)
+    builder.box((0.016, 0.024, 0.006), (0, 0, 0.007), COLOUR)
+    builder.cylinder(0.016, 0.006, (0, 0, 0.013), COLOUR, segments=8)
+    builder.cylinder(0.005, 0.014, (0, 0, 0.023), COLOUR, segments=6)
+    builder.enlarge(2.2)
+
+
+def _lens_hood(builder):
+    """Short flared tube, open both ends, with a narrower collar where it fits the lens."""
+    builder.shell(0.046, 0.016, 0.006, COLOUR, segments=10, open_base=True)
+    builder.shell(0.048, 0.05, 0.005, COLOUR, segments=10, centre=(0, 0, 0.014), radius_top=0.066, open_base=True)
+
+
+def _tripod_phone_adapter(builder):
+    """Sprung phone clamp, two jaws on a back bar, standing on a threaded foot block."""
+    builder.box((0.03, 0.03, 0.02), (0, 0, 0.01), COLOUR)
+    builder.box((0.016, 0.02, 0.1), (0, 0.006, 0.07), COLOUR)
+    for z in (0.028, 0.114):
+        builder.box((0.03, 0.03, 0.012), (0, -0.008, z), COLOUR)
+    builder.cylinder(0.01, 0.008, (0.019, 0, 0.01), COLOUR, segments=6, axis="X")
+
+
+def _gopro_mount_set(builder):
+    """Three action camera mounts: a three-finger base, a two-finger buckle and a thumbscrew."""
+    builder.box((0.04, 0.04, 0.006), (-0.045, 0, 0.003), COLOUR)
+    for x in (-0.012, 0.0, 0.012):
+        builder.box((0.005, 0.02, 0.022), (-0.045 + x, 0, 0.017), COLOUR)
+    builder.box((0.03, 0.05, 0.008), (0.005, 0, 0.004), COLOUR)
+    for x in (-0.006, 0.006):
+        builder.box((0.005, 0.02, 0.022), (0.005 + x, 0.008, 0.019), COLOUR)
+    builder.cylinder(0.005, 0.04, (0.05, 0, 0.005), COLOUR, segments=6, axis="Y")
+    builder.cylinder(0.014, 0.008, (0.05, 0.022, 0.014), COLOUR, segments=6, axis="Y")
+    builder.enlarge(1.3)
+
+
+def _light_stand_cold_shoe_adapter(builder):
+    """Round spigot that drops onto a light stand, with a shoe slot on top and a thumbscrew at the side."""
+    builder.cylinder(0.012, 0.03, (0, 0, 0.015), COLOUR, segments=8)
+    builder.box((0.03, 0.03, 0.01), (0, 0, 0.035), COLOUR)
+    for side in (-1, 1):
+        builder.box((0.006, 0.03, 0.008), (side * 0.012, 0, 0.044), COLOUR)
+    builder.cylinder(0.006, 0.014, (0.02, 0, 0.016), COLOUR, segments=6, axis="X")
+    builder.enlarge(1.8)
+
+
+def _gimbal_counterweight(builder):
+    """Three stacked weight discs on a threaded rod with a clamp block at the end."""
+    for index in range(3):
+        builder.cylinder(0.03, 0.014, (0, 0, 0.007 + index * 0.016), COLOUR, segments=10)
+    builder.cylinder(0.007, 0.05, (0, 0, 0.07), COLOUR, segments=6)
+    builder.box((0.03, 0.022, 0.016), (0, 0, 0.1), COLOUR)
+
+
 VARIANTS = {
     "guitar_pick_holder": _guitar_pick_holder,
     "recorder": _recorder,
@@ -256,6 +373,19 @@ VARIANTS = {
     "landing_gear_x4": _landing_gear_x4,
     "servo_saver": _servo_saver,
     "rc_boat_hull": _rc_boat_hull,
+    "guitar_pick_set_x10": _guitar_pick_set_x10,
+    "guitar_wall_hanger": _guitar_wall_hanger,
+    "capo": _capo,
+    "drum_stick_holder": _drum_stick_holder,
+    "headphone_hook_studio": _headphone_hook_studio,
+    "pedalboard_cable_clips_x10": _pedalboard_cable_clips_x10,
+    "speaker_stand_bookshelf_pair": _speaker_stand_bookshelf_pair,
+    "camera_hot_shoe_mount": _camera_hot_shoe_mount,
+    "lens_hood": _lens_hood,
+    "tripod_phone_adapter": _tripod_phone_adapter,
+    "gopro_mount_set": _gopro_mount_set,
+    "light_stand_cold_shoe_adapter": _light_stand_cold_shoe_adapter,
+    "gimbal_counterweight": _gimbal_counterweight,
 }
 
 if __name__ == "__main__":

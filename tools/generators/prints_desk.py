@@ -104,6 +104,54 @@ def _ruler_and_template_set(builder):
     builder.cylinder(0.042, 0.005, (0.055, 0.025, 0.0025), COLOUR, segments=10)
 
 
+# Desk and office, Spare room tier
+
+def _monitor_stand_riser(builder):
+    """Wide platform on two side panels, with a shelf underneath for the keyboard."""
+    builder.box((0.3, 0.19, 0.014), (0, 0, 0.097), COLOUR, bevel=0.004)
+    for side in (-1, 1):
+        builder.box((0.014, 0.17, 0.092), (side * 0.135, 0, 0.046), COLOUR)
+    builder.box((0.258, 0.15, 0.008), (0, 0.005, 0.03), COLOUR)
+
+
+def _laptop_riser(builder):
+    """Open frame that lifts and tilts a laptop: a U-shaped foot, two rising arms and a cradle bar with a lip each end."""
+    for side in (-1, 1):
+        x = side * 0.1
+        builder.box((0.018, 0.2, 0.012), (x, 0, 0.006), COLOUR)
+        print_shapes.strut(builder, (x, -0.09, 0.01), (x, 0.075, 0.11), 0.016)
+        builder.box((0.018, 0.014, 0.03), (x, -0.094, 0.025), COLOUR)
+    builder.box((0.218, 0.018, 0.012), (0, 0.09, 0.006), COLOUR)
+    builder.box((0.218, 0.016, 0.016), (0, 0.075, 0.108), COLOUR)
+
+
+def _under_desk_headphone_hook(builder):
+    """Plate that screws up under a desk, with an arm dropping down and curling forward into a hook."""
+    builder.box((0.06, 0.05, 0.007), (0, 0.01, 0.0865), COLOUR)
+    builder.box((0.03, 0.01, 0.08), (0, 0.03, 0.045), COLOUR)
+    builder.box((0.03, 0.06, 0.01), (0, 0.005, 0.005), COLOUR)
+    builder.box((0.03, 0.01, 0.03), (0, -0.02, 0.02), COLOUR)
+
+
+def _desk_drawer_bolt_on(builder):
+    """Sleeve that bolts under a desk with a drawer pulled part way out of it."""
+    builder.box((0.26, 0.18, 0.008), (0, 0.02, 0.066), COLOUR)
+    for side in (-1, 1):
+        builder.box((0.008, 0.18, 0.066), (side * 0.126, 0.02, 0.033), COLOUR)
+    builder.tray((0.24, 0.17, 0.05), 0.006, COLOUR, centre=(0, -0.03, 0.004))
+    builder.box((0.07, 0.012, 0.014), (0, -0.12, 0.03), COLOUR)
+
+
+def _desk_clamp_cup_holder(builder):
+    """C clamp for the edge of a desk carrying a round cup holder out to one side."""
+    builder.box((0.05, 0.06, 0.01), (-0.07, 0, 0.06), COLOUR)
+    builder.box((0.05, 0.01, 0.06), (-0.07, 0.025, 0.03), COLOUR)
+    builder.box((0.05, 0.06, 0.01), (-0.07, 0, 0.005), COLOUR)
+    builder.cylinder(0.007, 0.03, (-0.07, -0.008, 0.018), COLOUR, segments=6)
+    builder.shell(0.05, 0.06, 0.006, COLOUR, segments=10, centre=(0.03, 0, 0))
+    builder.box((0.03, 0.03, 0.01), (-0.035, 0, 0.055), COLOUR)
+
+
 VARIANTS = {
     "tablet_stand": _tablet_stand,
     "business_card_holder": _business_card_holder,
@@ -117,6 +165,11 @@ VARIANTS = {
     "desk_lamp_shade": _desk_lamp_shade,
     "bulldog_clip_display_wall": _bulldog_clip_display_wall,
     "ruler_and_template_set": _ruler_and_template_set,
+    "monitor_stand_riser": _monitor_stand_riser,
+    "laptop_riser": _laptop_riser,
+    "under_desk_headphone_hook": _under_desk_headphone_hook,
+    "desk_drawer_bolt_on": _desk_drawer_bolt_on,
+    "desk_clamp_cup_holder": _desk_clamp_cup_holder,
 }
 
 if __name__ == "__main__":

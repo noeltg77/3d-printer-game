@@ -1,5 +1,5 @@
 """Printed item generator for the seasonal categories: Halloween, Bonfire Night,
-Christmas, Valentine's Day, Easter, Mother's Day and Back to school.
+Christmas, Valentine's Day, Easter, Mother's Day, Back to school, Father's Day and New Year.
 
 Same rules as prints.py: tint material, origin at the centre of the base, a
 little larger than life so items read at the game's camera distance.
@@ -275,6 +275,194 @@ def _protractor_and_compass_set(builder):
     builder.cylinder(0.01, 0.012, hinge, COLOUR, segments=6)
 
 
+# Spare room tier: Bonfire Night, Christmas, Father's Day, Halloween, Mother's Day, New Year, Valentine's Day
+
+HEART = [(0, -0.03), (0.022, -0.008), (0.028, 0.008), (0.02, 0.022), (0.008, 0.024), (0, 0.014),
+         (-0.008, 0.024), (-0.02, 0.022), (-0.028, 0.008), (-0.022, -0.008)]
+
+
+def _sparkler_holder(builder):
+    """Handle standing on end with a wide guard disc and a socket above it for the sparkler."""
+    builder.cylinder(0.014, 0.09, (0, 0, 0.045), COLOUR, segments=8, radius_top=0.011)
+    builder.cylinder(0.045, 0.006, (0, 0, 0.09), COLOUR, segments=10)
+    builder.cylinder(0.009, 0.03, (0, 0, 0.108), COLOUR, segments=6)
+
+
+def _firework_safety_cap_set(builder):
+    """Four tapered caps, each with a flanged rim."""
+    for x, y in print_shapes.grid(2, 2, 0.055, 0.055):
+        builder.cylinder(0.024, 0.006, (x, y, 0.003), COLOUR, segments=6)
+        builder.cylinder(0.018, 0.035, (x, y, 0.0235), COLOUR, segments=8, radius_top=0.01)
+
+
+def _rocket_launcher_tube_stand(builder):
+    """Upright launch tube on a square base, braced by three fins."""
+    builder.box((0.12, 0.12, 0.01), (0, 0, 0.005), COLOUR)
+    builder.shell(0.022, 0.16, 0.005, COLOUR, segments=8, centre=(0, 0, 0.008))
+    for index in range(3):
+        angle = math.pi / 2 + math.tau * index / 3
+        builder.box((0.05, 0.008, 0.07), (0.04 * math.cos(angle), 0.04 * math.sin(angle), 0.044), COLOUR,
+                    rotation=(0, 0, angle), taper=(0.2, 1.0))
+
+
+def _bauble_set_x6(builder):
+    """Six faceted baubles in two rows, each with a cap for the hook."""
+    for x, y in print_shapes.grid(3, 2, 0.065, 0.065):
+        builder.ball(0.027, (x, y, 0.027), COLOUR, subdivisions=1)
+        builder.cylinder(0.008, 0.01, (x, y, 0.055), COLOUR, segments=6)
+
+
+def _snowflake_ornaments_x8(builder):
+    """Eight flat snowflakes, each three bars crossing at the centre."""
+    for x, y in print_shapes.grid(4, 2, 0.058, 0.058):
+        for index in range(3):
+            builder.box((0.05, 0.007, 0.004), (x, y, 0.002), COLOUR, rotation=(0, 0, index * math.pi / 3))
+
+
+def _star_tree_topper(builder):
+    """Five-pointed star standing on a cone that sits over the top of the tree."""
+    builder.shell(0.03, 0.06, 0.005, COLOUR, segments=8, radius_top=0.014, open_base=True)
+    star = [((0.07 if index % 2 == 0 else 0.03) * math.cos(math.pi / 2 + math.pi * index / 5),
+             0.115 + (0.07 if index % 2 == 0 else 0.03) * math.sin(math.pi / 2 + math.pi * index / 5)) for index in range(10)]
+    builder.plate(star, 0.016, COLOUR, upright=True)
+
+
+def _angel_tree_topper(builder):
+    """Angel: a cone gown, a round head, a halo and a pair of wings."""
+    builder.cylinder(0.045, 0.11, (0, 0, 0.055), COLOUR, segments=8, radius_top=0.012)
+    builder.ball(0.022, (0, 0, 0.128), COLOUR, subdivisions=1)
+    builder.shell(0.02, 0.004, 0.004, COLOUR, segments=6, centre=(0, 0.004, 0.152), open_base=True)
+    for side in (-1, 1):
+        builder.plate([(side * 0.008, 0.05), (side * 0.075, 0.125), (side * 0.06, 0.07), (side * 0.03, 0.04)], 0.008, COLOUR,
+                      centre=(0, 0.022, 0), upright=True)
+
+
+def _spiral_christmas_tree(builder):
+    """Tree made of six four-pointed tiers, each smaller than the last and turned a little, on a round base."""
+    builder.cylinder(0.04, 0.012, (0, 0, 0.006), COLOUR, segments=8)
+    for index in range(6):
+        size = 0.075 - index * 0.011
+        turn = index * 0.35
+        tier = [((size if point % 2 == 0 else size * 0.45) * math.cos(turn + math.pi * point / 4),
+                 (size if point % 2 == 0 else size * 0.45) * math.sin(turn + math.pi * point / 4)) for point in range(8)]
+        builder.plate(tier, 0.024, COLOUR, centre=(0, 0, 0.012 + index * 0.024))
+    builder.ball(0.012, (0, 0, 0.165), COLOUR, subdivisions=1)
+
+
+def _napkin_rings_x6(builder):
+    """Six napkin rings standing in two rows."""
+    for x, y in print_shapes.grid(3, 2, 0.062, 0.062):
+        builder.shell(0.026, 0.03, 0.005, COLOUR, segments=6, centre=(x, y, 0), open_base=True)
+
+
+def _tree_light_clips_x20(builder):
+    """Twenty tiny clips in four rows of five."""
+    for x, y in print_shapes.grid(5, 4, 0.02, 0.022):
+        builder.box((0.012, 0.016, 0.008), (x, y, 0.004), COLOUR, taper=(0.5, 1.0))
+    builder.enlarge(1.3)
+
+
+def _beer_bottle_opener_wall(builder):
+    """Wall plate with an opener jaw near the top and a tray below to catch the caps."""
+    builder.box((0.08, 0.012, 0.19), (0, 0.04, 0.095), COLOUR, bevel=0.004)
+    builder.box((0.05, 0.02, 0.01), (0, 0.025, 0.155), COLOUR)
+    builder.box((0.05, 0.008, 0.02), (0, 0.018, 0.142), COLOUR)
+    builder.tray((0.08, 0.06, 0.05), 0.006, COLOUR, centre=(0, 0.006, 0))
+
+
+def _bbq_tool_hook_rack(builder):
+    """Long rail standing on edge with four chunky hooks for tongs and turners."""
+    builder.box((0.27, 0.014, 0.06), (0, 0.022, 0.05), COLOUR, bevel=0.004)
+    for x, _ in print_shapes.grid(4, 1, 0.066, 0):
+        builder.box((0.02, 0.04, 0.014), (x, -0.004, 0.03), COLOUR)
+        builder.box((0.02, 0.014, 0.036), (x, -0.02, 0.018), COLOUR)
+
+
+def _grill_spice_shaker_set(builder):
+    """Three shakers with domed lids standing on a tray."""
+    builder.box((0.19, 0.07, 0.01), (0, 0, 0.005), COLOUR)
+    for x, _ in print_shapes.grid(3, 1, 0.06, 0):
+        builder.cylinder(0.024, 0.07, (x, 0, 0.044), COLOUR, segments=8)
+        builder.cylinder(0.026, 0.02, (x, 0, 0.089), COLOUR, segments=8, radius_top=0.012)
+
+
+def _ghost_figurine(builder):
+    """Little ghost: a rounded head on a flaring sheet, with two stubby arms."""
+    builder.cylinder(0.05, 0.07, (0, 0, 0.035), COLOUR, segments=8, radius_top=0.036)
+    builder.ball(0.038, (0, 0, 0.078), COLOUR)
+    for side in (-1, 1):
+        print_shapes.limb(builder, (side * 0.03, 0, 0.06), (side * 0.062, -0.01, 0.075), 0.012, 0.007)
+
+
+def _spooky_eyes_glow_pack_x10(builder):
+    """Ten slanted eyes in five pairs, each with a raised pupil."""
+    eye = [(-0.018, 0.004), (0.0, -0.008), (0.018, 0.0), (0.0, 0.009)]
+    for x, y in print_shapes.grid(2, 5, 0.044, 0.026):
+        shape = eye if x > 0 else [(-px, py) for px, py in reversed(eye)]
+        builder.plate(shape, 0.004, COLOUR, centre=(x, y, 0))
+        builder.box((0.006, 0.008, 0.003), (x, y, 0.0055), COLOUR)
+    builder.enlarge(1.3)
+
+
+def _flower_vase_personalised(builder):
+    """Vase with a rounded body, an open flared neck and a raised plaque for a name."""
+    builder.cylinder(0.035, 0.09, (0, 0, 0.045), COLOUR, segments=10, radius_top=0.055)
+    builder.cylinder(0.055, 0.04, (0, 0, 0.11), COLOUR, segments=10, radius_top=0.03)
+    builder.shell(0.03, 0.05, 0.005, COLOUR, segments=10, centre=(0, 0, 0.126), radius_top=0.044, open_base=True)
+    builder.box((0.05, 0.008, 0.025), (0, -0.048, 0.07), COLOUR)
+
+
+def _jewellery_dish_heart(builder):
+    """Shallow heart-shaped dish."""
+    heart = [(x * 2.0, y * 2.0) for x, y in HEART]
+    builder.plate(heart, 0.006, COLOUR)
+    builder.outline(heart, 0.022, 0.006, COLOUR)
+
+
+def _new_year_number_topper(builder):
+    """Flat starburst on two stakes, with a blank banner across it for the year."""
+    burst = [((0.06 if index % 2 == 0 else 0.03) * math.cos(math.pi / 2 + math.pi * index / 8),
+              0.06 + (0.06 if index % 2 == 0 else 0.03) * math.sin(math.pi / 2 + math.pi * index / 8)) for index in range(16)]
+    builder.plate(burst, 0.005, COLOUR)
+    builder.box((0.12, 0.03, 0.004), (0, 0.06, 0.007), COLOUR)
+    for x in (-0.02, 0.02):
+        builder.box((0.007, 0.09, 0.005), (x, -0.035, 0.0025), COLOUR)
+
+
+def _party_crowns_x10(builder):
+    """Ten flat crown bands in two rows, each with two points, ready to curl into a ring."""
+    band = [(-0.022, -0.008), (0.022, -0.008), (0.022, 0.012), (0.011, 0.002), (0.0, 0.012), (-0.011, 0.002), (-0.022, 0.012)]
+    for x, y in print_shapes.grid(5, 2, 0.052, 0.036):
+        builder.plate(band, 0.004, COLOUR, centre=(x, y, 0))
+
+
+def _lunar_zodiac_figurine(builder):
+    """Sitting rabbit on a round base: a plump body, a round head, two upright ears and a tail."""
+    builder.cylinder(0.055, 0.012, (0, 0, 0.006), COLOUR, segments=8)
+    builder.ball(0.045, (0, 0.008, 0.05), COLOUR, scale=(0.9, 1.1, 0.95))
+    builder.ball(0.03, (0, -0.03, 0.098), COLOUR, subdivisions=1)
+    for side in (-1, 1):
+        builder.box((0.012, 0.01, 0.05), (side * 0.013, -0.024, 0.142), COLOUR, taper=(0.5, 0.6))
+    builder.ball(0.014, (0, 0.056, 0.036), COLOUR, subdivisions=1)
+
+
+def _rose_print_in_place(builder):
+    """Rose on a short stem and a round foot: three rings of petals, each turned against the last, round a bud."""
+    builder.cylinder(0.03, 0.008, (0, 0, 0.004), COLOUR, segments=8)
+    builder.cylinder(0.006, 0.05, (0, 0, 0.03), COLOUR, segments=6)
+    for index, (low, high, height) in enumerate(((0.016, 0.042, 0.024), (0.014, 0.032, 0.03), (0.012, 0.022, 0.034))):
+        builder.cylinder(low, height, (0, 0, 0.055 + height / 2), COLOUR, segments=5, radius_top=high, rotation=(0, 0, index * 0.63))
+    builder.ball(0.012, (0, 0, 0.09), COLOUR, subdivisions=1)
+
+
+def _heart_earrings(builder):
+    """Pair of flat heart earrings, each with a loop at the top."""
+    for side in (-1, 1):
+        builder.plate(HEART, 0.004, COLOUR, centre=(side * 0.035, 0, 0))
+        builder.shell(0.006, 0.004, 0.0025, COLOUR, segments=6, centre=(side * 0.035, 0.02, 0), open_base=True)
+    builder.enlarge(1.5)
+
+
 VARIANTS = {
     "skull_candle_holder": _skull_candle_holder,
     "bat_garland_x10": _bat_garland_x10,
@@ -297,6 +485,28 @@ VARIANTS = {
     "photo_lithophane_frame": _photo_lithophane_frame,
     "locker_shelf": _locker_shelf,
     "protractor_and_compass_set": _protractor_and_compass_set,
+    "sparkler_holder": _sparkler_holder,
+    "firework_safety_cap_set": _firework_safety_cap_set,
+    "rocket_launcher_tube_stand": _rocket_launcher_tube_stand,
+    "bauble_set_x6": _bauble_set_x6,
+    "snowflake_ornaments_x8": _snowflake_ornaments_x8,
+    "star_tree_topper": _star_tree_topper,
+    "angel_tree_topper": _angel_tree_topper,
+    "spiral_christmas_tree": _spiral_christmas_tree,
+    "napkin_rings_x6": _napkin_rings_x6,
+    "tree_light_clips_x20": _tree_light_clips_x20,
+    "beer_bottle_opener_wall": _beer_bottle_opener_wall,
+    "bbq_tool_hook_rack": _bbq_tool_hook_rack,
+    "grill_spice_shaker_set": _grill_spice_shaker_set,
+    "ghost_figurine": _ghost_figurine,
+    "spooky_eyes_glow_pack_x10": _spooky_eyes_glow_pack_x10,
+    "flower_vase_personalised": _flower_vase_personalised,
+    "jewellery_dish_heart": _jewellery_dish_heart,
+    "new_year_number_topper": _new_year_number_topper,
+    "party_crowns_x10": _party_crowns_x10,
+    "lunar_zodiac_figurine": _lunar_zodiac_figurine,
+    "rose_print_in_place": _rose_print_in_place,
+    "heart_earrings": _heart_earrings,
 }
 
 if __name__ == "__main__":
