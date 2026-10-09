@@ -142,7 +142,7 @@ func _stock_note(filament: Dictionary) -> String:
 
 func _spool_card(colour: StringName) -> Control:
 	var filament: Dictionary = Game.data.filaments[_material]
-	var picture := Ui.panel(SpoolIcon.create(Palette.colour(colour), 96), Ui.box(Ui.SOFT, 14, 0, 0))
+	var picture := Ui.panel(ModelPicture.of_spool(colour, 104), Ui.box(Ui.SOFT, 14, 0, 0))
 	picture.custom_minimum_size.y = 120
 	var card := Ui.card(Ui.vbox([
 		picture,
@@ -172,7 +172,7 @@ func _basket_card() -> Control:
 		var remove := Ui.button("-", _add.bind(key, -1), Ui.INSET, Ui.INK, 30, 10)
 		remove.tooltip_text = "Take one out"
 		lines.add_child(Ui.hbox([
-			SpoolIcon.create(Palette.colour(colour), 36, Ui.WHITE), name_and_count, remove,
+			ModelPicture.of_spool(colour, 40), name_and_count, remove,
 			Ui.text(Money.format(Game.supplier.spool_price(material) * quantity), 14, Ui.INK, 800),
 		], 12))
 	if _basket.is_empty():

@@ -4,8 +4,6 @@ extends Interactable
 ## instead of gaining it. Stands on the premises' dryer spot (DryerSpot), which
 ## creates it when one is unpacked. Spools sit in the model's spool_slot_* markers.
 
-const MODEL := preload("res://assets/models/props/dryer.glb")
-
 ## Row from data/dryers.json.
 var spec: Dictionary
 
@@ -19,7 +17,7 @@ static func create(dryer_id: StringName) -> FilamentDryer:
 	dryer.spec = Game.data.dryers[dryer_id]
 	dryer.display_name = "Filament dryer"
 	dryer.stand_offset = Vector3(0.0, 0.0, 0.6)
-	dryer.add_child(MODEL.instantiate())
+	dryer.add_child((load(GameData.DRYER_MODEL % dryer.spec["model"]) as PackedScene).instantiate())
 	return dryer
 
 

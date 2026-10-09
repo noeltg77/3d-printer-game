@@ -18,6 +18,8 @@ const MOTIONS := {"bed_slinger": "Bed slinger", "core_xy": "Core XY"}
 ## Speed multiplier and build volume (litres) that fill a stat bar completely.
 const FULL_SPEED := 3.0
 const FULL_VOLUME := 40.0
+## Size of the picture at the start of a row, in pixels.
+const ROW_PICTURE := 64
 
 var screen: PcScreen
 
@@ -88,8 +90,8 @@ func _printer_card(printer_id: String, spec: Dictionary) -> Control:
 	var owned := 0
 	for station: PrinterStation in get_tree().get_nodes_in_group(&"printer"):
 		owned += 1 if station.spec == spec else 0
-	var picture := Ui.panel(PrinterIcon.create(spec["shop_colours"], 120), Ui.box(TILE, 16, 0, 0))
-	picture.custom_minimum_size.y = 150
+	var picture := Ui.panel(ModelPicture.of_printer(spec, 170), Ui.box(TILE, 16, 0, 0))
+	picture.custom_minimum_size.y = 186
 	var size: Array = spec["build_volume_mm"]
 	var litres := float(size[0]) * float(size[1]) * float(size[2]) / 1000000.0
 	var materials: PackedStringArray = []
@@ -154,7 +156,7 @@ func _packaging() -> Control:
 	], 0)
 	words.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var row := Ui.panel(Ui.hbox([
-		Ui.icon_tile("box", 52, 26, TILE, NAVY),
+		ModelPicture.tile(Parcel.MODEL.resource_path, ROW_PICTURE, TILE),
 		words,
 		Ui.pill("In stock: %d" % Game.packaging, Ui.RED_DARK if low else Ui.GREEN_DARK, Ui.RED_SOFT if low else Ui.GREEN_SOFT),
 		Ui.width(Ui.text(Money.format(int(config["packaging_pack_pence"])), 17, Ui.INK, 800), 70),
@@ -186,7 +188,7 @@ func _parts() -> Control:
 		var buy := _disabled_if(Ui.button("Buy", _buy.bind(order), BLUE, Ui.WHITE, 44, 14), problem != "")
 		buy.tooltip_text = problem
 		rows.add_child(Ui.panel(Ui.hbox([
-			Ui.icon_tile("wrench", 52, 26, TILE, NAVY),
+			ModelPicture.tile(GameData.part_model(part), ROW_PICTURE, TILE),
 			words,
 			Ui.width(_worn_note(StringName(part["slot"])) if Game.unlocked(part) else Ui.pill("Needs more space", LOCK_TEXT, LOCK_BG), 150),
 			Ui.pill("On the shelf: %d" % spare, Ui.GREEN_DARK if spare > 0 else Ui.MUTED, Ui.GREEN_SOFT if spare > 0 else TILE),
@@ -253,7 +255,9 @@ func _upgrades() -> Control:
 			"Fitted to %d printer%s" % [fitted, "" if fitted == 1 else "s"] if fitted > 0 else "Not fitted", Ui.MUTED, TILE)
 		var buy := _disabled_if(Ui.button("Buy", _buy.bind(order), BLUE, Ui.WHITE, 44, 14), problem != "")
 		buy.tooltip_text = problem
-		var cells: Array = [Ui.icon_tile("wrench", 52, 26, TILE, NAVY), words]
+		# A multicolour unit is shown as it looks on the printer.
+		var model: String = GameData.UNIT_MODEL % upgrade["multicolour"]["model"] if upgrade.has("multicolour") else GameData.part_model(upgrade)
+		var cells: Array = [ModelPicture.tile(model, ROW_PICTURE, TILE), words]
 		if not printers.is_empty() and could_fit == 0 and owned == 0 and fitted == 0:
 			cells.append(Ui.pill("Won't fit your printers", LOCK_TEXT, LOCK_BG))
 		cells.append_array([state, Ui.width(Ui.text(Money.format(int(upgrade["price_pence"])), 17, Ui.INK, 800), 70), buy])
@@ -284,7 +288,7 @@ func _dryers() -> Control:
 		words.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		var buy := _disabled_if(Ui.button("Buy", _buy.bind(order), BLUE, Ui.WHITE, 44, 14), problem != "")
 		buy.tooltip_text = problem
-		var cells: Array = [Ui.icon_tile("box", 52, 26, TILE, NAVY), words]
+		var cells: Array = [ModelPicture.tile(GameData.DRYER_MODEL % dryer["model"], ROW_PICTURE, TILE), words]
 		if owned:
 			cells.append(Ui.pill("You have this one", Ui.GREEN_DARK, Ui.GREEN_SOFT))
 		elif problem != "" and problem != "Not enough cash":

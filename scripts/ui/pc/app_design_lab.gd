@@ -191,7 +191,7 @@ func _card(product: StringName, row: Dictionary) -> Control:
 		Ui.pill("Sells for about %s" % Money.format(int(row["base_price_pence"])), FACT_TEXT, FACT_BG),
 	], 6)
 	var column := Ui.vbox([
-		Ui.hbox([Ui.icon_tile("design_lab", 52, 28, TILE, PURPLE_DARK), Ui.wrap(Ui.title(row["name"], 20))], 14),
+		Ui.hbox([Ui.panel(ModelPicture.of_product(product, 84), Ui.box(TILE, 14, 4, 4)), Ui.wrap(Ui.title(row["name"], 20))], 14),
 		Ui.wrap(Ui.text(row["description"], 13, Ui.MUTED)),
 		facts,
 	], 12)

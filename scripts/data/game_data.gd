@@ -23,6 +23,10 @@ const FAILURE_OUTCOMES: PackedStringArray = ["scrap", "stop", "degraded"]
 const SETTINGS := "res://data/game.json"
 ## Where the model of a multicolour unit is found.
 const UNIT_MODEL := "res://assets/models/printers/%s.glb"
+const PART_MODEL := "res://assets/models/parts/%s.glb"
+## What a kit with no model of its own is kept in: a multicolour unit, boxed until it is fitted.
+const PART_BOX := "res://assets/models/props/parts_box.glb"
+const DRYER_MODEL := "res://assets/models/props/%s.glb"
 const REVIEWS := "res://data/reviews.json"
 
 var printers: Dictionary = {}
@@ -107,6 +111,11 @@ func _load_table(table: String, path: String) -> Dictionary:
 	return by_id
 
 
+## The model file for a row of parts.json or upgrades.json, as it sits on the shelving.
+static func part_model(row: Dictionary) -> String:
+	return PART_MODEL % row["model"] if row.has("model") else PART_BOX
+
+
 func _check_references() -> void:
 	var slots := {}
 	for part: Dictionary in parts.values():
@@ -139,7 +148,12 @@ func _check_references() -> void:
 	var families := {}
 	for filament: Dictionary in filaments.values():
 		families[filament.get("family", "")] = true
+	for row: Dictionary in parts.values() + upgrades.values():
+		if not ResourceLoader.exists(part_model(row)):
+			errors.append("%s: no model \"%s\"" % [row["id"], row.get("model", "")])
 	for dryer: Dictionary in dryers.values():
+		if not ResourceLoader.exists(DRYER_MODEL % dryer.get("model", "")):
+			errors.append("dryer %s: no model \"%s\"" % [dryer["id"], dryer.get("model", "")])
 		for family: String in dryer.get("dries", []):
 			if not families.has(family):
 				errors.append("dryer %s: unknown filament family \"%s\"" % [dryer["id"], family])

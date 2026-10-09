@@ -1,9 +1,8 @@
 class_name SparePart
 extends Node3D
-## A box of spare parts or upgrade kits of one kind, kept on the shelving until
-## a printer needs one. Like a spool carries its grams, the box carries how many are left.
-
-const MODEL := preload("res://assets/models/props/parts_box.glb")
+## The spare parts or upgrade kits of one kind, kept on the shelving until a
+## printer needs one. Each kind has its own model (`model` in its data row).
+## Like a spool carries its grams, it carries how many are left.
 
 ## Id from data/parts.json or data/upgrades.json.
 var part: StringName
@@ -15,7 +14,7 @@ static func create(p_part: StringName, p_count := 1) -> SparePart:
 	box.part = p_part
 	box.count = p_count
 	box.name = "Spare_%s" % p_part
-	box.add_child(MODEL.instantiate())
+	box.add_child((load(GameData.part_model(Game.data.kit(p_part))) as PackedScene).instantiate())
 	return box
 
 
