@@ -32,8 +32,9 @@ Stored exactly as supplied on 2026-10-09. Don't edit them to match the game; cha
 
 - `size_mm` is measured from the product's model, scaled back down to real size.
 - `demand_per_day` comes from the size band (XS 3, S 2.5, M 2, L 1.5 for the cheapest design in the band) and falls for dearer designs, by the square root of the price ratio. Seasons and demand patterns are not applied yet, so seasonal products sell all year.
-- `licence` is a one-off fee of twice the typical price. `description` is the category name.
-- `OVERRIDES` in the script sets these per product where a rule is not good enough (the free starting design, hand-written descriptions).
+- `licence` is a one-off fee of twice the typical price.
+- `description` is written by hand in `data/import/product_descriptions.json`, one line per product id. A product with nothing there shows its category name, and the import lists it.
+- `OVERRIDES` in the script sets these per product where a rule is not good enough (the free starting design).
 
 These rules were set with `scripts/dev/balance_report.gd`; see `docs/balance_notes.md` before changing them.
 
