@@ -41,7 +41,7 @@ const OVERRIDES := {
 
 ## Field order in the output, and which numbers are written as whole numbers.
 const FIELDS: Array[String] = [
-	"id", "name", "category", "description", "unlock_tier", "filament_grams", "print_minutes", "size_mm",
+	"id", "name", "category", "category_name", "description", "unlock_tier", "filament_grams", "print_minutes", "size_mm",
 	"difficulty", "needs_supports", "colour_count", "allowed_filaments", "base_price_pence", "demand_per_day", "licence",
 ]
 const WHOLE: Array[String] = ["unlock_tier", "filament_grams", "print_minutes", "size_mm", "colour_count", "base_price_pence", "fee_pence"]
@@ -89,6 +89,7 @@ func _convert(entry: Dictionary) -> Dictionary:
 		"id": entry["id"],
 		"name": entry["name"],
 		"category": _slug(entry["category"]),
+		"category_name": entry["category"],
 		"description": entry["category"],
 		"unlock_tier": TIERS[entry["unlock_tier"]],
 		"filament_grams": entry["filament_g"],
@@ -133,6 +134,9 @@ func _real_size_mm(id: String) -> Array:
 func _write_row(row: Dictionary) -> String:
 	var lines: PackedStringArray = []
 	for field in FIELDS:
+		# Rows kept from before the catalogue do not have every field.
+		if not row.has(field):
+			continue
 		lines.append("\t\t\t\"%s\": %s" % [field, _write_value(field, row[field])])
 	return "\t\t{\n%s\n\t\t}" % ",\n".join(lines)
 
