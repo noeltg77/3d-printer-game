@@ -40,7 +40,7 @@ func _card(product: StringName, row: Dictionary) -> Control:
 	var facts := Ui.hbox([
 		Ui.pill(GameClock.duration_label(row["print_minutes"]), FACT_TEXT, FACT_BG),
 		Ui.pill("%d g" % row["filament_grams"], FACT_TEXT, FACT_BG),
-		Ui.pill("Sells for about %s" % Money.format(int(row["base_price_pence"]), Money.PRICE), FACT_TEXT, FACT_BG),
+		Ui.pill("Sells for about %s" % Money.format(int(row["base_price_pence"])), FACT_TEXT, FACT_BG),
 	], 6)
 	var column := Ui.vbox([
 		Ui.hbox([Ui.icon_tile("design_lab", 52, 28, TILE, PURPLE_DARK), Ui.title(row["name"], 20)], 14),
@@ -58,7 +58,7 @@ func _card(product: StringName, row: Dictionary) -> Control:
 		buy.disabled = not Game.bank.can_afford(fee)
 		action = buy
 	column.add_child(Ui.spacer())
-	column.add_child(Ui.hbox([Ui.title("Free" if fee == 0 else Money.format(fee, Money.PRICE), 22), null, action]))
+	column.add_child(Ui.hbox([Ui.title("Free" if fee == 0 else Money.format(fee), 22), null, action]))
 	var card := Ui.card(column, 22, 18, SHADOW)
 	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	return card

@@ -4,11 +4,10 @@ extends RefCounted
 ## files hold amounts in GBP as integer pence; the player's display currency
 ## (data/currencies.json) is applied only here, at the moment of showing it.
 ## Never write a currency symbol anywhere else.
-
-## Balances, costs and totals: converted and shown to the penny.
-const EXACT := &"exact"
-## Shop and listing prices: converted, then rounded to end in .49 or .99.
-const PRICE := &"price"
+##
+## Every amount is converted the same way, to the penny, so the price on a
+## shop card is exactly what appears on the bank statement. Prices are not
+## rounded to tidy endings in other currencies, because that would break it.
 
 const SOURCE := "res://data/currencies.json"
 const BASE := "GBP"
@@ -49,9 +48,9 @@ static func currency_for_locale(locale: String) -> String:
 
 ## An amount of GBP pence as text in the display currency:
 ## "£1,234.50", "-$3.00", "12,99 €".
-static func format(pence: int, kind: StringName = EXACT) -> String:
+static func format(pence: int) -> String:
 	var spec: Dictionary = currencies()[currency]
-	var amount := to_display(pence, kind)
+	var amount := to_display(pence)
 	var whole := str(absi(amount) / 100)
 	var grouped := ""
 	for index in whole.length():
@@ -65,20 +64,6 @@ static func format(pence: int, kind: StringName = EXACT) -> String:
 	return "%s%s%s" % [sign, spec["symbol"], number]
 
 
-## GBP pence converted to hundredths of the display currency, with the
-## rounding for `kind` applied.
-static func to_display(pence: int, kind: StringName = EXACT) -> int:
-	var amount := roundi(pence * float(currencies()[currency]["rate"]))
-	if kind == PRICE and amount != 0:
-		return signi(amount) * _charm(absi(amount))
-	return amount
-
-
-## The nearest amount ending in 49 or 99, never less than 49.
-static func _charm(amount: int) -> int:
-	var whole := amount / 100 * 100
-	var best := 49
-	for candidate: int in [whole - 1, whole + 49, whole + 99]:
-		if candidate >= 49 and absi(candidate - amount) < absi(best - amount):
-			best = candidate
-	return best
+## GBP pence converted to hundredths of the display currency.
+static func to_display(pence: int) -> int:
+	return roundi(pence * float(currencies()[currency]["rate"]))

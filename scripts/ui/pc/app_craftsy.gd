@@ -109,7 +109,7 @@ func _orders_card() -> Control:
 		due.minutes = order.due_at
 		var words := Ui.vbox([
 			Ui.text(Game.product_name(order.product), 15, Ui.INK, 800),
-			Ui.text("%s · Ship by day %d" % [Money.format(order.price, Money.PRICE), due.day], 13, LABEL),
+			Ui.text("%s · Ship by day %d" % [Money.format(order.price), due.day], 13, LABEL),
 		], 0)
 		words.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		rows.add_child(Ui.panel(Ui.hbox([
@@ -145,7 +145,7 @@ func _listing_row(product: StringName) -> Control:
 	toggle.tooltip_text = "Click to take it down" if listed else "Click to put it up for sale"
 	return _table_row([
 		Ui.text(Game.product_name(product), 15, Ui.INK, 800),
-		Ui.hbox([cheaper, Ui.width(Ui.text(Money.format(price, Money.PRICE), 15), 66),
+		Ui.hbox([cheaper, Ui.width(Ui.text(Money.format(price), 15), 66),
 			Ui.button("+", _update.bind(product, listed, price + PRICE_STEP), Ui.WHITE, Ui.INK, 30, 10)], 4),
 		Ui.text(Money.format(Game.unit_cost(product)), 15),
 		Ui.text(Money.format(profit), 15, Ui.GREEN_DARK if profit > 0 else Ui.RED_DARK, 800),
@@ -176,7 +176,7 @@ func _sales_card() -> Control:
 		when.minutes = order.shipped_at
 		var net := Game.unit_profit(order.product, order.price)
 		rows.add_child(Ui.panel(Ui.vbox([
-			Ui.hbox([Ui.text(Game.product_name(order.product), 14, Ui.INK, 800), null, Ui.text(Money.format(order.price, Money.PRICE), 14, Ui.GREEN_DARK, 800)]),
+			Ui.hbox([Ui.text(Game.product_name(order.product), 14, Ui.INK, 800), null, Ui.text(Money.format(order.price), 14, Ui.GREEN_DARK, 800)]),
 			Ui.text("Day %d · about %s profit" % [when.day, Money.format(net)], 13, LABEL),
 		], 2), Ui.box(ROW, 16, 14, 12)))
 	if shipped.is_empty():

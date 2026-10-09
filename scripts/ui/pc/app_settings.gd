@@ -33,7 +33,7 @@ func refresh() -> void:
 		Ui.wrap(Ui.text("Pick the money you think in. Prices, your balance and every total switch straight away. "
 			+ "The business itself runs in pounds underneath, so changing this never alters what anything costs or what you have earned.", 14, Ui.MUTED)),
 		options,
-		Ui.wrap(Ui.text("Shop and listing prices are rounded to a tidy .49 or .99 in your currency, so a price tag can differ by a few pennies from the exact amount on your bank statement.", 13, Ui.MUTED)),
+		Ui.wrap(Ui.text("The price you see is the price you pay: every amount is converted the same way, so a price tag always matches your bank statement.", 13, Ui.MUTED)),
 	], 16), 22, 24, SHADOW)
 	card.custom_minimum_size.x = 760
 	card.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN

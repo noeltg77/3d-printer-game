@@ -41,7 +41,7 @@ func _process(delta: float) -> void:
 		notify("Delivery arrived: %s" % delivery.describe())
 		changed.emit()
 	for order in market.tick(before, clock.minutes, rng):
-		notify("New order: %s for %s" % [product_name(order.product), Money.format(order.price, Money.PRICE)])
+		notify("New order: %s for %s" % [product_name(order.product), Money.format(order.price)])
 		changed.emit()
 	for order in market.expire(clock.minutes):
 		notify("Order #%d was cancelled: not dispatched in time" % order.id)

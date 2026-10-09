@@ -5,7 +5,7 @@ All content lives in `data/*.json` and is loaded by `scripts/data/game_data.gd`.
 Conventions:
 
 - `id` is a unique snake_case string and is how tables reference each other.
-- Money is an integer in GBP pence (`*_pence`), everywhere: data, simulation and saves. The player's display currency is applied only when an amount is shown, by `Money.format`. Give shop and listing prices a .49 or .99 ending so the price shown matches the amount charged.
+- Money is an integer in GBP pence (`*_pence`), everywhere: data, simulation and saves. The player's display currency is applied only when an amount is shown, by `Money.format`. Every amount converts exactly, so a price shown always equals the amount charged. Give shop and listing prices a .49 or .99 ending in the data so they look tidy in pounds; in other currencies they come out as whatever the rate gives.
 - Time is in game minutes (`*_minutes`). How long a game minute lasts in real time is a time scale question, not a data one.
 - Multipliers are relative to 1.0. Chances and ratings are 0.0 to 1.0.
 - `unlock_tier` is the progression tier (1 garage to 4 factory) where the entry first appears.

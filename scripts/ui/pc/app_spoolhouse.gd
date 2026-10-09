@@ -117,7 +117,7 @@ func _spool_card(colour: StringName) -> Control:
 		Ui.hbox([Ui.pill("PLA", Ui.PAPER, Ui.INK), null, Ui.text(BRAND, 12, Ui.MUTED)]),
 		Ui.title(Palette.display_name(colour), 17),
 		Ui.hbox([
-			Ui.text(Money.format(Game.supplier.spool_price(), Money.PRICE), 16, Ui.INK, 800), null,
+			Ui.text(Money.format(Game.supplier.spool_price()), 16, Ui.INK, 800), null,
 			Ui.button("Add", _add.bind(String(colour), 1)),
 		]),
 	], 8), 20, 14)
