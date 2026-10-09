@@ -28,7 +28,7 @@ A cosy isometric 3D printing business sim with a proper tycoon brain underneath.
 | Start | Empty garage and $300: enough for the cheap printer and some starter filament, nothing more |
 | Selling | Made to order or from stock. Orders arrive on listed designs, get packed at the workbench and are paid when the daily courier collects |
 | Design work | No minigame. Character sits at the PC for a set time to create their own version of an existing item |
-| Business UI | An in-game computer is the hub for all business screens |
+| Business UI | An in-game computer is the hub for all business screens. It runs "PlateOS": a desktop of apps (Spoolhouse for filament, Printbay for printers and parts, the Craftsy seller dashboard, Design Lab, PennyBank). `docs/mockups/pc_screens.html` sets the look for all UI |
 | Slicing | Simplified presets with a risk meter, not a full slicer |
 | Printer building | Out of scope. No custom printer assembly |
 | Brands | Parody names only, no real brands (e.g. no Bambu Lab) |

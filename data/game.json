@@ -6,10 +6,13 @@
 		"designs": ["cable_clips"],
 		"minute_of_day": 480
 	},
+	"bank_name": "PennyBank",
+	"business_name": "Garage Prints",
 	"electricity_cents_per_kwh": 30,
 	"courier_minute_of_day": 1020,
 	"supplier": {
-		"name": "PrintBits",
+		"filament_shop": "Spoolhouse",
+		"hardware_shop": "Printbay",
 		"filament_lead_minutes": 120,
 		"printer_lead_minutes": 180,
 		"packaging_name": "Mailer boxes",

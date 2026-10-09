@@ -15,6 +15,8 @@ class Order:
 	var price: int
 	var placed_at: float
 	var due_at: float
+	## When the courier took it, or -1 if it hasn't gone yet.
+	var shipped_at := -1.0
 	var status := Status.OPEN
 
 
@@ -105,8 +107,9 @@ func mark_packed(order: Order) -> void:
 
 ## Completes a sale. Returns what to put through the bank:
 ## { price, fee, royalty } in cents.
-func ship(order: Order) -> Dictionary:
+func ship(order: Order, minute := 0.0) -> Dictionary:
 	order.status = Status.SHIPPED
+	order.shipped_at = minute
 	listing(order.product)["sold"] += 1
 	return {"price": order.price, "fee": fee_for(order.price), "royalty": royalty_for(order.product, order.price)}
 

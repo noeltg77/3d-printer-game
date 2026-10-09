@@ -41,6 +41,7 @@ godot --headless --path . --script res://scripts/dev/validate_data.gd
 | `power_watts` | Drives electricity cost per print |
 | `upgrade_slots` | Upgrade kinds that can be fitted (upgrades table comes in Phase 4/6) |
 | `model` | Which asset generator, variant and colour builds its mesh |
+| `shop_colours` | `top`, `left`, `right` hex colours for the flat printer drawing on its shop card |
 
 ## filaments.json
 
@@ -91,7 +92,8 @@ Starting conditions and global rates. Not a table of rows.
 | `start.cash_cents`, `start.packaging`, `start.designs`, `start.minute_of_day` | What a new game begins with |
 | `electricity_cents_per_kwh` | Charged when a print finishes, from the printer's `power_watts` and the print time |
 | `courier_minute_of_day` | When parcels in the outbox are collected and paid |
-| `supplier` | Shop name, lead times in game minutes, and the packaging pack size and price |
+| `bank_name`, `business_name` | Names shown on the PC |
+| `supplier` | The filament and hardware shop names, lead times in game minutes, and the packaging pack size and price |
 
 One game day is 1440 game minutes and lasts 10 real minutes at 1x (`GameClock.MINUTES_PER_SECOND`).
 

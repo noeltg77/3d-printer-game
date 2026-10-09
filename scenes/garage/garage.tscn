@@ -30,7 +30,7 @@
 [ext_resource type="Script" path="res://scripts/world/delivery_zone.gd" id="31_delivery_zone"]
 [ext_resource type="Script" path="res://scripts/interaction/outbox.gd" id="32_outbox"]
 [ext_resource type="PackedScene" path="res://assets/models/props/outbox_mat.glb" id="33_outbox_mat"]
-[ext_resource type="Script" path="res://scripts/ui/pc_screen.gd" id="34_pc_screen"]
+[ext_resource type="Script" path="res://scripts/ui/pc/pc_screen.gd" id="34_pc_screen"]
 
 [sub_resource type="Environment" id="Environment_garage"]
 background_mode = 1

@@ -42,7 +42,7 @@ Checking gameplay without clicking: the `DevAutoplay` autoload (`scripts/dev/dev
 
 ```
 godot --headless --path . --script res://scripts/dev/run_tests.gd    # unit tests for simulation classes
-godot --path . res://scenes/garage/garage.tscn -- --time-scale=2 "--autoplay=Finisher 3>Load filament>Red;Finisher 3>Start print;wait>21;Finisher 3>Collect print" --shot=tools/previews/play.png --shot-times=4,12,30,45
+godot --path . res://scenes/garage/garage.tscn -- --time-scale=2 "--autoplay=call>place_supplier_order({\"printers\":{\"plodder_mini\":1},\"spools\":{\"red\":1}});wait>80;Delivery: 1 spool>Unpack;Delivery: Printer>Unpack;Plodder Mini>Load filament>Red;Plodder Mini>Print>Cable;shot>tools/previews/play.png;quit"
 ```
 
 ## Gameplay architecture
@@ -59,7 +59,17 @@ Control is semi-autonomous: the player clicks an object, picks from its action l
 - The `Game` autoload (`scripts/game/game.gd`) owns those objects, advances them each frame and emits `changed`, `notified`, `delivery_arrived` and `courier_arrived`. Scene nodes and UI read from `Game` and call its methods; they don't keep their own copies of cash, orders or designs.
 - Game speed is `Engine.time_scale` (set through `Game.set_speed`), so walking, animation, prints and timers all follow it. Durations in data are game minutes; convert with `GameClock.to_seconds`.
 - Physical stock is nodes, not counters: spools on the rack carry their own grams, finished prints sit in shelf slots, parcels sit on the outbox. Mailer boxes are the one counted stock (`Game.packaging`).
-- The PC is `PcScreen` (`scripts/ui/`), one script per tab, each rebuilding itself in `refresh()` from `Game`. `Ui` has the helpers for building rows and labels in code.
+- The PC is `PcScreen` (`scripts/ui/pc/`), a full-screen "PlateOS" desktop. Each app is one script (`app_*.gd`) that rebuilds itself in `refresh()` from `Game`; register new apps in `PcScreen.APPS`. While the PC is open the character is held (`Agent.held`), so jobs queued from an app start when the player leaves the desk.
+
+## UI look and feel
+
+`docs/mockups/pc_screens.html` is the visual source of truth for all UI (open it in a browser). Every screen, in the PC or over the 3D view, follows it: Fredoka headings, Nunito body text, cream cards with a flat offset shadow, chunky rounded buttons, warm accent colours, dark taskbar chips. Never ship a screen in Godot's default dark theme, even as a placeholder.
+
+- Build UI in code from `Ui` (`scripts/ui/ui.gd`): colour constants, `Ui.text` / `Ui.title`, `Ui.card`, `Ui.box`, `Ui.button`, `Ui.pill`, `Ui.bar`, `Ui.icon`, `Ui.hbox` / `Ui.vbox`. Add a helper there rather than styling a one-off.
+- Set `Ui.theme()` on the top control of each screen and on popup menus.
+- Icons are white line SVGs in `assets/ui/icons/`, tinted when used. Fonts are in `assets/fonts/` (see the README there about the licence files needed before release).
+- The base window is 1600 x 900. Lay screens out with containers so they stretch, not fixed positions.
+- Where a mock-up shows something from a later phase (reviews, part health, upgrades, print settings), leave it out or show an honest "not yet" state. Don't fill it with fake data.
 
 ## Art pipeline
 

@@ -22,6 +22,7 @@ var _menu_actions: Array[Action] = []
 
 func _ready() -> void:
 	_menu.id_pressed.connect(_on_action_chosen)
+	_style(_menu)
 	add_child(_menu)
 
 
@@ -94,6 +95,7 @@ func _add_actions(menu: PopupMenu, actions: Array[Action]) -> void:
 	for action in actions:
 		if not action.children.is_empty():
 			var submenu := PopupMenu.new()
+			_style(submenu)
 			submenu.id_pressed.connect(_on_action_chosen)
 			menu.add_submenu_node_item(action.label, submenu)
 			_add_actions(submenu, action.children)
@@ -102,6 +104,13 @@ func _add_actions(menu: PopupMenu, actions: Array[Action]) -> void:
 			_menu_actions.append(action)
 			menu.add_item(action.label, id)
 			menu.set_item_disabled(menu.get_item_index(id), not action.enabled)
+
+
+## Gives a menu the shared look. The window must be transparent for the
+## rounded corners of the panel to show.
+func _style(menu: PopupMenu) -> void:
+	menu.theme = Ui.theme()
+	menu.transparent_bg = true
 
 
 func _on_action_chosen(id: int) -> void:

@@ -2,9 +2,9 @@
 	"schema_version": 1,
 	"printers": [
 		{
-			"id": "finisher_3",
-			"name": "Finisher 3",
-			"brand": "Crudeality",
+			"id": "plodder_mini",
+			"name": "Plodder Mini",
+			"brand": "Plodder",
 			"description": "Cheap, loud, open-frame bed slinger. Everyone's first printer.",
 			"unlock_tier": 1,
 			"kind": "fdm",
@@ -20,13 +20,14 @@
 			"supported_filaments": ["pla", "petg"],
 			"power_watts": 120,
 			"upgrade_slots": ["nozzle", "enclosure", "auto_bed_levelling"],
-			"model": { "generator": "printers", "variant": "open_frame", "colour": "charcoal" }
+			"model": { "generator": "printers", "variant": "open_frame", "colour": "charcoal" },
+			"shop_colours": { "top": "#D9DEE6", "left": "#A9B3C2", "right": "#C3CBD7" }
 		},
 		{
-			"id": "kernel_one",
-			"name": "Kernel One",
-			"brand": "Proosa",
-			"description": "Enclosed core XY workhorse. Dependable, and it knows it.",
+			"id": "zippy_x1",
+			"name": "Zippy X1",
+			"brand": "Zippy",
+			"description": "Fast enclosed core XY. The one everybody upgrades to.",
 			"unlock_tier": 2,
 			"kind": "fdm",
 			"motion": "core_xy",
@@ -41,7 +42,8 @@
 			"supported_filaments": ["pla", "petg", "abs"],
 			"power_watts": 200,
 			"upgrade_slots": ["nozzle", "multicolour_unit"],
-			"model": { "generator": "printers", "variant": "enclosed", "colour": "orange" }
+			"model": { "generator": "printers", "variant": "enclosed", "colour": "orange" },
+			"shop_colours": { "top": "#CFE0FF", "left": "#5D86D6", "right": "#7FA2E6" }
 		}
 	]
 }

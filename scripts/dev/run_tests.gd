@@ -100,7 +100,7 @@ func _test_marketplace() -> void:
 func _test_supplier() -> void:
 	var data := GameData.load_all()
 	var supplier := Supplier.new(data)
-	var basket := {"printers": {"finisher_3": 1}, "spools": {"red": 2, "white": 1}, "packaging": 1}
+	var basket := {"printers": {"plodder_mini": 1}, "spools": {"red": 2, "white": 1}, "packaging": 1}
 	_check(supplier.price_of(basket) == 15900 + 3 * 1600 + 500, "basket price adds printers, spools and packaging")
 	var placed := supplier.place(basket, 100.0)
 	_check(placed.size() == 2, "a printer ships separately from supplies")
@@ -108,5 +108,5 @@ func _test_supplier() -> void:
 	var first := supplier.collect_due(100.0 + 120.0)
 	_check(first.size() == 1 and first[0].spools.size() == 3 and first[0].packaging == 10, "supplies arrive first, with every spool and a full pack")
 	var second := supplier.collect_due(100.0 + 180.0)
-	_check(second.size() == 1 and second[0].printer == &"finisher_3", "the printer arrives after its longer lead time")
+	_check(second.size() == 1 and second[0].printer == &"plodder_mini", "the printer arrives after its longer lead time")
 	_check(supplier.pending.is_empty(), "collected deliveries are no longer pending")

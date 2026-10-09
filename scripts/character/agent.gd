@@ -16,10 +16,18 @@ const TURN_SPEED := 10.0
 const SEAT_TIME := 0.3
 
 signal _arrived
+signal _released
 
 var current_label := ""
 var carried: Node3D = null
 var seated := false
+## While true, queued tasks wait. The PC holds the character in the chair so
+## jobs can be lined up from the screen and start when it is closed.
+var held := false:
+	set(value):
+		held = value
+		if not held:
+			_released.emit()
 
 var _queue: Array[Action] = []
 var _busy := false
@@ -156,6 +164,10 @@ func stand_up() -> void:
 func _run_queue() -> void:
 	_busy = true
 	while not _queue.is_empty():
+		if held:
+			current_label = ""
+			status_changed.emit()
+			await _released
 		var action: Action = _queue.pop_front()
 		current_label = action.get_task_name()
 		status_changed.emit()

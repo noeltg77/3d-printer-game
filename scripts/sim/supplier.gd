@@ -9,6 +9,8 @@ extends RefCounted
 class Delivery:
 	extends RefCounted
 	var arrive_at: float
+	## Name of the shop it was ordered from.
+	var shop := ""
 	## Empty unless this is a printer box.
 	var printer: StringName = &""
 	## One palette colour name per spool.
@@ -66,9 +68,10 @@ static func count_printers(basket: Dictionary) -> int:
 
 
 ## Turns a basket into pending deliveries. Paying for it is the caller's job.
-func place(basket: Dictionary, minute: float) -> Array[Delivery]:
+func place(basket: Dictionary, minute: float, shop := "") -> Array[Delivery]:
 	var placed: Array[Delivery] = []
 	var supplies := Delivery.new()
+	supplies.shop = shop
 	supplies.arrive_at = minute + float(_config()["filament_lead_minutes"])
 	for colour: String in basket.get("spools", {}):
 		for i in int(basket["spools"][colour]):
@@ -79,6 +82,7 @@ func place(basket: Dictionary, minute: float) -> Array[Delivery]:
 	for printer_id: String in basket.get("printers", {}):
 		for i in int(basket["printers"][printer_id]):
 			var box := Delivery.new()
+			box.shop = shop
 			box.arrive_at = minute + float(_config()["printer_lead_minutes"])
 			box.printer = StringName(printer_id)
 			placed.append(box)

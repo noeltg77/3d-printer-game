@@ -112,14 +112,36 @@ func supplier_problem(basket: Dictionary) -> String:
 	return ""
 
 
-## Pays for a basket and schedules its deliveries. False if it can't be ordered.
-func place_supplier_order(basket: Dictionary) -> bool:
+## Pays for a basket and schedules its deliveries. `shop` is the name of the
+## shop it was bought from. False if it can't be ordered.
+func place_supplier_order(basket: Dictionary, shop := "") -> bool:
 	if supplier_problem(basket) != "":
 		return false
-	bank.spend(supplier.price_of(basket), "%s order" % data.settings["supplier"]["name"], clock.minutes)
-	supplier.place(basket, clock.minutes)
+	if shop == "":
+		shop = data.settings["supplier"]["hardware_shop"]
+	bank.spend(supplier.price_of(basket), "%s order" % shop, clock.minutes)
+	supplier.place(basket, clock.minutes, shop)
+	notify("Order placed with %s" % shop)
 	changed.emit()
 	return true
+
+
+## What one unit of a design costs to make and send: filament, electricity on
+## the starter printer, and a mailer box.
+func unit_cost(product: StringName) -> int:
+	var row: Dictionary = data.products[product]
+	var pla: Dictionary = data.filaments["pla"]
+	var config: Dictionary = data.settings["supplier"]
+	var printer: Dictionary = data.printers.values()[0]
+	var filament := float(row["filament_grams"]) / 1000.0 * float(pla["price_cents_per_kg"])
+	var kwh := float(printer["power_watts"]) / 1000.0 * float(row["print_minutes"]) / 60.0
+	var mailer := float(config["packaging_pack_cents"]) / float(config["packaging_pack_size"])
+	return roundi(filament + kwh * float(data.settings["electricity_cents_per_kwh"]) + mailer)
+
+
+## What is left from one sale at `price` after costs, marketplace fees and royalty.
+func unit_profit(product: StringName, price: int) -> int:
+	return price - unit_cost(product) - market.fee_for(price) - market.royalty_for(product, price)
 
 
 ## Finished items of a design on the shelves.
@@ -130,7 +152,7 @@ func stock_of(product: StringName) -> int:
 
 ## Takes payment for a dispatched order, less the marketplace's cut.
 func complete_sale(order: Marketplace.Order) -> void:
-	var sale := market.ship(order)
+	var sale := market.ship(order, clock.minutes)
 	var market_name: String = market.config["name"]
 	bank.earn(sale["price"], "Sale: %s (%s)" % [product_name(order.product), market_name], clock.minutes)
 	bank.charge(sale["fee"], "%s fees" % market_name, clock.minutes)
