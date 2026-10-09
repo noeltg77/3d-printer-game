@@ -110,3 +110,36 @@ def limb(builder, start, end, radius, radius_end=None, segments=6):
     builder.cylinder(
         radius, span.length, tuple((start + end) / 2), COLOUR, segments=segments,
         rotation=tuple(span.to_track_quat("Z", "Y").to_euler()), radius_top=radius_end)
+
+
+def gear_points(teeth, radius, depth=0.22, turn=0.0):
+    """Outline of a gear with pointed teeth, anticlockwise: `radius` at the tips,
+    `depth` the share of it the teeth cut in."""
+    return [
+        ((radius if index % 2 == 0 else radius * (1.0 - depth)) * math.cos(turn + math.pi * index / teeth),
+         (radius if index % 2 == 0 else radius * (1.0 - depth)) * math.sin(turn + math.pi * index / teeth))
+        for index in range(teeth * 2)
+    ]
+
+
+def gear(builder, teeth, radius, thickness, centre=(0.0, 0.0, 0.0), turn=0.0, boss=0.0):
+    """Gear lying flat, standing on `centre`. `boss` is the radius of a raised hub, if any."""
+    builder.plate(gear_points(teeth, radius, turn=turn), thickness, COLOUR, centre=centre)
+    if boss > 0.0:
+        builder.cylinder(boss, thickness * 0.5, (centre[0], centre[1], centre[2] + thickness * 1.25), COLOUR, segments=6)
+
+
+def hoop(builder, radius, thick, depth, centre, pieces=8, start=0.0, sweep=math.tau):
+    """Upright ring, or part of one, built from blocks: bearing mounts, arches, shrouds.
+
+    Stands in the x-z plane round `centre`, `depth` thick front to back. `radius`
+    is to the middle of the band. `start` and `sweep` (radians, anticlockwise from
+    +X) pick an arc; the default is the whole ring.
+    """
+    step = sweep / pieces
+    length = 2.0 * (radius + thick / 2) * math.tan(step / 2)
+    for index in range(pieces):
+        angle = start + (index + 0.5) * step
+        builder.box(
+            (length, depth, thick), (centre[0] + radius * math.cos(angle), centre[1], centre[2] + radius * math.sin(angle)),
+            COLOUR, rotation=(0, -(angle + math.pi / 2), 0))

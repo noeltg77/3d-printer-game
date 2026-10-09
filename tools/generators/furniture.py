@@ -88,6 +88,9 @@ def _filament_rack(builder, args, rng):
         z = 0.14 + tier * 0.32
         for y in (-rail_gap, rail_gap):
             builder.cylinder(rail_radius, width - 0.03, (0, y, z), "charcoal", segments=6, axis="X")
+        # A bar across each end frame carries the rails, or they hang in mid-air between the posts.
+        for x in (-1, 1):
+            builder.box((0.03, depth, 0.03), (x * (width / 2 - 0.015), 0, z), "charcoal")
         builder.cylinder(0.008, width - 0.03, (0, depth / 2 - 0.015, z + 0.15), "charcoal", segments=6, axis="X")
         for index in range(per_tier):
             x = (index - (per_tier - 1) / 2) * pitch

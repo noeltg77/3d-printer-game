@@ -140,12 +140,12 @@ func tick(from_minute: float, to_minute: float, rng: RandomNumberGenerator, desi
 func offer(minute: float, rng: RandomNumberGenerator, designs: Array[StringName], tier: int) -> Contract:
 	var able: Array[Dictionary] = []
 	for client: Dictionary in data.clients.values():
-		if int(client["unlock_tier"]) <= tier and not wanted_by(client, designs).is_empty():
+		if int(client["unlock_tier"]) <= tier and not wanted_by(client, designs, tier).is_empty():
 			able.append(client)
 	if able.is_empty():
 		return null
 	var client: Dictionary = able[rng.randi() % able.size()]
-	var choices := wanted_by(client, designs)
+	var choices := wanted_by(client, designs, tier)
 	var product: StringName = choices[rng.randi() % choices.size()]
 	var row: Dictionary = data.products[product]
 	var contract := Contract.new()
@@ -175,14 +175,15 @@ func offer(minute: float, rng: RandomNumberGenerator, designs: Array[StringName]
 
 
 ## The designs a client might ask for: those the business owns in the client's
-## categories, and the ones the client brings itself.
-func wanted_by(client: Dictionary, designs: Array[StringName]) -> Array[StringName]:
+## categories, and the ones the client brings itself, if the business has
+## grown to the `tier` they are made for.
+func wanted_by(client: Dictionary, designs: Array[StringName], tier: int) -> Array[StringName]:
 	var found: Array[StringName] = []
 	for design in designs:
 		if data.products.has(design) and client["categories"].has(data.products[design]["category"]):
 			found.append(design)
 	for supplied: String in client.get("supplies", []):
-		if data.products.has(supplied) and not found.has(StringName(supplied)):
+		if data.products.has(supplied) and int(data.products[supplied]["unlock_tier"]) <= tier and not found.has(StringName(supplied)):
 			found.append(StringName(supplied))
 	return found
 

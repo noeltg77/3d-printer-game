@@ -184,13 +184,18 @@ class MeshBuilder:
         ]
         return self._skin(loops, colour)
 
-    def plate(self, points, thickness, colour, centre=(0.0, 0.0, 0.0)):
+    def plate(self, points, thickness, colour, centre=(0.0, 0.0, 0.0), upright=False):
         """Flat solid cut to a 2D outline: silhouettes, templates, tags.
 
-        `points` are (x, y) pairs in order, anticlockwise seen from above.
+        `points` are (x, y) pairs in order, anticlockwise seen from above, and the
+        plate lies on `centre`. With `upright` they are (x, z) pairs instead: the
+        plate stands in the x-z plane, its thickness centred on `centre` front to back.
         """
         origin = Vector(centre)
-        loops = [[self.bm.verts.new(origin + Vector((x, y, z))) for x, y in points] for z in (0.0, thickness)]
+        if upright:
+            loops = [[self.bm.verts.new(origin + Vector((x, y, z))) for x, z in points] for y in (-thickness / 2, thickness / 2)]
+        else:
+            loops = [[self.bm.verts.new(origin + Vector((x, y, z))) for x, y in points] for z in (0.0, thickness)]
         return self._skin(loops, colour)
 
     def outline(self, points, height, wall, colour, centre=(0.0, 0.0, 0.0)):
@@ -251,6 +256,11 @@ class MeshBuilder:
         matrix = _transform(centre, rotation) @ Matrix.Diagonal((*scale, 1.0))
         bmesh.ops.transform(self.bm, matrix=matrix, verts=verts)
         return self._paint_new(before, colour)
+
+    def enlarge(self, factor):
+        """Scales everything built so far about the origin. For small parts that are
+        easier to lay out at real proportions and then bring up to a readable size."""
+        bmesh.ops.scale(self.bm, vec=(factor, factor, factor), verts=self.bm.verts)
 
     def paint(self, faces, colour, facing=None):
         """Recolours faces. With `facing`, only those whose normal points that way."""
@@ -443,4 +453,5 @@ def run(module, argv=None):
     module.build(args, random.Random(args.seed))
     export_glb(args.out)
     if not args.no_preview:
-        render_preview(PREVIEW_DIR / f"{args.out.stem}.png")
+        # A module can ask for a bigger render if its asset is a whole scene.
+        render_preview(PREVIEW_DIR / f"{args.out.stem}.png", resolution=getattr(module, "PREVIEW_RESOLUTION", 512))

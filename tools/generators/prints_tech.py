@@ -109,6 +109,92 @@ def _cable_comb_set(builder):
             builder.box((0.008, 0.024, 0.008), (x, y - 0.004, 0.004), COLOUR)
 
 
+# Tech accessories, Spare room tier
+
+def _phone_case_custom(builder):
+    """Phone case lying open side up, with a raised surround for the camera at one corner."""
+    builder.tray((0.08, 0.16, 0.014), 0.004, COLOUR, floor=0.003, chamfer=0.003)
+    builder.outline([(-0.03, 0.035), (-0.004, 0.035), (-0.004, 0.068), (-0.03, 0.068)], 0.008, 0.004, COLOUR)
+
+
+def _earbuds_case_cover(builder):
+    """Rounded pebble-shaped cover with a seam round the middle and a loop for a clip."""
+    builder.ball(0.034, (0, 0, 0.0244), COLOUR, scale=(1.0, 0.75, 0.72))
+    builder.cylinder(0.034, 0.004, (0, 0, 0.026), COLOUR, segments=10)
+    builder.shell(0.01, 0.006, 0.004, COLOUR, segments=6, centre=(0.042, 0, 0.02), open_base=True)
+    builder.enlarge(1.5)
+
+
+def _smart_speaker_wall_mount(builder):
+    """Wall plate with a round cradle on a braced arm for a small speaker to sit in."""
+    builder.box((0.1, 0.012, 0.13), (0, 0.07, 0.065), COLOUR, bevel=0.004)
+    builder.shell(0.055, 0.022, 0.008, COLOUR, segments=10, centre=(0, 0.008, 0.03), open_base=True)
+    builder.box((0.03, 0.03, 0.012), (0, 0.056, 0.036), COLOUR)
+    print_shapes.strut(builder, (0, 0.064, 0.008), (0, 0.02, 0.03), 0.012)
+
+
+def _router_wall_mount(builder):
+    """Wall plate with an L-shaped claw at each corner that grips the edges of a router."""
+    builder.box((0.2, 0.012, 0.13), (0, 0.03, 0.065), COLOUR, bevel=0.004)
+    for x, z in print_shapes.grid(2, 2, 0.16, 0.09):
+        builder.box((0.022, 0.04, 0.012), (x, 0.006, 0.065 + z), COLOUR)
+        builder.box((0.022, 0.01, 0.026), (x, -0.012, 0.065 + z * 0.84), COLOUR)
+
+
+def _cable_strain_relief_x10(builder):
+    """Ten little tapered sleeves in two rows."""
+    for x, y in print_shapes.grid(5, 2, 0.028, 0.03):
+        builder.cylinder(0.01, 0.026, (x, y, 0.013), COLOUR, segments=6, radius_top=0.005)
+    builder.enlarge(1.2)
+
+
+def _laptop_vent_stand(builder):
+    """Sloping stand: two side rails rising to the back, slats across them and a lip at the front."""
+    for side in (-1, 1):
+        x = side * 0.12
+        builder.box((0.016, 0.2, 0.012), (x, 0, 0.006), COLOUR)
+        builder.box((0.016, 0.016, 0.075), (x, 0.092, 0.0375), COLOUR)
+        print_shapes.strut(builder, (x, -0.095, 0.012), (x, 0.095, 0.07), 0.014)
+    for index in range(5):
+        along = (index + 0.5) / 5
+        builder.box((0.256, 0.016, 0.008), (0, -0.095 + along * 0.19, 0.022 + along * 0.058), COLOUR, rotation=(math.radians(17), 0, 0))
+    builder.box((0.256, 0.01, 0.022), (0, -0.098, 0.022), COLOUR)
+
+
+def _phone_grip_ring(builder):
+    """Round sticky base with a finger ring standing up from it."""
+    builder.cylinder(0.022, 0.005, (0, 0, 0.0025), COLOUR, segments=8)
+    print_shapes.hoop(builder, 0.016, 0.005, 0.008, (0, 0, 0.022))
+    builder.enlarge(1.8)
+
+
+def _tablet_wall_mount(builder):
+    """Wall plate with a ledge along the bottom and a grip either side for a tablet to slide into."""
+    builder.box((0.19, 0.01, 0.13), (0, 0.02, 0.065), COLOUR, bevel=0.004)
+    builder.box((0.19, 0.03, 0.01), (0, 0.004, 0.012), COLOUR)
+    builder.box((0.19, 0.008, 0.024), (0, -0.008, 0.019), COLOUR)
+    for side in (-1, 1):
+        builder.box((0.01, 0.03, 0.07), (side * 0.092, 0.004, 0.06), COLOUR)
+        builder.box((0.018, 0.008, 0.07), (side * 0.086, -0.008, 0.06), COLOUR)
+
+
+def _mini_pc_wall_bracket(builder):
+    """Deep cradle for a small computer: a wall plate, a floor, a front lip and a strap up each side."""
+    builder.box((0.16, 0.012, 0.13), (0, 0.045, 0.065), COLOUR, bevel=0.004)
+    builder.box((0.16, 0.08, 0.012), (0, 0.0, 0.006), COLOUR)
+    builder.box((0.16, 0.01, 0.04), (0, -0.036, 0.03), COLOUR)
+    for side in (-1, 1):
+        builder.box((0.012, 0.08, 0.09), (side * 0.074, 0.0, 0.055), COLOUR, taper=(1.0, 0.5))
+
+
+def _screen_corner_protectors_x4(builder):
+    """Four L-shaped corner pieces."""
+    corner = [(-0.02, -0.02), (0.02, -0.02), (0.02, -0.008), (-0.008, -0.008), (-0.008, 0.02), (-0.02, 0.02)]
+    for x, y in print_shapes.grid(2, 2, 0.05, 0.05):
+        builder.plate(corner, 0.018, COLOUR, centre=(x, y, 0))
+    builder.enlarge(1.3)
+
+
 VARIANTS = {
     "controller_wall_mount_x2": _controller_wall_mount_x2,
     "controller_stand": _controller_stand,
@@ -120,6 +206,16 @@ VARIANTS = {
     "smartwatch_charging_stand": _smartwatch_charging_stand,
     "console_vertical_stand": _console_vertical_stand,
     "cable_comb_set": _cable_comb_set,
+    "phone_case_custom": _phone_case_custom,
+    "earbuds_case_cover": _earbuds_case_cover,
+    "smart_speaker_wall_mount": _smart_speaker_wall_mount,
+    "router_wall_mount": _router_wall_mount,
+    "cable_strain_relief_x10": _cable_strain_relief_x10,
+    "laptop_vent_stand": _laptop_vent_stand,
+    "phone_grip_ring": _phone_grip_ring,
+    "tablet_wall_mount": _tablet_wall_mount,
+    "mini_pc_wall_bracket": _mini_pc_wall_bracket,
+    "screen_corner_protectors_x4": _screen_corner_protectors_x4,
 }
 
 if __name__ == "__main__":

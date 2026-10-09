@@ -58,8 +58,9 @@ func _init() -> void:
 		elif arg == "--designs=all":
 			_all_designs = true
 	_data = GameData.load_all()
+	# This is the garage, so only designs on sale there count.
 	for product: String in _data.products:
-		if not _data.products[product].get("contract_only", false):
+		if int(_data.products[product]["unlock_tier"]) <= 1 and not _data.products[product].get("contract_only", false):
 			_wishlist.append(_figures(product))
 	_wishlist.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return a["per_hour"] > b["per_hour"])
 	print("Garage balance: %d runs of %d game days each (one day is 10 minutes of play at 1x)\n" % [_runs, _days])

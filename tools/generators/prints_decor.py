@@ -128,6 +128,105 @@ def _light_switch_cover(builder):
         builder.cylinder(0.007, 0.004, (side * 0.04, 0, 0.013), COLOUR, segments=6)
 
 
+# Home decor, Spare room tier
+
+def _vase_mode_vase_tall(builder):
+    """Tall vase: a body that swells out, draws in at the shoulder and opens again at the neck."""
+    builder.cylinder(0.04, 0.1, (0, 0, 0.05), COLOUR, segments=10, radius_top=0.062)
+    builder.cylinder(0.062, 0.08, (0, 0, 0.14), COLOUR, segments=10, radius_top=0.034)
+    builder.shell(0.034, 0.07, 0.005, COLOUR, segments=10, centre=(0, 0, 0.176), radius_top=0.048, open_base=True)
+
+
+def _self_watering_mini_planter(builder):
+    """Square reservoir with a taller square pot sitting in it and a filling spout at one corner."""
+    builder.tray((0.12, 0.12, 0.05), 0.007, COLOUR, chamfer=0.004)
+    builder.tray((0.092, 0.092, 0.085), 0.006, COLOUR, centre=(0, 0, 0.022), taper=0.008)
+    builder.box((0.026, 0.026, 0.04), (0.055, -0.055, 0.04), COLOUR, rotation=(0, 0, math.pi / 4))
+
+
+def _low_poly_animal_head_wall(builder):
+    """Stag's head on a shield-shaped wall plaque: neck, head, muzzle, ears and branching antlers."""
+    builder.plate([(-0.07, 0.07), (0, 0.0), (0.07, 0.07), (0.07, 0.2), (-0.07, 0.2)], 0.012, COLOUR, centre=(0, 0.07, 0), upright=True)
+    print_shapes.limb(builder, (0, 0.064, 0.1), (0, 0.0, 0.15), 0.034, 0.026, segments=6)
+    builder.box((0.05, 0.06, 0.05), (0, -0.02, 0.165), COLOUR, taper=(0.8, 0.8))
+    builder.box((0.028, 0.045, 0.026), (0, -0.065, 0.152), COLOUR, taper=(0.8, 0.8))
+    for side in (-1, 1):
+        builder.box((0.02, 0.008, 0.03), (side * 0.034, -0.005, 0.185), COLOUR, taper=0.2)
+        print_shapes.strut(builder, (side * 0.016, -0.005, 0.185), (side * 0.07, 0.01, 0.26), 0.009)
+        print_shapes.strut(builder, (side * 0.045, 0.003, 0.225), (side * 0.035, -0.03, 0.262), 0.007)
+        print_shapes.strut(builder, (side * 0.062, 0.008, 0.248), (side * 0.105, 0.0, 0.272), 0.007)
+
+
+def _candle_holder(builder):
+    """Candlestick: a wide foot, a slim stem, a drip tray and a cup for the candle."""
+    builder.cylinder(0.055, 0.014, (0, 0, 0.007), COLOUR, segments=10, radius_top=0.045)
+    builder.cylinder(0.014, 0.09, (0, 0, 0.058), COLOUR, segments=8, radius_top=0.01)
+    builder.cylinder(0.04, 0.008, (0, 0, 0.106), COLOUR, segments=10)
+    builder.shell(0.022, 0.03, 0.005, COLOUR, segments=8, centre=(0, 0, 0.108))
+
+
+def _picture_frame(builder):
+    """Standing picture frame with a block at each corner and a prop behind."""
+    builder.box((0.15, 0.006, 0.11), (0, 0, 0.073), COLOUR)
+    for z in (0.009, 0.137):
+        builder.box((0.17, 0.014, 0.018), (0, 0, z), COLOUR)
+    for side in (-1, 1):
+        builder.box((0.018, 0.014, 0.146), (side * 0.085, 0, 0.073), COLOUR)
+        for z in (0.011, 0.135):
+            builder.box((0.026, 0.02, 0.026), (side * 0.085, 0, z + 0.002), COLOUR)
+    print_shapes.strut(builder, (0, 0.004, 0.1), (0, 0.07, 0.007), 0.012)
+
+
+def _mirror_frame(builder):
+    """Round frame standing on two feet, with a flat back for the mirror glass."""
+    print_shapes.hoop(builder, 0.11, 0.022, 0.022, (0, 0, 0.126), pieces=10)
+    builder.cylinder(0.105, 0.006, (0, 0.006, 0.126), COLOUR, segments=10, axis="Y")
+    for side in (-1, 1):
+        builder.box((0.03, 0.08, 0.012), (side * 0.05, 0, 0.006), COLOUR)
+
+
+def _trinket_dish(builder):
+    """Shallow seven-sided dish that flares from a small foot."""
+    builder.shell(0.04, 0.026, 0.006, COLOUR, segments=7, radius_top=0.068, chamfer=0.003)
+
+
+def _bud_vase_set_x3(builder):
+    """Three small vases for single stems: a squat one, a tall one and a cone, each with an open neck."""
+    for x, low, high, height in ((-0.06, 0.03, 0.02, 0.045), (0.0, 0.02, 0.026, 0.085), (0.06, 0.032, 0.012, 0.06)):
+        builder.cylinder(low, height, (x, 0, height / 2), COLOUR, segments=6, radius_top=high)
+        builder.shell(min(high, 0.016), 0.03, 0.004, COLOUR, segments=6, centre=(x, 0, height - 0.004), radius_top=0.016, open_base=True)
+
+
+def _hanging_lamp_shade(builder):
+    """Large pendant shade in three stepped tiers under a collar for the fitting."""
+    builder.cylinder(0.14, 0.05, (0, 0, 0.025), COLOUR, segments=10, radius_top=0.12)
+    builder.cylinder(0.11, 0.05, (0, 0, 0.07), COLOUR, segments=10, radius_top=0.085)
+    builder.cylinder(0.075, 0.045, (0, 0, 0.115), COLOUR, segments=10, radius_top=0.045)
+    builder.cylinder(0.028, 0.03, (0, 0, 0.15), COLOUR, segments=8)
+
+
+def _incense_holder(builder):
+    """Long narrow ash tray with a raised block at one end that holds the stick."""
+    builder.tray((0.2, 0.04, 0.012), 0.005, COLOUR, floor=0.005)
+    builder.box((0.022, 0.03, 0.022), (-0.085, 0, 0.011), COLOUR, taper=(0.5, 0.8))
+
+
+def _door_stop(builder):
+    """Plain wedge with grip ridges across the slope."""
+    builder.plate([(-0.085, 0.0), (0.085, 0.0), (0.085, 0.048), (-0.085, 0.006)], 0.055, COLOUR, upright=True)
+    for x, z in ((-0.03, 0.021), (0.01, 0.031), (0.05, 0.041)):
+        builder.box((0.008, 0.055, 0.006), (x, 0, z), COLOUR, rotation=(0, math.radians(-14), 0))
+
+
+def _window_plant_shelf(builder):
+    """Shelf with a front rail, held up by a braced bracket at each end."""
+    builder.box((0.28, 0.11, 0.012), (0, 0, 0.114), COLOUR, bevel=0.004)
+    builder.box((0.28, 0.008, 0.02), (0, -0.051, 0.13), COLOUR)
+    for side in (-1, 1):
+        builder.box((0.014, 0.014, 0.11), (side * 0.11, 0.045, 0.055), COLOUR)
+        print_shapes.strut(builder, (side * 0.11, 0.045, 0.012), (side * 0.11, -0.04, 0.108), 0.012)
+
+
 VARIANTS = {
     "low_poly_planter": _low_poly_planter,
     "lithophane_photo_panel": _lithophane_photo_panel,
@@ -141,6 +240,18 @@ VARIANTS = {
     "plant_mister_holder": _plant_mister_holder,
     "curtain_tie_backs_pair": _curtain_tie_backs_pair,
     "light_switch_cover": _light_switch_cover,
+    "vase_mode_vase_tall": _vase_mode_vase_tall,
+    "self_watering_mini_planter": _self_watering_mini_planter,
+    "low_poly_animal_head_wall": _low_poly_animal_head_wall,
+    "candle_holder": _candle_holder,
+    "picture_frame": _picture_frame,
+    "mirror_frame": _mirror_frame,
+    "trinket_dish": _trinket_dish,
+    "bud_vase_set_x3": _bud_vase_set_x3,
+    "hanging_lamp_shade": _hanging_lamp_shade,
+    "incense_holder": _incense_holder,
+    "door_stop": _door_stop,
+    "window_plant_shelf": _window_plant_shelf,
 }
 
 if __name__ == "__main__":

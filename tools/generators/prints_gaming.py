@@ -159,6 +159,44 @@ def _retro_console_cartridge_holder(builder):
     print_shapes.divided_tray(builder, (0.26, 0.13, 0.055), 0.008, along=5, chamfer=0.004)
 
 
+# Gaming and tabletop, Spare room tier
+
+def _board_game_insert_organiser(builder):
+    """Box insert with wells of different sizes: two for cards, a long one for the board bits and four small ones."""
+    builder.tray((0.3, 0.24, 0.045), 0.007, COLOUR, chamfer=0.004)
+    builder.box((0.286, 0.006, 0.041), (0, 0.02, 0.0205), COLOUR)
+    builder.box((0.006, 0.1, 0.041), (0, 0.068, 0.0205), COLOUR)
+    builder.box((0.286, 0.006, 0.041), (0, -0.055, 0.0205), COLOUR)
+    for x in (-0.072, 0.0, 0.072):
+        builder.box((0.006, 0.062, 0.041), (x, -0.086, 0.0205), COLOUR)
+
+
+def _wargaming_terrain_hills_x3(builder):
+    """Three stepped hills of different sizes, each a wide irregular base with a smaller flat top."""
+    for x, y, size, turn in ((-0.08, 0.03, 0.075, 0.2), (0.07, 0.045, 0.06, 1.0), (0.02, -0.07, 0.065, 2.1)):
+        builder.cylinder(size, 0.022, (x, y, 0.011), COLOUR, segments=7, radius_top=size * 0.8, rotation=(0, 0, turn))
+        builder.cylinder(size * 0.62, 0.02, (x + size * 0.1, y, 0.032), COLOUR, segments=6, radius_top=size * 0.45, rotation=(0, 0, turn + 0.5))
+
+
+def _fantasy_tavern_set(builder):
+    """Tavern furniture: a trestle table with a bench each side, a bar counter, two barrels and two stools."""
+    builder.box((0.1, 0.05, 0.008), (-0.07, -0.03, 0.04), COLOUR)
+    for x in (-0.105, -0.035):
+        builder.box((0.008, 0.04, 0.036), (x, -0.03, 0.018), COLOUR)
+    for y in (-0.075, 0.015):
+        builder.box((0.09, 0.018, 0.02), (-0.07, y, 0.01), COLOUR)
+    builder.box((0.14, 0.04, 0.05), (0.05, 0.07, 0.025), COLOUR, bevel=0.004)
+    for x in (0.03, 0.08):
+        builder.cylinder(0.022, 0.05, (x, -0.02, 0.025), COLOUR, segments=8, radius_top=0.019)
+    for x in (0.02, 0.085):
+        builder.cylinder(0.014, 0.022, (x, -0.075, 0.011), COLOUR, segments=6)
+
+
+def _miniature_carry_case_insert(builder):
+    """Foam-style tray with a grid of twenty-four slots for figures."""
+    print_shapes.divided_tray(builder, (0.27, 0.19, 0.04), 0.007, across=5, along=3, chamfer=0.004)
+
+
 VARIANTS = {
     "miniature_display_shelf": _miniature_display_shelf,
     "wargaming_terrain_ruined_building": _wargaming_terrain_ruined_building,
@@ -175,6 +213,10 @@ VARIANTS = {
     "poker_chip_holder": _poker_chip_holder,
     "mahjong_tile_rack": _mahjong_tile_rack,
     "retro_console_cartridge_holder": _retro_console_cartridge_holder,
+    "board_game_insert_organiser": _board_game_insert_organiser,
+    "wargaming_terrain_hills_x3": _wargaming_terrain_hills_x3,
+    "fantasy_tavern_set": _fantasy_tavern_set,
+    "miniature_carry_case_insert": _miniature_carry_case_insert,
 }
 
 if __name__ == "__main__":

@@ -373,7 +373,7 @@ func _test_filaments() -> void:
 	var tough := {"allowed_filaments": ["pla", "petg"]}
 	_check(FilamentRules.suits(tough, data.filaments["petg"]) and not FilamentRules.suits(tough, data.filaments["tpu"]), "and in the other filaments it names, but no others")
 	_check(FilamentRules.suits(data.products["flexi_dragon"], data.filaments["pla_glow"]) and not FilamentRules.suits(data.products["flexi_dragon"], data.filaments["petg"]), "a PLA-only design takes the fancy PLAs but not PETG")
-	_check(FilamentRules.has_a_use(data.products, data.filaments["pla_wood"]) and not FilamentRules.has_a_use(data.products, data.filaments["asa"]), "a filament no design can use is spotted")
+	_check(FilamentRules.has_a_use(data.products, data.filaments["pla_wood"]) and not FilamentRules.has_a_use(data.products, data.filaments["abs"]), "a filament no design can use is spotted")
 
 	_check(FilamentRules.spool_key("pla_silk", "pink") == "pla_silk:pink", "a spool key names material and colour")
 	_check(FilamentRules.material_of("pla_silk:pink") == "pla_silk" and FilamentRules.colour_of("pla_silk:pink") == "pink", "and can be taken apart again")
@@ -618,8 +618,12 @@ func _test_contracts() -> void:
 		for category: String in client["categories"]:
 			_check(data.products.values().any(func(row: Dictionary) -> bool: return row["category"] == category), "every category a client asks for has designs in it (%s %s)" % [client["id"], category])
 	var museum: Dictionary = data.clients["wexcombe_museum"]
-	_check(book.wanted_by(museum, none) == ([&"museum_replica_artefact"] as Array[StringName]), "a client can bring a design of its own")
-	_check(book.wanted_by(data.clients["brindle_and_daw"], owned).has(&"desk_organiser") and not book.wanted_by(data.clients["brindle_and_daw"], owned).has(&"museum_replica_artefact"), "and otherwise asks for designs the business owns, in its line of work")
+	_check(book.wanted_by(museum, none, 3) == ([&"museum_replica_artefact"] as Array[StringName]), "a client can bring a design of its own")
+	_check(book.wanted_by(data.clients["brindle_and_daw"], owned, 3).has(&"desk_organiser") and not book.wanted_by(data.clients["brindle_and_daw"], owned, 3).has(&"museum_replica_artefact"), "and otherwise asks for designs the business owns, in its line of work")
+	for client: Dictionary in data.clients.values():
+		for supplied: String in client.get("supplies", []):
+			if int(data.products[supplied]["unlock_tier"]) > 3:
+				_check(not book.wanted_by(client, none, 3).has(StringName(supplied)), "a client holds back a design made for a bigger business (%s)" % supplied)
 
 	var seen := {}
 	for attempt in 60:

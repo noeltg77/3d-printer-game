@@ -4,6 +4,8 @@ extends Node3D
 ## Screenshot it with `-- --shot=<png path>` (see dev_shot.gd).
 
 const MODELS_DIR := "res://assets/models"
+## Whole scenes rather than single assets, far too big for the grid. Look at them in their premises.
+const SKIPPED_DIRS: PackedStringArray = ["surroundings"]
 const GAP := 0.4
 const ROW_WIDTH := 9.0
 const ISO_ROTATION := Vector3(-35.264, 45.0, 0.0)
@@ -37,6 +39,8 @@ func _place_models() -> void:
 func _find_models(dir_path: String) -> PackedStringArray:
 	var found: PackedStringArray = []
 	for dir_name in DirAccess.get_directories_at(dir_path):
+		if SKIPPED_DIRS.has(dir_name):
+			continue
 		found.append_array(_find_models(dir_path.path_join(dir_name)))
 	for file_name in DirAccess.get_files_at(dir_path):
 		if file_name.get_extension() == "glb":

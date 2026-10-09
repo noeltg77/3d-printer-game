@@ -15,7 +15,7 @@ Stored exactly as supplied on 2026-10-09. Don't edit them to match the game; cha
 | `filaments.json` | 25 materials, 8 brands, 197 colour and material combinations | Garage PLA colours can come in any time; other materials in Phase 6 |
 | `accessories.json` | Multicolour units, dryers and dry boxes, moisture rules | Dryers in Phase 6, multicolour units in Phase 7 (the four slot Spare room ones so far, as rows in `data/upgrades.json`) |
 | `printers.json` | 12 form factors, 10 brands, 38 printers | Garage printers any time; others as tiers unlock (Phases 6, 8, 9) |
-| `products.json` | 660 products: 160 Garage, 474 Spare room, 19 Workshop, 7 Factory | Garage imported (all 160; the two contract only ones are marked `contract_only` and come with a client's contract). Spare room products come in one at a time as their models are built; others as tiers unlock |
+| `products.json` | 660 products: 160 Garage, 474 Spare room, 19 Workshop, 7 Factory | Garage, Spare room and Workshop imported, less the contract only ones, which are marked `contract_only` and come with a client's contract once they have a model and a client to supply them. The Factory products are resin, which the game has no material for yet, and four multicolour ones have no model |
 
 ## Differences from the live game to resolve on import
 
@@ -30,7 +30,7 @@ Stored exactly as supplied on 2026-10-09. Don't edit them to match the game; cha
 
 `data/products.json` is written by `scripts/dev/import_products.gd`, not by hand. It converts the fields above and works out what this list does not hold:
 
-- `size_mm` is measured from the product's model, scaled back down to real size.
+- `size_mm` is measured from the product's model, scaled back down to real size. A small part whose generator calls `builder.enlarge(...)` to make it visible needs the same factor in `data/import/model_enlargement.json`, or the import records it too big.
 - `demand_per_day` comes from the size band (XS 3, S 2.5, M 2, L 1.5, XL 1 for the cheapest design in the band; the cheapest Garage design, or for XL, which the Garage has none of, the cheapest Spare room one) and falls for dearer designs, by the square root of the price ratio. Seasons and demand patterns are not applied yet, so seasonal products sell all year.
 - `licence` is a one-off fee of twice the typical price.
 - `description` is written by hand in `data/import/product_descriptions.json`, one line per product id. A product with nothing there shows its category name, and the import lists it.
