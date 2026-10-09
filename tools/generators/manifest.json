@@ -19,9 +19,7 @@
 		{ "generator": "spools", "out": "assets/models/filament/spool_empty.glb", "args": { "seed": 10, "fill": 0 } },
 
 		{ "generator": "prints", "out": "assets/models/prints/desk_organiser.glb", "args": { "variant": "desk_organiser" } },
-		{ "generator": "prints", "out": "assets/models/prints/cable_clips.glb", "args": { "variant": "cable_clips" } },
 		{ "generator": "prints", "out": "assets/models/prints/phone_stand.glb", "args": { "variant": "phone_stand" } },
-		{ "generator": "prints", "out": "assets/models/prints/plant_pot.glb", "args": { "variant": "plant_pot" } },
 		{ "generator": "prints", "out": "assets/models/prints/flexi_dragon.glb", "args": { "variant": "flexi_dragon" } },
 		{ "generator": "prints", "out": "assets/models/prints/pen_pot_hex.glb", "args": { "variant": "pen_pot_hex" } },
 		{ "generator": "prints", "out": "assets/models/prints/headphone_stand.glb", "args": { "variant": "headphone_stand" } },

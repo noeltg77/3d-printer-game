@@ -34,6 +34,7 @@ Neither tool is on PATH. Run from the repo root.
 godot --headless --path . --import                                        # import new or changed assets
 godot --headless --path . --script res://scripts/dev/validate_data.gd     # check data tables
 godot --headless --path . --script res://scripts/dev/build_palette.gd     # rebuild palette.png from data/palette.json
+godot --headless --path . --script res://scripts/dev/import_products.gd   # rebuild data/products.json from the design catalogue
 godot --path . res://scenes/garage/garage.tscn -- --shot=tools/previews/godot_garage.png   # screenshot any scene, then quit
 ```
 

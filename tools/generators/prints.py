@@ -35,28 +35,12 @@ def _desk_organiser(builder):
     builder.box((0.045, 0.09, 0.04), (0.07, 0.005, 0.035), "white", bevel=0.006)
 
 
-def _cable_clips(builder):
-    """Six little clips laid out in two rows, as they come off the bed."""
-    for row in (-1, 1):
-        for column in (-1, 0, 1):
-            x, y = column * 0.06, row * 0.035
-            builder.box((0.045, 0.045, 0.012), (x, y, 0.006), "white", bevel=0.003)
-            builder.box((0.012, 0.045, 0.03), (x - 0.0165, y, 0.027), "white", bevel=0.003)
-            builder.box((0.012, 0.045, 0.02), (x + 0.0165, y, 0.022), "white", bevel=0.003)
-
-
 def _phone_stand(builder):
     """Base with a lip and a leaning back rest."""
     builder.box((0.11, 0.13, 0.015), (0, 0, 0.0075), "white", bevel=0.004)
     builder.box((0.11, 0.02, 0.03), (0, -0.055, 0.03), "white", bevel=0.004)
     builder.box((0.11, 0.018, 0.15), (0, 0.035, 0.082), "white", rotation=(math.radians(-18), 0, 0), bevel=0.004)
     builder.box((0.03, 0.05, 0.06), (0, 0.075, 0.04), "white", rotation=(math.radians(25), 0, 0))
-
-
-def _plant_pot(builder):
-    """Faceted pot, wider at the rim."""
-    builder.cylinder(0.045, 0.1, (0, 0, 0.05), "white", segments=6, radius_top=0.07)
-    builder.cylinder(0.078, 0.02, (0, 0, 0.11), "white", segments=6)
 
 
 def _flexi_dragon(builder):
@@ -100,9 +84,7 @@ def _mail_sorter(builder):
 
 VARIANTS = {
     "desk_organiser": _desk_organiser,
-    "cable_clips": _cable_clips,
     "phone_stand": _phone_stand,
-    "plant_pot": _plant_pot,
     "flexi_dragon": _flexi_dragon,
     "pen_pot_hex": _pen_pot_hex,
     "headphone_stand": _headphone_stand,

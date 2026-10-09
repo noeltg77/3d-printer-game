@@ -15,16 +15,27 @@ Stored exactly as supplied on 2026-10-09. Don't edit them to match the game; cha
 | `filaments.json` | 25 materials, 8 brands, 197 colour and material combinations | Garage PLA colours can come in any time; other materials in Phase 6 |
 | `accessories.json` | Multicolour units, dryers and dry boxes, moisture rules | Dryers in Phase 6, multicolour units in Phase 7 |
 | `printers.json` | 12 form factors, 10 brands, 38 printers | Garage printers any time; others as tiers unlock (Phases 6, 8, 9) |
-| `products.json` | 660 products: 160 Garage, 474 Spare room, 19 Workshop, 7 Factory | Garage products once their models exist; others as tiers unlock |
+| `products.json` | 660 products: 160 Garage, 474 Spare room, 19 Workshop, 7 Factory | Garage imported (158; the two contract only ones wait for contracts); others as tiers unlock |
 
 ## Differences from the live game to resolve on import
 
 - **Currency.** Settled: the game runs in GBP like these files, and converts only for display. The files hold pounds with decimals (`*_gbp`); `data/` holds integer pence (`*_pence`), so multiply by 100 on import.
 - **Tiers.** These files name tiers (`Garage`, `Spare room`, `Workshop`, `Factory`); `data/` uses numbers 1 to 4.
 - **Field names and units.** For example `print_hours` here against `print_minutes` in `data/`, `filament_g` against `filament_grams`, `difficulty` 1 to 5 here against 0 to 1.
-- **Product ids.** The five designs currently in `data/products.json` were invented before this list. `phone_stand` and `desk_organiser` match ids here; `cable_clips`, `plant_pot` and `flexi_dragon` do not (nearest: `cable_management_clips_x12`, `low_poly_planter`, `articulated_dragon`). Rename them when the catalogue is imported.
+- **Product ids.** Resolved for the Garage: `data/products.json` uses the ids here. Two rows from before this list remain, `desk_organiser` and `flexi_dragon`, because this list places them in the Spare room (as `desk_organiser`, now two colour, and `articulated_dragon`). Replace them when that tier is imported.
 - **Printer prices.** The Plodder Mini is 179 here and 159 in the game. Starting cash was tuned around 159.
 - **Shop and marketplace names.** Spoolhouse, Plainly and Meadow match. The marketplace is "Craftsy" in the game.
+
+## Importing products
+
+`data/products.json` is written by `scripts/dev/import_products.gd`, not by hand. It converts the fields above and works out what this list does not hold:
+
+- `size_mm` is measured from the product's model, scaled back down to real size.
+- `demand_per_day` comes from the size band (XS 5, S 3.5, M 3, L 2.5). Seasons and demand patterns are not applied yet, so seasonal products sell all year.
+- `licence` is a one-off fee of 1.2 times the typical price. `description` is the category name.
+- `OVERRIDES` in the script sets these per product where a rule is not good enough (the free starting design, hand-written descriptions).
+
+To change a product, change the rules or `OVERRIDES` and run the script again. A product is only imported once its model exists.
 
 ## Brief for building product models
 

@@ -70,6 +70,8 @@ Display currencies, keyed by code. Not a table of rows with ids.
 
 ## products.json
 
+Generated from `docs/design_data/products.json` by `scripts/dev/import_products.gd`. Don't edit it by hand: change the rules or per product overrides in that script and run it again. Every product needs a model at `assets/models/prints/<id>.glb`; the validator checks.
+
 | Field | Meaning |
 | --- | --- |
 | `category` | Demand and trend group, e.g. `home_organisation`, `fidget_toys` |
