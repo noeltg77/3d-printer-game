@@ -137,7 +137,7 @@ func _put_in(agent: Agent, spool: Spool) -> void:
 	if not is_instance_valid(spool) or not rack.spools().has(spool) or problem(spool) != "":
 		agent.say("Can't dry that spool right now")
 		return
-	await agent.go_to(rack)
+	await agent.go_to(rack.spot_of(spool))
 	await agent.reach(func() -> void:
 		spool.get_parent().remove_child(spool)
 		agent.carry(spool))
@@ -152,5 +152,5 @@ func _take_out(agent: Agent, spool: Spool) -> void:
 		return
 	await agent.go_to(self)
 	await agent.reach(func() -> void: agent.carry(take_out(spool)))
-	await agent.go_to(rack)
+	await agent.go_to(rack.spot())
 	await agent.reach(func() -> void: rack.store(agent.release() as Spool))

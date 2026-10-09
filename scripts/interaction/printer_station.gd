@@ -191,7 +191,7 @@ func _tray_actions() -> Array[Action]:
 	if tray.is_empty():
 		return actions
 	var label := "Empty the tray: %d print%s" % [tray.size(), "" if tray.size() == 1 else "s"]
-	if not _shelf().has_space():
+	if _shelf().room_for(tray[0].product) <= 0:
 		actions.append(Action.info("%s (shelving is full)" % label))
 		return actions
 	var empty := Action.new(label, _empty_tray).for_duty(&"collect")
@@ -207,7 +207,7 @@ func _status_actions() -> Array[Action]:
 			var left := GameClock.duration_label((job.duration - job.elapsed) * GameClock.MINUTES_PER_SECOND)
 			return [Action.info("Printing %s: %d%%, %s left" % [_batch_title(Game.product_name(item.product)), roundi(job.progress * 100.0), left])]
 		Status.DONE:
-			if _shelf().free_slots() >= copies():
+			if _shelf().room_for(item.product) >= copies():
 				var wash := post_minutes()
 				var label := "Collect %s" % _batch_title(item.describe())
 				if wash > 0.0:
@@ -743,7 +743,7 @@ func _load(agent: Agent, material: StringName, colour: StringName) -> void:
 	if free_slot() < 0 or not rack.has(material, colour) or FilamentRules.problem(mods.apply(spec), Game.data.filaments[material]) != "":
 		agent.say("Can't load that filament right now")
 		return
-	await agent.go_to(rack)
+	await agent.go_to(rack.spot(material, colour))
 	await agent.reach(func() -> void: agent.carry(rack.take(material, colour)))
 	if agent.carried == null:
 		return
@@ -764,7 +764,7 @@ func _unload(agent: Agent, slot: int) -> void:
 		agent.say("Binned an empty spool")
 		return
 	var rack := _rack()
-	await agent.go_to(rack)
+	await agent.go_to(rack.spot())
 	await agent.reach(func() -> void: rack.store(agent.release() as Spool))
 
 
@@ -783,7 +783,7 @@ func _open_print_dialog(_agent: Agent) -> void:
 
 func _collect(agent: Agent) -> void:
 	var shelf := _shelf()
-	if status != Status.DONE or shelf.free_slots() < copies():
+	if status != Status.DONE or shelf.room_for(item.product) < copies():
 		agent.say("Nothing to collect" if status != Status.DONE else "Not enough room on the shelving")
 		return
 	await agent.go_to(self)
@@ -795,14 +795,14 @@ func _collect(agent: Agent) -> void:
 
 func _empty_tray(agent: Agent) -> void:
 	var shelf := _shelf()
-	if tray.is_empty() or not shelf.has_space():
+	if tray.is_empty() or shelf.room_for(tray[0].product) <= 0:
 		agent.say("Nothing to take from the tray" if tray.is_empty() else "Not enough room on the shelving")
 		return
 	await agent.go_to(self)
 	await agent.reach(func() -> void:
 		# As many as there is shelf space for; the rest stay in the tray.
 		var taken: Array[PrintedItem] = []
-		for index in mini(tray.size(), shelf.free_slots()):
+		for index in mini(tray.size(), shelf.room_for(tray[0].product)):
 			taken.append(tray.pop_front())
 		for copy in taken:
 			copy.scale = Vector3.ONE
@@ -828,7 +828,7 @@ func _pick_up(agent: Agent, items: Array[PrintedItem]) -> void:
 func _shelve(agent: Agent, shelf: StorageShelf) -> void:
 	if agent.carried == null:
 		return
-	await agent.go_to(shelf)
+	await agent.go_to(shelf.spot(agent.carried))
 	await agent.reach(func() -> void:
 		var first := agent.release()
 		for child in first.get_children():
@@ -857,7 +857,7 @@ func _replace(agent: Agent, slot: StringName, part: StringName) -> void:
 	if status == Status.PRINTING or shelf.spare_count(part) == 0:
 		agent.say("Can't change the %s right now" % slot_name)
 		return
-	await agent.go_to(shelf)
+	await agent.go_to(shelf.spot(part))
 	await agent.reach(func() -> void: agent.carry(shelf.take_spare(part)))
 	if agent.carried == null:
 		return
@@ -875,7 +875,7 @@ func _fit_upgrade(agent: Agent, upgrade: StringName) -> void:
 	if status == Status.PRINTING or shelf.spare_count(upgrade) == 0 or upgrade_problem(upgrade) != "":
 		agent.say("Can't fit that to the %s right now" % display_name)
 		return
-	await agent.go_to(shelf)
+	await agent.go_to(shelf.spot(upgrade))
 	await agent.reach(func() -> void: agent.carry(shelf.take_spare(upgrade)))
 	if agent.carried == null:
 		return

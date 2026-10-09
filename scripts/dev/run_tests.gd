@@ -28,6 +28,7 @@ func _init() -> void:
 	_test_marketplace()
 	_test_deliveries()
 	_test_shipping()
+	_test_storage()
 	_test_supplier()
 	_test_saving()
 	print("Tests passed" if _failures == 0 else "%d test(s) FAILED" % _failures)
@@ -1340,6 +1341,51 @@ func _test_shipping() -> void:
 	_check(both[0]["review"]["stars"] == 5 and both[1]["review"]["stars"] <= 3, "and one that turns up late is marked down for it")
 	var kept := Marketplace.Order.restored(_through_file(late.save()))
 	_check(kept.late and kept.shipping["packaging"] == "small_cardboard_box" and is_equal_approx(kept.shipping["late_star_penalty"], 3.0), "how an order was sent is saved with it")
+
+
+func _test_storage() -> void:
+	var data := GameData.load_all()
+	var rules := StorageRules.new(data)
+	_check(rules.is_bin(&"stackable_storage_bin") and not rules.is_bin(&"cable_management_clips_x12"), "only some designs make storage bins")
+	_check(rules.bin_units(&"stackable_storage_bin") == 12 and rules.bin_units(&"cable_management_clips_x12") == 0, "a bin has so many units of room")
+	var sizes: Array = data.settings["storage_bins"]["sizes"]
+	var small: StringName = &""
+	var medium: StringName = &""
+	var large: StringName = &""
+	for product: Dictionary in data.products.values():
+		var longest: float = product["size_mm"].max()
+		if longest <= float(sizes[0]["max_mm"]) and small == &"":
+			small = StringName(product["id"])
+		elif longest > float(sizes[0]["max_mm"]) and longest <= float(sizes[1]["max_mm"]) and medium == &"":
+			medium = StringName(product["id"])
+		elif longest > float(sizes[1]["max_mm"]) and large == &"":
+			large = StringName(product["id"])
+	_check(small != &"" and medium != &"" and large != &"", "the catalogue has designs of every size")
+	_check(rules.size_of(small)["id"] == "small" and rules.size_of(medium)["id"] == "medium" and rules.size_of(large)["id"] == "large", "a design's longest side says how big it is")
+	_check(rules.fits(small, 12) == 12 and rules.fits(medium, 12) == 6 and rules.fits(large, 12) == 2, "a bin of twelve units holds twelve small prints, six medium or two large")
+	_check(rules.fits(large, 5) == 0 and rules.fits(medium, 5) == 2 and rules.fits(small, 0) == 0, "and a part full one only what is left over")
+	_check(rules.bin_summary(&"stackable_storage_bin") == "12 small, 6 medium or 2 large prints", "which is how the bin is described")
+	_check(rules.limit(data.premises["garage"], "shelf") == 2 and rules.limit(data.premises["garage"], "rack") == 1, "the garage has room for one more bay of shelving and no more racks")
+	var last_shelves := 0
+	var last_racks := 0
+	for place: Dictionary in data.premises.values():
+		_check(rules.limit(place, "shelf") > last_shelves and rules.limit(place, "rack") > last_racks, "%s has room for more storage than the place before" % place["name"])
+		last_shelves = rules.limit(place, "shelf")
+		last_racks = rules.limit(place, "rack")
+
+	var supplier := Supplier.new(data)
+	var basket := {"fittings": {"shelving_unit": 2}}
+	_check(supplier.price_of(basket) == int(data.fittings["shelving_unit"]["price_pence"]) * 2, "shelving is priced by the unit")
+	var boxes := supplier.place(basket, 0.0, "Printbay")
+	_check(boxes.size() == 2 and boxes[0].fitting == &"shelving_unit" and boxes[0].describe() == "Flat pack", "and each unit comes in a box of its own")
+	var again := Supplier.Delivery.restored(_through_file(boxes[0].save()))
+	_check(again.fitting == &"shelving_unit", "which is still a flat pack after a save")
+
+	var shelf := {"slots": [{"slot": "item_slot_1", "unit": 0, "kind": "print"}, {"slot": "item_slot_1", "unit": 1, "kind": "print"}],
+		"units": [{"fitting": "shelving_unit", "x": 1.0, "z": 2.0, "yaw": 0.0}]}
+	var taken := StorageRules.pack_for_move(shelf)
+	_check(taken == ([&"shelving_unit"] as Array[StringName]) and shelf["units"].is_empty(), "bought shelving comes down when the business moves")
+	_check(int(shelf["slots"][0]["unit"]) == 0 and int(shelf["slots"][1]["unit"]) > 1, "and what stood on it has to find a new space")
 
 
 func _test_supplier() -> void:

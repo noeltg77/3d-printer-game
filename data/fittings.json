@@ -1,0 +1,25 @@
+{
+	"schema_version": 1,
+	"fittings": [
+		{
+			"id": "shelving_unit",
+			"name": "Shelving unit",
+			"kind": "shelf",
+			"description": "Another bay of shelving, twelve spaces, to stand wherever there is floor for it.",
+			"unlock_tier": 1,
+			"price_pence": 5999,
+			"model": "shelving",
+			"stand_offset": [0.0, 0.0, 0.7]
+		},
+		{
+			"id": "filament_rack_unit",
+			"name": "Filament rack",
+			"kind": "rack",
+			"description": "A second rack for twenty four more spools, to stand wherever there is floor for it.",
+			"unlock_tier": 2,
+			"price_pence": 4499,
+			"model": "filament_rack_small",
+			"stand_offset": [0.0, 0.0, 0.65]
+		}
+	]
+}

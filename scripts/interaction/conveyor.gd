@@ -118,7 +118,7 @@ func _fit(agent: Agent) -> void:
 	if installed or kit == &"" or shelf.spare_count(kit) == 0:
 		agent.say("Can't fit the conveyor right now")
 		return
-	await agent.go_to(shelf)
+	await agent.go_to(shelf.spot(kit))
 	await agent.reach(func() -> void: agent.carry(shelf.take_spare(kit)))
 	if agent.carried == null:
 		return

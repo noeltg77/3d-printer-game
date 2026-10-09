@@ -25,7 +25,7 @@ static func items(tree: SceneTree) -> Array[Dictionary]:
 	var open_orders := Game.open_orders()
 	var shops: Dictionary = Game.data.settings["supplier"]
 	var boxes_waiting := not tree.get_nodes_in_group(&"delivery_box").is_empty()
-	if boxes_waiting:
+	if tree.get_nodes_in_group(&"delivery_box").any(func(box: DeliveryBox) -> bool: return box.delivery.fitting == &""):
 		_add(found, "Unpack the delivery", "Click the box by the door and choose Unpack. Everything inside gets put away for you.")
 
 	var printers := tree.get_nodes_in_group(&"printer")
@@ -119,6 +119,15 @@ static func items(tree: SceneTree) -> Array[Dictionary]:
 				"A contract has a deadline and a spec. Open Inbox on the computer to see what filament, colour and strength they want.")
 	if Game.stock_unlocked() and Game.stock.rules.is_empty():
 		_add(found, "Let the stockroom do the ordering", "With this many printers something is always running out. Click the computer, open Stockroom and switch on a rule for the filament, spares and boxes you use most.")
+	for box: DeliveryBox in tree.get_nodes_in_group(&"delivery_box"):
+		if box.delivery.fitting != &"":
+			_add(found, "Put up the %s" % String(Game.data.fittings[box.delivery.fitting]["name"]).to_lower(),
+				"Click its box by the door and choose Unpack. Then click the floor where you want it: green means it fits, and R turns it.")
+	if shelf != null and shelf.bins().is_empty() and shelf.free_slots() <= 2:
+		for item in shelf._loose():
+			if Game.storage.is_bin(item.product):
+				_add(found, "Use a storage bin for more room", "The shelving is nearly full. Click it, open Storage bins and put your printed bin to use: one space then holds several prints.")
+				break
 	for kind in low_packaging():
 		_add(found, "%s are nearly out" % Game.packaging_plural(kind).capitalize(),
 			"Your designs go out in them, one to an order. Buy a pack at %s, under Packaging, or pick something else on the listing." % shops["hardware_shop"])

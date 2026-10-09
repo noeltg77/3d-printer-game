@@ -86,7 +86,7 @@ func _pack(agent: Agent, order: Marketplace.Order) -> void:
 		agent.say("Can't pack that order right now")
 		return
 	var shelf := _shelf()
-	await agent.go_to(shelf)
+	await agent.go_to(shelf.spot(order.product))
 	await agent.reach(func() -> void: agent.carry(shelf.take(order.product)))
 	if agent.carried == null:
 		return
@@ -97,7 +97,7 @@ func _pack(agent: Agent, order: Marketplace.Order) -> void:
 	# The last of the packaging may have gone while this was queued.
 	if order.status != Marketplace.Status.OPEN or terms.is_empty() or not Game.use_packaging(StringName(terms["packaging"])):
 		agent.say("Can't pack that order right now")
-		await agent.go_to(shelf)
+		await agent.go_to(shelf.spot(item))
 		await agent.reach(func() -> void: shelf.store(agent.release()))
 		return
 	var kind: Dictionary = Game.data.packaging[terms["packaging"]]
@@ -170,7 +170,7 @@ func _send(agent: Agent, contract_id: int) -> void:
 		agent.say("Nothing to send to that client right now")
 		return
 	var shelf := _shelf()
-	await agent.go_to(shelf)
+	await agent.go_to(shelf.spot(contract.product))
 	await agent.reach(func() -> void:
 		# The rest ride along out of sight, inside the first.
 		var taken := shelf.items_for(contract).slice(0, Game.contracts.remaining(contract))

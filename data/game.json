@@ -20,6 +20,14 @@
 		"neutral_presentation": 3,
 		"speed_stars": { "economy": -0.1, "standard": 0.0, "express": 0.25, "priority": 0.25, "same_day": 0.4 }
 	},
+	"storage_bins": {
+		"sizes": [
+			{ "id": "small", "name": "Small", "max_mm": 90, "cost": 1 },
+			{ "id": "medium", "name": "Medium", "max_mm": 160, "cost": 2 },
+			{ "id": "large", "name": "Large", "cost": 6 }
+		],
+		"designs": { "stackable_storage_bin": 12, "gridfinity_bin_pack_x6": 6 }
+	},
 	"finishing": {
 		"minutes": 6,
 		"quality_gain": 1,

@@ -203,6 +203,8 @@ func _card(product: StringName, row: Dictionary) -> Control:
 		column.add_child(Ui.wrap(Ui.text("Needs a printer with a multicolour unit to print in all %d colours. In one colour it sells for %d%% less." % [
 			colours, roundi((1.0 - float(Game.data.toggles["multicolour"]["off_price_multiplier"])) * 100.0)], 13, Ui.AMBER_DARK, 800)))
 
+	if Game.storage.is_bin(product):
+		column.add_child(Ui.wrap(Ui.text("Use it in your own workshop: on the shelving it holds %s in one space. Or sell it like anything else." % Game.storage.bin_summary(product), 13, Ui.GREEN_DARK, 800)))
 	column.add_child(_own_design(product))
 	var action: Control
 	if Game.studio.has(product):

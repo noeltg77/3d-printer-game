@@ -101,6 +101,18 @@ func move(place: StringName) -> bool:
 	world.erase("character")
 	if not Game.move_to(place):
 		return false
+	# Nor where bought shelving and racks stood: they arrive flat packed, to be put up again.
+	var flat_packs: Array[StringName] = []
+	if world.has("shelf"):
+		flat_packs.append_array(StorageRules.pack_for_move(world["shelf"]))
+	if world.has("rack"):
+		flat_packs.append_array(StorageRules.pack_for_move(world["rack"]))
+	for fitting in flat_packs:
+		var box := Supplier.Delivery.new()
+		box.fitting = fitting
+		if not world.has("deliveries"):
+			world["deliveries"] = {"boxes": []}
+		world["deliveries"]["boxes"].append({"spot": 0, "delivery": box.save()})
 	Game.hand_over(world)
 	get_tree().change_scene_to_file(Game.premises_row()["scene"])
 	return true

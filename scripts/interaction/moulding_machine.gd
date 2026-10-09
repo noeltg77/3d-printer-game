@@ -179,7 +179,7 @@ func _install(agent: Agent) -> void:
 	if installed or kit == &"" or shelf.spare_count(kit) == 0:
 		agent.say("Can't install the machine right now")
 		return
-	await agent.go_to(shelf)
+	await agent.go_to(shelf.spot(kit))
 	await agent.reach(func() -> void: agent.carry(shelf.take_spare(kit)))
 	if agent.carried == null:
 		return
@@ -236,7 +236,7 @@ func _shelve(agent: Agent, output_key: String) -> void:
 		Game.changed.emit())
 	if agent.carried == null:
 		return
-	await agent.go_to(shelf)
+	await agent.go_to(shelf.spot(agent.carried))
 	await agent.reach(func() -> void:
 		var first := agent.release()
 		for child in first.get_children():

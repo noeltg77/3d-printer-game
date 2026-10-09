@@ -252,6 +252,7 @@ The places the business can run from, smallest first.
 | `move_cost_pence` | Paid once to move in |
 | `rent_pence_per_day` | Charged at midnight every game day |
 | `staff` | How many staff the place has room for. Staff also need a `StaffRoom` node in the scene, where they come in |
+| `shelf_units`, `rack_units` | How many bays of shelving and how many filament racks the place has room for, counting the one in the scene. The rest are bought (fittings.json) |
 | `printer_spots`, `shelf_slots`, `rack_slots` | Shown on the place's card. They describe the scene; they don't set it. A scene with several benches still has one `Workbench`, whose `printer_spots` reach onto the others |
 
 ## contracts.json
@@ -322,6 +323,7 @@ Starting conditions and global rates. Not a table of rows.
 | `electricity_pence_per_kwh` | Charged when a print finishes, from the printer's `power_watts` and the print time |
 | `courier_minute_of_day` | When parcels in the outbox are collected and paid |
 | `shipping` | `default_service`: the service a marketplace sends by until the player picks another, and a parcel goes by if the one picked won't take it. `buyer_pays`: speed class to the service whose price the buyer is charged for postage (anything quicker than standard is charged at the standard rate). `late_minutes`: `[shortest, longest]` a held up parcel is delayed, and `late_star_penalty` what the buyer knocks off for it. `stars_per_presentation_point`: stars a review moves for each point the packaging's `presentation` is above or below `neutral_presentation`. `speed_stars`: stars added by speed class |
+| `storage_bins` | Printed storage bins (`StorageRules`). `designs`: design id to the units of room a bin printed from it has. `sizes`: the size classes, smallest first, each with a `name`, the longest side in mm a design may have to count as it (`max_mm`, none on the last) and the units one print of that size takes up (`cost`) |
 | `finishing` | The finishing bench: `minutes` of the character's time for one print, the `quality_gain` it gets and the `max_quality` it stops at. A print can be finished once |
 | `default_preset` | The preset the print dialog opens on |
 | `moisture` | `gain_per_day`: moisture (0 to 1) a filament with sensitivity 1.0 gains in a day in the open. `wet_at`: the level at which a spool is wet. Every `step` beyond that adds `extra_fail_per_step` to the chance of a print failing, and wet filament raises the `wet_filament` flag for failures |
@@ -337,6 +339,19 @@ Starting conditions and global rates. Not a table of rows.
 | `supplier` | The filament and hardware shop names, lead times in game minutes (filament, printers, spare parts) |
 
 One game day is 1440 game minutes and lasts 10 real minutes at 1x (`GameClock.MINUTES_PER_SECOND`).
+
+## fittings.json
+
+Storage that is bought and stood wherever the player likes.
+
+| Field | Meaning |
+| --- | --- |
+| `kind` | `shelf` (spaces for prints and spares, added to the premises' shelving) or `rack` (slots for spools, added to its filament rack) |
+| `model` | Model in `assets/models/furniture/`. Its `item_slot_*` or `spool_slot_*` markers are the room it adds |
+| `stand_offset` | Where the character stands to use it, from its origin |
+| `price_pence`, `unlock_tier` | As elsewhere |
+
+How many a place holds is on its row in premises.json: `shelf_units` and `rack_units`, each counting the one built in to the scene.
 
 ## packaging.json
 

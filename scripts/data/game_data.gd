@@ -20,6 +20,7 @@ const TABLES := {
 	"roles": "res://data/staff.json",
 	"shifts": "res://data/staff.json",
 	"packaging": "res://data/packaging.json",
+	"fittings": "res://data/fittings.json",
 	"bands": "res://data/couriers.json",
 	"couriers": "res://data/couriers.json",
 	"services": "res://data/couriers.json",
@@ -67,6 +68,8 @@ var shifts: Dictionary = {}
 var staff_config: Dictionary = {}
 ## What orders are sent in, by id, cheapest and flimsiest first (data/packaging.json).
 var packaging: Dictionary = {}
+## Shelving and racks that can be bought and stood about the premises, by id (data/fittings.json).
+var fittings: Dictionary = {}
 ## Parcel size bands, smallest first, and the couriers and their services, by id (data/couriers.json).
 var bands: Dictionary = {}
 var couriers: Dictionary = {}
@@ -107,6 +110,17 @@ static func load_all() -> GameData:
 		data.errors.append("%s: expected an object with a \"comments\" object" % REVIEWS)
 	data._check_references()
 	return data
+
+
+func _check_storage() -> void:
+	for row: Dictionary in fittings.values():
+		if not ["shelf", "rack"].has(row.get("kind", "")):
+			errors.append("fitting %s: kind must be \"shelf\" or \"rack\"" % row["id"])
+		if not ResourceLoader.exists("res://assets/models/furniture/%s.glb" % row.get("model", "")):
+			errors.append("fitting %s: no model \"%s\"" % [row["id"], row.get("model", "")])
+	for design: String in settings.get("storage_bins", {}).get("designs", {}):
+		if not products.has(design):
+			errors.append("game.json storage_bins: unknown design \"%s\"" % design)
 
 
 func _check_shipping() -> void:
@@ -219,6 +233,7 @@ func _check_references() -> void:
 		if not ResourceLoader.exists(part_model(row)):
 			errors.append("%s: no model \"%s\"" % [row["id"], row.get("model", "")])
 	_check_shipping()
+	_check_storage()
 	for dryer: Dictionary in dryers.values():
 		if not ResourceLoader.exists(DRYER_MODEL % dryer.get("model", "")):
 			errors.append("dryer %s: no model \"%s\"" % [dryer["id"], dryer.get("model", "")])

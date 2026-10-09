@@ -12,6 +12,8 @@
 			"printer_spots": 2,
 			"shelf_slots": 12,
 			"rack_slots": 24,
+			"shelf_units": 2,
+			"rack_units": 1,
 			"staff": 0
 		},
 		{
@@ -25,6 +27,8 @@
 			"printer_spots": 4,
 			"shelf_slots": 24,
 			"rack_slots": 70,
+			"shelf_units": 3,
+			"rack_units": 2,
 			"staff": 0
 		},
 		{
@@ -38,6 +42,8 @@
 			"printer_spots": 12,
 			"shelf_slots": 48,
 			"rack_slots": 140,
+			"shelf_units": 4,
+			"rack_units": 3,
 			"staff": 2
 		},
 		{
@@ -51,6 +57,8 @@
 			"printer_spots": 24,
 			"shelf_slots": 96,
 			"rack_slots": 280,
+			"shelf_units": 5,
+			"rack_units": 4,
 			"staff": 6
 		}
 	]

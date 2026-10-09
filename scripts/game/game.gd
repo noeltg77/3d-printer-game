@@ -47,6 +47,8 @@ var owned_designs: Array[StringName] = []
 ## id -> packaging id), and the courier's service each marketplace sends by
 ## (marketplace id -> service id).
 var shipping: Shipping
+## The rules of bought shelving and racks, and of printed storage bins.
+var storage: StorageRules
 var pack_choice: Dictionary[StringName, StringName] = {}
 var service_choice: Dictionary[StringName, StringName] = {}
 ## Packaging in stock, by kind (data/packaging.json). One is used per packed order.
@@ -168,6 +170,7 @@ func new_game() -> void:
 	_stock_blocked.clear()
 	owned_designs.assign(start["designs"])
 	shipping = Shipping.new(data)
+	storage = StorageRules.new(data)
 	pack_choice.clear()
 	service_choice.clear()
 	packaging.clear()
@@ -595,7 +598,28 @@ func supplier_problem(basket: Dictionary) -> String:
 	var bench: Workbench = get_tree().get_first_node_in_group(&"workbench")
 	if bench != null and Supplier.count_printers(basket) + incoming_printers > bench.free_spots() - _unpacked(&"printers"):
 		return "No bench space for another printer"
+	for kind: String in ["shelf", "rack"]:
+		var wanted := 0
+		for fitting_id: String in basket.get("fittings", {}):
+			if data.fittings[fitting_id]["kind"] == kind:
+				wanted += int(basket["fittings"][fitting_id])
+		if wanted > 0 and fitting_count(kind) + wanted > storage.limit(premises_row(), kind):
+			return "No room here for more %s" % ("shelving" if kind == "shelf" else "filament racks")
 	return ""
+
+
+## How many units of shelving or of filament rack ("shelf" or "rack") the
+## business has: standing in the room, waiting to be put up, or on their way.
+func fitting_count(kind: String) -> int:
+	var host := get_tree().get_first_node_in_group(&"print_storage" if kind == "shelf" else &"filament_rack")
+	var count: int = host.call(&"unit_count") if host != null else 1
+	var boxed: Array[Supplier.Delivery] = supplier.pending.duplicate()
+	for box: DeliveryBox in get_tree().get_nodes_in_group(&"delivery_box"):
+		boxed.append(box.delivery)
+	for delivery in boxed:
+		if delivery.fitting != &"" and data.fittings[delivery.fitting]["kind"] == kind:
+			count += 1
+	return count
 
 
 ## Pays for a basket and schedules its deliveries. `shop` is the name of the

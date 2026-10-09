@@ -87,7 +87,8 @@ func _finish(agent: Agent, product: StringName) -> void:
 	if shelf.unfinished().filter(func(item: PrintedItem) -> bool: return item.product == product).is_empty():
 		agent.say("Nothing left to finish")
 		return
-	await agent.go_to(shelf)
+	var waiting := shelf.unfinished().filter(func(candidate: PrintedItem) -> bool: return candidate.product == product)
+	await agent.go_to(shelf.spot(product) if waiting.is_empty() else shelf.spot_of(waiting[0]))
 	await agent.reach(func() -> void: agent.carry(shelf.take_unfinished(product)))
 	if agent.carried == null:
 		return
@@ -101,7 +102,7 @@ func _finish(agent: Agent, product: StringName) -> void:
 	item.finish()
 	await _move_torch(_torch_rest)
 	await agent.reach(func() -> void: agent.carry(item))
-	await agent.go_to(shelf)
+	await agent.go_to(shelf.spot(item))
 	await agent.reach(func() -> void:
 		if not shelf.store(agent.release()):
 			# Its space was taken while it was away: it has to go somewhere.

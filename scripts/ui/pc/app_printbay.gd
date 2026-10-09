@@ -13,7 +13,7 @@ const KIND_TEXT := Color("DDE6F7")
 const SHADOW := Color("DCE2EE")
 const LOCK_TEXT := Color("5A4A1C")
 const LOCK_BG := Color("F4EBCF")
-const TABS := {"printers": "Printers", "packaging": "Packaging", "upgrades": "Upgrades", "parts": "Spare parts", "dryers": "Dryers"}
+const TABS := {"printers": "Printers", "packaging": "Packaging", "upgrades": "Upgrades", "parts": "Spare parts", "dryers": "Dryers", "storage": "Storage"}
 const MOTIONS := {"bed_slinger": "Bed slinger", "core_xy": "Core XY", "resin_lift": "Resin"}
 ## Speed multiplier and build volume (litres) that fill a stat bar completely.
 const FULL_SPEED := 3.0
@@ -42,6 +42,8 @@ func refresh() -> void:
 			page = _upgrades()
 		"dryers":
 			page = _dryers()
+		"storage":
+			page = _storage()
 		_:
 			page = _coming_later()
 	var body := Ui.panel(Ui.margin(page, 40, 28, 40, 28), Ui.box(PAGE, 0, 0, 0))
@@ -293,6 +295,41 @@ func _upgrades() -> Control:
 
 
 ## A row per filament dryer. The premises have room for one.
+func _storage() -> Control:
+	var place := Game.premises_row()
+	var rows := Ui.vbox([
+		Ui.wrap(Ui.text("More room for stock and spools. It arrives flat packed: click the box, choose where it stands, and it is put up there. You can stand it somewhere else later. If you move, it comes with you.", 14, Ui.MUTED)),
+	], 12)
+	for fitting_id: String in Game.data.fittings:
+		var fitting: Dictionary = Game.data.fittings[fitting_id]
+		var kind: String = fitting["kind"]
+		var order := {"fittings": {fitting_id: 1}}
+		var have := Game.fitting_count(kind)
+		var limit := Game.storage.limit(place, kind)
+		var problem := Game.supplier_problem(order) if Game.unlocked(fitting) else "Unlocks when you move to a bigger space"
+		var words := Ui.vbox([
+			Ui.text(fitting["name"], 16, Ui.INK, 800),
+			Ui.wrap(Ui.text(fitting["description"], 13, Ui.MUTED)),
+			Ui.text("The %s has room for %d in all, counting the one that was here." % [String(place["name"]).to_lower(), limit], 13, NAVY, 800),
+		], 2)
+		words.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var buy := _disabled_if(Ui.button("Buy", _buy.bind(order), BLUE, Ui.WHITE, 44, 14), problem != "")
+		buy.tooltip_text = problem
+		var cells: Array = [ModelPicture.tile(FittingUnit.MODEL_PATH % fitting["model"], ROW_PICTURE, TILE), words]
+		cells.append(Ui.pill("You have %d of %d" % [have, limit], Ui.GREEN_DARK if have < limit else LOCK_TEXT, Ui.GREEN_SOFT if have < limit else LOCK_BG))
+		cells.append_array([Ui.width(Ui.text(Money.format(int(fitting["price_pence"])), 17, Ui.INK, 800), 70), buy])
+		rows.add_child(Ui.panel(Ui.hbox(cells, 18), Ui.box(Ui.WHITE, 18, 18, 14, SHADOW, 3)))
+	var bins := Ui.vbox([Ui.title("Print your own", 20)], 6)
+	bins.add_child(Ui.wrap(Ui.text("A printed storage bin takes one space on the shelving and holds several prints. Buy the design in Design Lab, print one, then click the shelving and choose Storage bins.", 14, Ui.MUTED)))
+	for design: String in Game.data.settings["storage_bins"]["designs"]:
+		bins.add_child(Ui.hbox([
+			ModelPicture.of_product(StringName(design), 44),
+			Ui.text("%s: holds %s" % [Game.product_name(StringName(design)), Game.storage.bin_summary(StringName(design))], 14, Ui.INK, 800),
+		], 12))
+	rows.add_child(Ui.panel(bins, Ui.box(Ui.WHITE, 18, 18, 14, SHADOW, 3)))
+	return Ui.scroll(rows)
+
+
 func _dryers() -> Control:
 	var spot: DryerSpot = get_tree().get_first_node_in_group(&"dryer_spot")
 	var rows := Ui.vbox([

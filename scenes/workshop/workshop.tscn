@@ -82,7 +82,7 @@ light_energy = 1.5
 omni_range = 6.0
 
 [node name="ShelfLight" type="OmniLight3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.2, 2.5, -3.2)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.4, 2.5, 3.2)
 light_color = Color(1, 0.86, 0.62, 1)
 light_energy = 1.4
 omni_range = 5.5
@@ -144,7 +144,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.2, 0, -2.2)
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.2, 0, 1.8)
 
 [node name="FilamentRack" parent="." groups=["obstacle"] instance=ExtResource("7_rack")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.6, 0, -4.32)
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 3.5, 0, 4.32)
 script = ExtResource("23_rack")
 display_name = "Filament rack"
 stand_offset = Vector3(0, 0, 0.65)
@@ -177,7 +177,7 @@ script = ExtResource("30_interactable")
 display_name = "Bin"
 
 [node name="DryerSpot" type="Node3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.35, 0, -4.3)
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 5.2, 0, 4.3)
 script = ExtResource("38_dryer_spot")
 
 [node name="DeliveryZone" type="Node3D" parent="."]
@@ -195,28 +195,28 @@ display_name = "Outbox"
 stand_offset = Vector3(0.8, 0, 0)
 
 [node name="Shelving" parent="." groups=["obstacle"] instance=ExtResource("3_shelving")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.2, 0, -4.26)
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, -0.4, 0, 4.26)
 script = ExtResource("24_shelf")
 display_name = "Shelving"
 stand_offset = Vector3(0, 0, 0.7)
 
 [node name="FloorBox1" parent="." groups=["obstacle"] instance=ExtResource("15_box_b")]
-transform = Transform3D(0.9659, 0, 0.2588, 0, 1, 0, -0.2588, 0, 0.9659, 5.3, 0, 3.8)
+transform = Transform3D(0.9659, 0, 0.2588, 0, 1, 0, -0.2588, 0, 0.9659, 5.5, 0, 2.0)
 
 [node name="FloorBox2" parent="." groups=["obstacle"] instance=ExtResource("16_box_open")]
-transform = Transform3D(0.866, 0, -0.5, 0, 1, 0, 0.5, 0, 0.866, 4.4, 0, 3.9)
+transform = Transform3D(0.866, 0, -0.5, 0, 1, 0, 0.5, 0, 0.866, 5.4, 0, 1.2)
 
 [node name="FloorBox3" parent="." groups=["obstacle"] instance=ExtResource("14_box_a")]
-transform = Transform3D(0.9659, 0, -0.2588, 0, 1, 0, 0.2588, 0, 0.9659, -5.4, 0, 3.7)
+transform = Transform3D(0.9659, 0, -0.2588, 0, 1, 0, 0.2588, 0, 0.9659, -5.4, 0, -3.7)
 
 [node name="PackingStation" parent="." groups=["obstacle"] instance=ExtResource("60_packing_station")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.2, 0, 1.6)
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -5.62, 0, 2.9)
 script = ExtResource("61_packing_station")
 display_name = "Packing station"
 stand_offset = Vector3(0, 0, 0.75)
 
 [node name="FinishingBench" parent="." groups=["obstacle"] instance=ExtResource("62_finishing_bench")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.2, 0, -1.4)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.6, 0, -4.16)
 script = ExtResource("63_finishing_bench")
 display_name = "Finishing bench"
 stand_offset = Vector3(0, 0, 0.75)
