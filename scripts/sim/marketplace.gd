@@ -124,9 +124,11 @@ func orders_per_day(product: StringName, price: int) -> float:
 func tick(from_minute: float, to_minute: float, rng: RandomNumberGenerator) -> Array[Order]:
 	var placed: Array[Order] = []
 	var days := (to_minute - from_minute) / GameClock.DAY
+	# Counted once and kept up to date below: going through every order for every listing is slow.
+	var open := open_orders().size()
 	for product in listings:
 		var entry := listings[product]
-		if not entry["listed"] or open_orders().size() >= int(config["max_open_orders"]):
+		if not entry["listed"] or open >= int(config["max_open_orders"]):
 			continue
 		if rng.randf() < orders_per_day(product, entry["price"]) * days:
 			var order := Order.new()
@@ -138,6 +140,7 @@ func tick(from_minute: float, to_minute: float, rng: RandomNumberGenerator) -> A
 			_next_id += 1
 			orders.append(order)
 			placed.append(order)
+			open += 1
 	return placed
 
 
