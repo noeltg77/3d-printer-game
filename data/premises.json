@@ -24,6 +24,18 @@
 			"printer_spots": 4,
 			"shelf_slots": 24,
 			"rack_slots": 70
+		},
+		{
+			"id": "workshop",
+			"name": "Workshop",
+			"description": "A proper rented unit with a roller door you could drive through. Three long benches for a dozen printers, a wall of shelving and a rack for more filament than is sensible.",
+			"tier": 3,
+			"scene": "res://scenes/workshop/workshop.tscn",
+			"move_cost_pence": 149999,
+			"rent_pence_per_day": 2999,
+			"printer_spots": 12,
+			"shelf_slots": 48,
+			"rack_slots": 140
 		}
 	]
 }

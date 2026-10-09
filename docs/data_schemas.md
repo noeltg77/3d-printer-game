@@ -240,7 +240,7 @@ The places the business can run from, smallest first.
 | `scene` | The scene for the place. It needs the same parts as the garage scene (see `WorldSave.PARTS`), each with at least as many slots as the place before, so everything fits when the business moves |
 | `move_cost_pence` | Paid once to move in |
 | `rent_pence_per_day` | Charged at midnight every game day |
-| `printer_spots`, `shelf_slots`, `rack_slots` | Shown on the place's card. They describe the scene; they don't set it |
+| `printer_spots`, `shelf_slots`, `rack_slots` | Shown on the place's card. They describe the scene; they don't set it. A scene with several benches still has one `Workbench`, whose `printer_spots` reach onto the others |
 
 ## game.json
 

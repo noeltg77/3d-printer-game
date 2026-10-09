@@ -3,8 +3,10 @@ extends Interactable
 ## The workbench: printers stand on it, and it is the packing station where a
 ## finished item becomes a parcel for an order.
 
-## Where printers go on the bench top, relative to the bench. Longer benches
-## set more of them in their scene.
+## Where printers go, relative to this bench, in the order they fill. A longer
+## bench sets more of them in its scene, and a print farm's also reach onto the
+## other benches in the room, which are plain furniture: this one bench owns
+## every printer, and is where orders are packed.
 @export var printer_spots: Array[Vector3] = [Vector3(-0.42, 0.9, 0.03), Vector3(0.42, 0.9, 0.03)]
 
 var _printers: Array[PrinterStation] = []

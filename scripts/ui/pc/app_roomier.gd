@@ -71,7 +71,7 @@ func _card(place: StringName) -> Control:
 func _later_card() -> Control:
 	var card := Ui.panel(Ui.vbox([
 		Ui.title("Bigger still", 20, Ui.MUTED),
-		Ui.wrap(Ui.text("Workshops and factory units aren't on the market yet.", 13, Ui.MUTED)),
+		Ui.wrap(Ui.text("Factory units aren't on the market yet.", 13, Ui.MUTED)),
 	], 8), Ui.outlined(Ui.CLEAR, SHADOW, 22, 20, 20))
 	card.custom_minimum_size.x = 260
 	card.size_flags_vertical = Control.SIZE_SHRINK_BEGIN

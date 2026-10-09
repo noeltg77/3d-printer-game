@@ -15,6 +15,7 @@ func _init() -> void:
 	_test_moisture()
 	_test_design_studio()
 	_test_markets_and_trends()
+	_test_premises()
 	_test_clock()
 	_test_bank()
 	_test_money()
@@ -545,6 +546,21 @@ func _test_markets_and_trends() -> void:
 	later.restore(_through_file(trends.save()))
 	_check(later.hot == trends.hot and later.cool == trends.cool and is_equal_approx(later.until, trends.until), "trends come back from a save")
 	_check(trends.category_name("home_organisation") == "Home organisation", "a category has a name for the player")
+
+
+func _test_premises() -> void:
+	var data := GameData.load_all()
+	var before := {}
+	for place: Dictionary in data.premises.values():
+		_check(ResourceLoader.exists(place["scene"]), "every premises has its scene (%s)" % place["id"])
+		if not before.is_empty():
+			_check(int(place["tier"]) == int(before["tier"]) + 1, "premises go up a tier at a time (%s)" % place["id"])
+			_check(int(place["move_cost_pence"]) > int(before["move_cost_pence"]) and int(place["rent_pence_per_day"]) > int(before["rent_pence_per_day"]), "a bigger place costs more to move to and to rent (%s)" % place["id"])
+			# Everything has to fit when the business moves.
+			for room: String in ["printer_spots", "shelf_slots", "rack_slots"]:
+				_check(int(place[room]) >= int(before[room]), "a bigger place has at least as much room as the one before (%s %s)" % [place["id"], room])
+		before = place
+	_check(int(before["tier"]) <= data.settings["tier_names"].size(), "every tier a place can be has a name")
 
 
 func _test_clock() -> void:

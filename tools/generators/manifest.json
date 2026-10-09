@@ -192,6 +192,7 @@
 
 		{ "generator": "garage", "out": "assets/models/garage/garage.glb" },
 		{ "generator": "garage", "out": "assets/models/garage/unit.glb", "args": { "size": [8.0, 7.0, 2.8], "window": [2.5, 1.6], "door-width": 2.0, "wall": "white", "outside": "slate", "cap": "navy", "floor": "sand" } },
+		{ "generator": "garage", "out": "assets/models/garage/workshop.glb", "args": { "size": [12.0, 9.0, 3.0], "window": [3.9, 2.2], "door-width": 2.8, "door-height": 2.4, "wall": "cream", "outside": "brick", "cap": "charcoal", "floor": "stone" } },
 
 		{ "generator": "furniture", "out": "assets/models/furniture/shelving.glb", "args": { "variant": "shelving" } },
 		{ "generator": "furniture", "out": "assets/models/furniture/filament_rack_small.glb", "args": { "variant": "filament_rack", "tiers": 3, "per-tier": 8 } },
@@ -199,6 +200,8 @@
 		{ "generator": "furniture", "out": "assets/models/furniture/workbench.glb", "args": { "variant": "workbench", "seed": 4 } },
 		{ "generator": "furniture", "out": "assets/models/furniture/shelving_wide.glb", "args": { "variant": "shelving", "bays": 2 } },
 		{ "generator": "furniture", "out": "assets/models/furniture/workbench_long.glb", "args": { "variant": "workbench", "seed": 6, "width": 3.4 } },
+		{ "generator": "furniture", "out": "assets/models/furniture/shelving_long.glb", "args": { "variant": "shelving", "bays": 4 } },
+		{ "generator": "furniture", "out": "assets/models/furniture/filament_rack_farm.glb", "args": { "variant": "filament_rack", "per-tier": 28 } },
 		{ "generator": "furniture", "out": "assets/models/furniture/desk.glb", "args": { "variant": "desk" } },
 		{ "generator": "furniture", "out": "assets/models/furniture/chair.glb", "args": { "variant": "chair", "colour": "teal" } },
 
