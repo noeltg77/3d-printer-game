@@ -3373,6 +3373,25 @@
 			"licence": { "type": "one_off", "fee_pence": 2799, "royalty_pct": 0.0 }
 		},
 		{
+			"id": "puzzle_cube_3x3",
+			"name": "Puzzle cube 3x3",
+			"category": "toys_and_fidgets",
+			"category_name": "Toys and fidgets",
+			"description": "A twist puzzle cube with a colour on each face. Six colours in one print, and it turns.",
+			"unlock_tier": 3,
+			"filament_grams": 70,
+			"print_minutes": 186,
+			"size_mm": [75, 75, 75],
+			"difficulty": 0.15,
+			"needs_supports": false,
+			"colour_count": 6,
+			"colour_swaps": 15,
+			"allowed_filaments": ["pla"],
+			"base_price_pence": 1599,
+			"demand_per_day": 1.6,
+			"licence": { "type": "one_off", "fee_pence": 3199, "royalty_pct": 0.0 }
+		},
+		{
 			"id": "bouncy_squishy_tpu",
 			"name": "Bouncy squishy (TPU)",
 			"category": "toys_and_fidgets",
@@ -6569,6 +6588,25 @@
 			"licence": { "type": "one_off", "fee_pence": 3799, "royalty_pct": 0.0 }
 		},
 		{
+			"id": "molecule_kit",
+			"name": "Molecule kit",
+			"category": "education_and_stem",
+			"category_name": "Education and STEM",
+			"description": "A small molecule with atoms in four colours and the bonds in a fifth.",
+			"unlock_tier": 3,
+			"filament_grams": 70,
+			"print_minutes": 180,
+			"size_mm": [180, 95, 30],
+			"difficulty": 0.15,
+			"needs_supports": false,
+			"colour_count": 5,
+			"colour_swaps": 12,
+			"allowed_filaments": ["pla"],
+			"base_price_pence": 1199,
+			"demand_per_day": 1.85,
+			"licence": { "type": "one_off", "fee_pence": 2399, "royalty_pct": 0.0 }
+		},
+		{
 			"id": "geometry_solids_set",
 			"name": "Geometry solids set",
 			"category": "education_and_stem",
@@ -6586,6 +6624,25 @@
 			"base_price_pence": 1099,
 			"demand_per_day": 1.9,
 			"licence": { "type": "one_off", "fee_pence": 2199, "royalty_pct": 0.0 }
+		},
+		{
+			"id": "fraction_circles",
+			"name": "Fraction circles",
+			"category": "education_and_stem",
+			"category_name": "Education and STEM",
+			"description": "Six circles, each cut into more slices than the last and each its own colour.",
+			"unlock_tier": 3,
+			"filament_grams": 70,
+			"print_minutes": 186,
+			"size_mm": [190, 125, 5],
+			"difficulty": 0.15,
+			"needs_supports": false,
+			"colour_count": 6,
+			"colour_swaps": 15,
+			"allowed_filaments": ["pla"],
+			"base_price_pence": 1299,
+			"demand_per_day": 1.75,
+			"licence": { "type": "one_off", "fee_pence": 2599, "royalty_pct": 0.0 }
 		},
 		{
 			"id": "braille_alphabet_tiles",
