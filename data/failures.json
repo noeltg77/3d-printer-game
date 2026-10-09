@@ -76,6 +76,17 @@
 			"player_text": "{text}"
 		},
 		{
+			"id": "design_fault",
+			"name": "Design fault",
+			"happens": "end",
+			"outcome": "degraded",
+			"weight": 0,
+			"causes": {},
+			"quality_loss": 1,
+			"fix": "Fix the design at the PC",
+			"player_text": "It printed fine, but the design itself is off: a slot too tight, a wall too thin. Fix it in the Design Lab before you sell any."
+		},
+		{
 			"id": "tangled_spool",
 			"name": "Tangled spool",
 			"happens": "mid",

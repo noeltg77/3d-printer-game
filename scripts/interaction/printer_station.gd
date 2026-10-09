@@ -283,6 +283,13 @@ func _end_print() -> void:
 	wear.apply(minutes_run / 60.0, Game.data.presets[preset], Game.data.filaments[spool.material])
 	for slot: String in job.failure.get("damages", {}):
 		wear.damage(StringName(slot), float(job.failure["damages"][slot]))
+	if not job.ruined:
+		# The first print of an own design is its test, and a faulty design spoils every print.
+		var news := Game.studio.printed(item.product)
+		if Game.studio.is_faulty(item.product) and job.failure.is_empty():
+			job.failure = Game.data.failures["design_fault"]
+		elif news == "sound":
+			Game.notify("The test print passed: your %s design is sound" % title, &"good")
 	if job.ruined:
 		# Filament the print never got to is still on the spool.
 		spool.grams += _grams * (1.0 - job.progress)

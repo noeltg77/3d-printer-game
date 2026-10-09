@@ -1,7 +1,8 @@
 extends VBoxContainer
-## PC app: Design Lab, the catalogue of designs to license. No mock-up existed
-## for this one, so it follows the shop screens: a banner with a search box,
-## categories down the left and a card per matching design.
+## PC app: Design Lab, the catalogue of designs to license, and where the
+## business makes its own versions of them. No mock-up existed for this one, so
+## it follows the shop screens: a banner with a search box, categories down the
+## left and a card per matching design.
 
 const PURPLE := Color("7A5BC4")
 const PURPLE_DARK := Color("573F92")
@@ -11,6 +12,9 @@ const FACT_BG := Color("EFEAF8")
 const FACT_TEXT := Color("573F92")
 
 const ALL := ""
+## Stands in for a category: only the business's own designs.
+const OWN := "__own"
+const STAR := Color("E0A526")
 
 var screen: PcScreen
 
@@ -64,7 +68,9 @@ func _build() -> void:
 ## True if a design belongs in the list for this category and search text.
 ## The search looks in the design's name and its category.
 static func matches(row: Dictionary, category: String, search: String) -> bool:
-	if category != ALL and row["category"] != category:
+	if category == OWN and not Game.studio.has(StringName(row["id"])):
+		return false
+	if category != ALL and category != OWN and row["category"] != category:
 		return false
 	var wanted := search.strip_edges()
 	return wanted == "" or String(row["name"]).containsn(wanted) or category_label(row).containsn(wanted)
@@ -91,7 +97,10 @@ func _sidebar() -> Control:
 		if matches(row, ALL, _search):
 			counts[category] += 1
 			total += 1
-	var list := Ui.vbox([_category_button(ALL, "All designs", total)], 6)
+	var own := 0
+	for product in Game.studio.designs:
+		own += 1 if matches(Game.data.products[product], OWN, _search) else 0
+	var list := Ui.vbox([_category_button(ALL, "All designs", total), _category_button(OWN, "Your own designs", own)], 6)
 	for category: String in names:
 		list.add_child(_category_button(category, names[category], counts[category]))
 	_categories_scroll = Ui.scroll(list)
@@ -164,18 +173,63 @@ func _card(product: StringName, row: Dictionary) -> Control:
 		Ui.wrap(Ui.text(row["description"], 13, Ui.MUTED)),
 		facts,
 	], 12)
-	if royalty > 0.0:
+	if royalty > 0.0 and not Game.studio.has(product):
 		column.add_child(Ui.text("The designer takes %d%% of each sale" % roundi(royalty * 100.0), 13, Ui.AMBER_DARK, 800))
 
+	column.add_child(_own_design(product))
 	var action: Control
-	if Game.owns(product):
+	if Game.studio.has(product):
+		action = Ui.pill("Your own design", Ui.GREEN_DARK, Ui.GREEN_SOFT, 14)
+	elif Game.owns(product):
 		action = Ui.pill("Owned", Ui.GREEN_DARK, Ui.GREEN_SOFT, 14)
 	else:
 		var buy := Ui.button("Get it" if fee == 0 else "Buy", func() -> void: Game.buy_design(product), PURPLE, Ui.WHITE, 44, 14, PURPLE_DARK, 15)
 		buy.disabled = not Game.bank.can_afford(fee)
 		action = buy
 	column.add_child(Ui.spacer())
-	column.add_child(Ui.hbox([Ui.title("Free" if fee == 0 else Money.format(fee), 22), null, action]))
+	column.add_child(Ui.hbox([Ui.title("No fee" if Game.studio.has(product) else ("Free" if fee == 0 else Money.format(fee)), 22), null, action]))
 	var card := Ui.card(column, 22, 18, SHADOW)
 	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	return card
+
+
+## The part of a card about the business's own version of the design: how
+## good it is and the next thing to do to it, or the offer to make one.
+func _own_design(product: StringName) -> Control:
+	var studio := Game.studio
+	var computer: Computer = get_tree().get_first_node_in_group(&"computer")
+	var rows := Ui.vbox([], 8)
+	if not studio.has(product):
+		if not Game.design_unlocked():
+			rows.add_child(Ui.text("Design your own once you have a bigger space", 13, Ui.MUTED))
+			return rows
+		rows.add_child(Ui.wrap(Ui.text("Or make your own: no fee and no royalty, but %s at the PC. It would come out at quality %d of %d." % [
+			GameClock.duration_label(studio.minutes_for(product)), studio.next_quality(product), int(Game.data.settings["design"]["max_quality"])], 13, Ui.MUTED)))
+		rows.add_child(_task_button("Design your own", computer.design_action(product)))
+		return rows
+	var record := studio.designs[product]
+	var selling := roundi((studio.appeal(product) - 1.0) * 100.0)
+	rows.add_child(Ui.hbox([
+		Ui.pill("V%d" % record["version"], Ui.PAPER, PURPLE_DARK, 13),
+		Ui.pips(int(record["quality"]), int(Game.data.settings["design"]["max_quality"]), STAR),
+		Ui.text("Sells as well as the bought one" if selling == 0 else "%d%% %s orders than the bought one" % [absi(selling), "more" if selling > 0 else "fewer"], 13, Ui.MUTED),
+	], 10))
+	if studio.needs_fix(product):
+		rows.add_child(Ui.text("The test print found a fault. Prints come out flawed until it is fixed.", 13, Ui.RED_DARK, 800))
+		rows.add_child(_task_button("Fix it (%s)" % GameClock.duration_label(studio.fix_minutes()), computer.fix_action(product)))
+	elif not record["tested"]:
+		rows.add_child(Ui.text("Not tested yet. Print one before you rely on it.", 13, Ui.AMBER_DARK, 800))
+	if studio.can_improve(product) and not studio.needs_fix(product):
+		rows.add_child(_task_button("Improve to V%d (%s)" % [record["version"] + 1, GameClock.duration_label(studio.minutes_for(product))],
+			computer.design_action(product)))
+	return rows
+
+
+## A button that queues a job at the desk and leaves the PC so it can start.
+func _task_button(label: String, action: Action) -> Button:
+	var button := Ui.button(label, func() -> void:
+		(get_tree().get_first_node_in_group(&"player") as Agent).enqueue(action)
+		screen.close(), Ui.WHITE, PURPLE_DARK, 38, 12, SHADOW, 14)
+	button.disabled = not action.enabled
+	button.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	return button

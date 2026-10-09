@@ -84,6 +84,9 @@ var comments: Dictionary = {}
 ## product id -> { listed: bool, price: int, sold: int }
 var listings: Dictionary[StringName, Dictionary] = {}
 var orders: Array[Order] = []
+## The business's own designs: product id -> how well each sells against the
+## bought design (1.0 the same). Own designs owe no royalty.
+var own_appeal: Dictionary[StringName, float] = {}
 ## Oldest first. Each: { order, product, stars, text, minute }.
 var reviews: Array[Dictionary] = []
 
@@ -117,7 +120,8 @@ func demand_multiplier(product: StringName, price: int) -> float:
 
 ## Expected orders per game day for a design at a price, at the current rating.
 func orders_per_day(product: StringName, price: int) -> float:
-	return products[product]["demand_per_day"] * demand_multiplier(product, price) * rating_multiplier()
+	return (products[product]["demand_per_day"] * demand_multiplier(product, price) * rating_multiplier()
+		* float(own_appeal.get(product, 1.0)))
 
 
 ## Rolls for new orders over a span of game minutes. Returns the ones placed.
@@ -191,6 +195,8 @@ func fee_for(price: int) -> int:
 
 
 func royalty_for(product: StringName, price: int) -> int:
+	if own_appeal.has(product):
+		return 0
 	return roundi(price * float(products[product]["licence"]["royalty_pct"]))
 
 

@@ -281,7 +281,7 @@ Build small and prove each step before moving on: assets and garage first, then 
 - [ ] More printers and upgrades (hardened nozzle, enclosure, dryer, auto levelling). Upgrades system, auto levelling, hardened nozzle, enclosure and dryer are in; more printers still to do
 - [x] PETG, TPU, ABS/ASA, carbon fibre, silk/glow/wood
 - [x] Filament moisture and drying
-- [ ] Own designs at the PC with iterations and test prints
+- [x] Own designs at the PC with iterations and test prints
 - [ ] More marketplaces, trends and demand
 - [x] Move to a bigger space
 

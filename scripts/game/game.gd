@@ -23,6 +23,7 @@ var clock: GameClock
 var bank: Bank
 var market: Marketplace
 var supplier: Supplier
+var studio: DesignStudio
 var owned_designs: Array[StringName] = []
 ## Mailer boxes in stock, one used per packed order.
 var packaging := 0
@@ -99,6 +100,7 @@ func new_game() -> void:
 	market = Marketplace.new(data.marketplaces["craftsy"], data.products)
 	market.comments = data.review_comments
 	supplier = Supplier.new(data)
+	studio = DesignStudio.new(data.products, data.settings["design"])
 	owned_designs.assign(start["designs"])
 	packaging = int(start["packaging"])
 	premises = StringName(start_premises if data.premises.has(start_premises) else start["premises"])
@@ -156,6 +158,7 @@ func delete_save() -> void:
 func save() -> Dictionary:
 	return {
 		"clock": clock.save(), "bank": bank.save(), "market": market.save(), "supplier": supplier.save(),
+		"studio": studio.save(),
 		"owned_designs": owned_designs, "packaging": packaging, "tier": tier, "premises": premises,
 	}
 
@@ -166,6 +169,9 @@ func restore(state: Dictionary) -> void:
 	bank.restore(state["bank"])
 	market.restore(state["market"])
 	supplier.restore(state["supplier"])
+	if state.has("studio"):
+		studio.restore(state["studio"])
+	_share_own_designs()
 	owned_designs.clear()
 	for product: String in state["owned_designs"]:
 		if data.products.has(product):
@@ -320,6 +326,47 @@ func _print_flags(spec: Dictionary, preset: StringName, product: StringName, wea
 	if wear != null:
 		flags.append_array(wear.flags())
 	return flags
+
+
+## True once the business is big enough to make its own designs.
+func design_unlocked() -> bool:
+	return tier >= int(data.settings["design"]["unlock_tier"])
+
+
+## Why the next version of an own design can't be started, or "" if it can.
+func design_problem(product: StringName) -> String:
+	if not design_unlocked():
+		return "Needs a bigger space"
+	if studio.needs_fix(product):
+		return "Fix its fault first"
+	if studio.has(product) and not studio.can_improve(product):
+		return "As good as it gets"
+	return ""
+
+
+## The character has finished the next version of an own design at the PC.
+func finish_design(product: StringName) -> void:
+	var record := studio.complete(product, rng)
+	if not owns(product):
+		owned_designs.append(product)
+	_share_own_designs()
+	notify("Your own %s is ready: version %d, quality %d out of %d. Print one to test it." % [
+		product_name(product), record["version"], record["quality"], int(data.settings["design"]["max_quality"])], &"good")
+	changed.emit()
+
+
+## The character has put right a fault a test print found.
+func finish_design_fix(product: StringName) -> void:
+	studio.fix(product)
+	notify("Fixed the fault in your %s design" % product_name(product), &"good")
+	changed.emit()
+
+
+## Tells the marketplace which designs are the business's own.
+func _share_own_designs() -> void:
+	market.own_appeal.clear()
+	for product in studio.designs:
+		market.own_appeal[product] = studio.appeal(product)
 
 
 ## Buys a design licence. False if it can't be afforded or is already owned.

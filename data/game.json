@@ -20,6 +20,21 @@
 	"default_preset": "standard",
 	"tier_names": ["Garage", "Small unit", "Workshop", "Factory"],
 	"wear_rate": 4.0,
+	"design": {
+		"unlock_tier": 2,
+		"base_minutes": 180,
+		"iteration_time": 0.6,
+		"fix_minutes": 60,
+		"max_version": 3,
+		"base_quality": 2,
+		"max_quality": 5,
+		"designs_per_skill_level": 3,
+		"max_skill": 2,
+		"fault_chance": 0.3,
+		"fault_chance_per_skill": 0.1,
+		"appeal_base": 0.7,
+		"appeal_per_quality": 0.1
+	},
 	"moisture": {
 		"gain_per_day": 0.2,
 		"wet_at": 0.4,

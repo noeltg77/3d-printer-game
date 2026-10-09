@@ -87,6 +87,10 @@ static func items(tree: SceneTree) -> Array[Dictionary]:
 			"Click the workbench and choose Pack order. The courier collects what is packed and that is when you get paid.")
 	if waiting > 0:
 		_add(found, "Print %d more for orders" % waiting, "Someone has ordered one you haven't made yet. Orders left too long are cancelled.")
+	for product in Game.studio.designs:
+		if Game.studio.needs_fix(product):
+			_add(found, "Fix the fault in your %s design" % Game.product_name(product),
+				"Every print of it will come out flawed until you do. Click the computer and open Design Lab.")
 	var bench: Workbench = tree.get_first_node_in_group(&"workbench")
 	for place: String in Game.data.premises:
 		var row: Dictionary = Game.data.premises[place]

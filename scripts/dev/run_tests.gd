@@ -12,6 +12,7 @@ func _init() -> void:
 	_test_printer_mods()
 	_test_filaments()
 	_test_moisture()
+	_test_design_studio()
 	_test_clock()
 	_test_bank()
 	_test_money()
@@ -317,6 +318,54 @@ func _test_moisture() -> void:
 	var boxes := supplier.place({"dryers": {"dryhive_mini_dryer_s1": 1}, "spools": {"red": 1}}, 0.0)
 	_check(boxes.size() == 2 and boxes[1].dryer == &"dryhive_mini_dryer_s1" and boxes[1].describe() == "Filament dryer", "a dryer comes in a box of its own")
 	_check(Supplier.Delivery.restored(_through_file(boxes[1].save())).dryer == &"dryhive_mini_dryer_s1", "and survives a save while on its way")
+
+
+func _test_design_studio() -> void:
+	var data := GameData.load_all()
+	var rules: Dictionary = data.settings["design"].duplicate()
+	var studio := DesignStudio.new(data.products, rules)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 4
+	var clips := &"cable_management_clips_x12"
+	var dragon := &"flexi_dragon"
+	_check(not studio.has(clips) and studio.version(clips) == 0 and is_equal_approx(studio.appeal(clips), 1.0), "a design not yet made is no different from the bought one")
+	_check(studio.minutes_for(dragon) > studio.minutes_for(clips), "harder items take longer to design")
+	_check(studio.next_quality(clips) == int(rules["base_quality"]), "a beginner's first version is of basic quality")
+
+	rules["fault_chance"] = 0.0
+	var first := studio.complete(clips, rng)
+	_check(first["version"] == 1 and first["quality"] == 2 and not first["faulty"] and not first["tested"], "finishing a design gives an untested V1")
+	_check(studio.appeal(clips) < 1.0, "a basic own design sells a little worse than the bought one")
+	_check(studio.minutes_for(clips) < float(rules["base_minutes"]), "an iteration is quicker than starting from nothing")
+	_check(studio.printed(clips) == "sound" and studio.designs[clips]["tested"], "the first print of a sound design proves it")
+	_check(studio.printed(clips) == "", "later prints have nothing new to say")
+	studio.complete(clips, rng)
+	studio.complete(clips, rng)
+	_check(studio.version(clips) == 3 and studio.designs[clips]["quality"] == 4 and not studio.can_improve(clips), "each iteration adds a point of quality, up to V3")
+	_check(studio.appeal(clips) > 1.0, "a well worked own design outsells the bought one")
+	_check(studio.skill() == 1 and studio.next_quality(dragon) == 3, "three finished designs make the next one start better")
+	_check(studio.fault_chance() < 0.3, "and skill makes hidden faults rarer")
+
+	rules["fault_chance"] = 1.0
+	studio.complete(dragon, rng)
+	_check(studio.is_faulty(dragon) and not studio.needs_fix(dragon), "a fault stays hidden until something is printed")
+	_check(studio.printed(dragon) == "fault" and studio.needs_fix(dragon), "the first print shows it up")
+	_check(studio.printed(dragon) == "" and studio.is_faulty(dragon), "and every print is flawed until it is fixed")
+	studio.fix(dragon)
+	_check(not studio.is_faulty(dragon) and not studio.needs_fix(dragon) and studio.designs[dragon]["tested"], "fixing it leaves a sound, tested design")
+
+	var saved := _through_file(studio.save())
+	saved["designs"]["gone_design"] = {"version": 1, "quality": 2, "faulty": false, "fault_known": false, "tested": true}
+	var again := DesignStudio.new(data.products, rules)
+	again.restore(saved)
+	_check(again.designs.size() == 2 and again.version(clips) == 3 and again.completed == studio.completed, "own designs and skill come back from a save")
+
+	var market := Marketplace.new(data.marketplaces["craftsy"], data.products)
+	var bought := market.orders_per_day(dragon, 1500)
+	_check(market.royalty_for(dragon, 1500) == 150, "a bought royalty design takes its cut")
+	market.own_appeal[dragon] = 1.2
+	_check(market.royalty_for(dragon, 1500) == 0, "an own design owes no royalty")
+	_check(is_equal_approx(market.orders_per_day(dragon, 1500), bought * 1.2), "and its appeal scales the orders it brings")
 
 
 func _test_clock() -> void:
