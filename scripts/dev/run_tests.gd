@@ -369,7 +369,7 @@ func _test_filaments() -> void:
 	var tough := {"allowed_filaments": ["pla", "petg"]}
 	_check(FilamentRules.suits(tough, data.filaments["petg"]) and not FilamentRules.suits(tough, data.filaments["tpu"]), "and in the other filaments it names, but no others")
 	_check(FilamentRules.suits(data.products["flexi_dragon"], data.filaments["pla_glow"]) and not FilamentRules.suits(data.products["flexi_dragon"], data.filaments["petg"]), "a PLA-only design takes the fancy PLAs but not PETG")
-	_check(FilamentRules.has_a_use(data.products, data.filaments["pla_wood"]) and not FilamentRules.has_a_use(data.products, data.filaments["asa"]), "a filament no design can use is spotted")
+	_check(FilamentRules.has_a_use(data.products, data.filaments["pla_wood"]) and not FilamentRules.has_a_use(data.products, data.filaments["abs"]), "a filament no design can use is spotted")
 
 	_check(FilamentRules.spool_key("pla_silk", "pink") == "pla_silk:pink", "a spool key names material and colour")
 	_check(FilamentRules.material_of("pla_silk:pink") == "pla_silk" and FilamentRules.colour_of("pla_silk:pink") == "pink", "and can be taken apart again")

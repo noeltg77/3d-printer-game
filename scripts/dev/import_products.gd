@@ -10,7 +10,7 @@ const TARGET := "res://data/products.json"
 const MODEL_PATH := "res://assets/models/prints/%s.glb"
 
 ## Catalogue tiers imported so far, and the number the game uses for each.
-const TIERS := {"Garage": 1, "Spare room": 2}
+const TIERS := {"Garage": 1, "Spare room": 2, "Workshop": 3, "Factory": 4}
 ## Tiers whose every product must have a model. The others come in a few at a
 ## time: a product there with no model yet is left out, and counted.
 const COMPLETE_TIERS: Array[String] = ["Garage"]
@@ -25,7 +25,7 @@ const FILAMENTS := {"Silk": "pla_silk", "Glow": "pla_glow", "Wood": "pla_wood", 
 
 ## Orders per game day at the typical price for the cheapest design in each catalogue
 ## size band. Small, cheap things sell fastest.
-const DEMAND_PER_DAY := {"XS": 3.0, "S": 2.5, "M": 2.0, "L": 1.5, "XL": 1.0}
+const DEMAND_PER_DAY := {"XS": 3.0, "S": 2.5, "M": 2.0, "L": 1.5, "XL": 1.0, "XXL": 0.5}
 ## Dearer designs in a band sell slower: demand is multiplied by (cheapest price in
 ## the band / this price) to this power. At 1.0 every design in a band takes the same
 ## money in a day; at 0.0 price makes no difference to demand.
@@ -45,6 +45,8 @@ const SIZE_STEP_MM := 5
 
 ## What each design's card says in the Design Lab, by product id. Written by hand.
 const DESCRIPTIONS := "res://data/import/product_descriptions.json"
+## The game's materials. A product in one that isn't here yet (resin) is left out, and counted.
+const FILAMENT_TABLE := "res://data/filaments.json"
 ## Small parts whose model was scaled up again to be visible (`builder.enlarge` in
 ## its generator), by product id. Their real size divides by this as well.
 const ENLARGEMENT := "res://data/import/model_enlargement.json"
@@ -64,7 +66,8 @@ const OVERRIDES := {
 	"benchy_pack_of_5": {"name": "Test boat (pack of 5)"},
 	"arduino_mounting_plate": {"name": "Controller board mounting plate"},
 	"gopro_mount_set": {"name": "Action camera mount set"},
-	"mandalorian_style_helmet": {"name": "Bounty hunter helmet"},
+	# Its model is shrunk to fit a shelf, so its real size can't be measured from it.
+	"mandalorian_style_helmet": {"name": "Bounty hunter helmet", "size_mm": [240, 280, 300]},
 }
 
 ## Field order in the output, and which numbers are written as whole numbers.
@@ -99,9 +102,13 @@ func _init() -> void:
 			_band_floor[band] = later_floor[band]
 	_descriptions = JSON.parse_string(FileAccess.get_file_as_string(DESCRIPTIONS))
 	_enlargement = JSON.parse_string(FileAccess.get_file_as_string(ENLARGEMENT))
+	var known_filaments := {}
+	for filament: Dictionary in JSON.parse_string(FileAccess.get_file_as_string(FILAMENT_TABLE))["filaments"]:
+		known_filaments[filament["id"]] = true
 	var rows: Array[Dictionary] = []
 	var skipped := 0
 	var waiting := 0
+	var no_material := 0
 	var missing_models: PackedStringArray = []
 	for entry: Dictionary in catalogue["products"]:
 		# A row kept from before the catalogue stays as it is until its tier is complete.
@@ -115,6 +122,9 @@ func _init() -> void:
 				missing_models.append(entry["id"])
 			else:
 				waiting += 1
+			continue
+		if not known_filaments.has(_filament(entry)):
+			no_material += 1
 			continue
 		rows.append(_convert(entry))
 	if not missing_models.is_empty():
@@ -134,8 +144,8 @@ func _init() -> void:
 	var file := FileAccess.open(TARGET, FileAccess.WRITE)
 	file.store_string("{\n\t\"schema_version\": 1,\n\t\"products\": [\n%s\n\t]\n}\n" % ",\n".join(blocks))
 	file.close()
-	print("Imported %d products, kept %d from before the catalogue, skipped %d contract only and %d from later tiers with no model yet." % [
-		imported, rows.size() - imported, skipped, waiting])
+	print("Imported %d products, kept %d from before the catalogue, skipped %d contract only, %d from later tiers with no model yet and %d in a material the game doesn't have yet." % [
+		imported, rows.size() - imported, skipped, waiting, no_material])
 	if not _undescribed.is_empty():
 		print("No description yet for: ", ", ".join(_undescribed))
 	quit(0)
@@ -156,7 +166,7 @@ func _convert(entry: Dictionary) -> Dictionary:
 		"difficulty": snappedf(DIFFICULTY_BASE + (float(entry["difficulty"]) - 1.0) * DIFFICULTY_STEP, 0.01),
 		"needs_supports": false,
 		"colour_count": entry["colours"],
-		"allowed_filaments": [FILAMENTS.get(entry["material"], String(entry["material"]).to_lower())],
+		"allowed_filaments": [_filament(entry)],
 		"base_price_pence": price,
 		"demand_per_day": snappedf(DEMAND_PER_DAY[entry["size"]]
 			* pow(_band_floor[entry["size"]] / float(entry["base_price_gbp"]), DEMAND_PRICE_POWER), 0.05),
@@ -169,6 +179,11 @@ func _convert(entry: Dictionary) -> Dictionary:
 		_undescribed.append(entry["id"])
 	row.merge(OVERRIDES.get(entry["id"], {}), true)
 	return row
+
+
+## The id in data/filaments.json of the material a catalogue entry is printed in.
+func _filament(entry: Dictionary) -> String:
+	return FILAMENTS.get(entry["material"], String(entry["material"]).to_lower())
 
 
 func _slug(text: String) -> String:
