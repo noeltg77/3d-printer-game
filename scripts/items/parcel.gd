@@ -24,6 +24,9 @@ var order: Marketplace.Order
 ## Id of the contract a crate is for, or 0 for an ordinary parcel, and the items in it.
 var contract := 0
 var count := 0
+## What a printer sold second hand fetches, in pence, and what it was. 0 for anything else.
+var resale := 0
+var resale_title := ""
 ## How tall it stands, in metres.
 var height := 0.14
 
@@ -45,6 +48,17 @@ static func create_crate(p_contract: int, p_count: int) -> Parcel:
 	parcel.count = p_count
 	parcel.name = "Crate_%d" % p_contract
 	parcel._build("medium_cardboard_box").scale = Vector3.ONE * CRATE_SCALE
+	return parcel
+
+
+## A printer boxed up for whoever bought it second hand.
+static func create_resale(title: String, pence: int) -> Parcel:
+	var parcel := Parcel.new()
+	parcel.resale = pence
+	parcel.resale_title = title
+	parcel.name = "Resale_%s" % title.to_snake_case()
+	parcel.add_child(DeliveryBox.PRINTER_MODEL.instantiate())
+	parcel.height = 0.35
 	return parcel
 
 

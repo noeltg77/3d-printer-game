@@ -60,8 +60,16 @@ func bin_summary(product: StringName) -> String:
 	return "%s prints" % (", ".join(parts.slice(0, -1)) + " or " + parts[-1] if parts.size() > 1 else parts[0])
 
 
-## How many units of a kind of fitting ("shelf" or "rack") the premises may
-## have in all, counting the one built in.
+## What a printer fetches second hand, in pence: its price new, less the most
+## for one with every part worn out (the `resale` rules in data/game.json).
+## `health` is how much life its parts have left on average, 0 to 1.
+func resale_value(printer: Dictionary, health: float) -> int:
+	var rules: Dictionary = data.settings["resale"]
+	return roundi(float(printer["price_pence"]) * lerpf(float(rules["worn_out"]), float(rules["as_new"]), clampf(health, 0.0, 1.0)))
+
+
+## How many units of a kind of fitting ("shelf", "rack" or "bench") the
+## premises may have in all, counting the one built in.
 func limit(premises: Dictionary, kind: String) -> int:
 	return int(premises.get("%s_units" % kind, 1))
 

@@ -19,6 +19,8 @@ const SETTINGS_FILE := "user://settings.cfg"
 const SAVE_VERSION := 1
 ## What the mailer boxes of an old save are now.
 const LEGACY_PACKAGING := Supplier.LEGACY_PACKAGING
+## Kind of fitting (data/fittings.json) -> group of the node it adds to.
+const FITTING_HOSTS := {"shelf": &"print_storage", "rack": &"filament_rack", "bench": &"workbench"}
 
 var data: GameData
 var clock: GameClock
@@ -598,20 +600,33 @@ func supplier_problem(basket: Dictionary) -> String:
 	var bench: Workbench = get_tree().get_first_node_in_group(&"workbench")
 	if bench != null and Supplier.count_printers(basket) + incoming_printers > bench.free_spots() - _unpacked(&"printers"):
 		return "No bench space for another printer"
-	for kind: String in ["shelf", "rack"]:
+	for kind: String in FITTING_HOSTS:
 		var wanted := 0
 		for fitting_id: String in basket.get("fittings", {}):
 			if data.fittings[fitting_id]["kind"] == kind:
 				wanted += int(basket["fittings"][fitting_id])
 		if wanted > 0 and fitting_count(kind) + wanted > storage.limit(premises_row(), kind):
-			return "No room here for more %s" % ("shelving" if kind == "shelf" else "filament racks")
+			return "No room here for more %s" % {"shelf": "shelving", "rack": "filament racks", "bench": "printer racks"}[kind]
 	return ""
 
 
-## How many units of shelving or of filament rack ("shelf" or "rack") the
+## The node that takes on bought fittings of a kind: the shelving, the
+## filament rack or the workbench.
+func fitting_host(kind: String) -> Interactable:
+	return get_tree().get_first_node_in_group(FITTING_HOSTS[kind])
+
+
+## Takes payment for a printer sold second hand, once the courier has it.
+func complete_resale(title: String, pence: int) -> void:
+	bank.earn(pence, "Sold second hand: %s" % title, clock.minutes)
+	notify("The %s has gone to its buyer: %s" % [title, Money.format(pence)], &"good")
+	changed.emit()
+
+
+## How many units of a kind of fitting ("shelf", "rack" or "bench") the
 ## business has: standing in the room, waiting to be put up, or on their way.
 func fitting_count(kind: String) -> int:
-	var host := get_tree().get_first_node_in_group(&"print_storage" if kind == "shelf" else &"filament_rack")
+	var host := fitting_host(kind)
 	var count: int = host.call(&"unit_count") if host != null else 1
 	var boxed: Array[Supplier.Delivery] = supplier.pending.duplicate()
 	for box: DeliveryBox in get_tree().get_nodes_in_group(&"delivery_box"):

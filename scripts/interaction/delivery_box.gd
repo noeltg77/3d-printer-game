@@ -60,7 +60,7 @@ func place_at(at: Transform3D) -> void:
 
 func _put_up(agent: Agent, at: Transform3D) -> void:
 	var row: Dictionary = Game.data.fittings[delivery.fitting]
-	var host: Interactable = get_tree().get_first_node_in_group(&"print_storage" if row["kind"] == "shelf" else &"filament_rack")
+	var host := Game.fitting_host(row["kind"])
 	await agent.go_to(self)
 	await agent.reach(_pick_up.bind(agent))
 	var stand: Array = row["stand_offset"]
@@ -86,7 +86,7 @@ func _unpack(agent: Agent) -> void:
 	await agent.reach(_pick_up.bind(agent))
 	if delivery.printer != &"":
 		var bench: Workbench = get_tree().get_first_node_in_group(&"workbench")
-		await agent.go_to(bench)
+		await agent.go_to(bench.spot())
 		await agent.reach(func() -> void: bench.install_printer(delivery.printer))
 	if delivery.dryer != &"":
 		var front := spot.global_transform * Vector3(0.0, 0.0, 0.6)

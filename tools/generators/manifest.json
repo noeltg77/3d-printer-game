@@ -589,6 +589,8 @@
 		{ "generator": "parcels", "out": "assets/models/packaging/branded_gift_box_stack.glb", "args": { "variant": "stack", "seed": 9, "kind": "box", "size": [0.26, 0.2, 0.12], "colour": "cream", "accent": "terracotta" } },
 		{ "generator": "parcels", "out": "assets/models/packaging/custom_printed_shipping_box.glb", "args": { "kind": "box", "size": [0.3, 0.24, 0.18], "colour": "white", "accent": "teal" } },
 		{ "generator": "parcels", "out": "assets/models/packaging/custom_printed_shipping_box_stack.glb", "args": { "variant": "stack", "seed": 10, "kind": "box", "size": [0.3, 0.24, 0.18], "colour": "white", "accent": "teal" } },
+		{ "generator": "furniture", "out": "assets/models/furniture/printer_rack_duo.glb", "args": { "variant": "printer_rack", "tiers": 2, "colour": "orange" } },
+		{ "generator": "furniture", "out": "assets/models/furniture/printer_rack_trio.glb", "args": { "variant": "printer_rack", "tiers": 3, "colour": "orange" } },
 		{ "generator": "furniture", "out": "assets/models/furniture/desk.glb", "args": { "variant": "desk" } },
 		{ "generator": "furniture", "out": "assets/models/furniture/chair.glb", "args": { "variant": "chair", "colour": "teal" } },
 

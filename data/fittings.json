@@ -20,6 +20,26 @@
 			"price_pence": 4499,
 			"model": "filament_rack_small",
 			"stand_offset": [0.0, 0.0, 0.65]
+		},
+		{
+			"id": "printer_rack_duo",
+			"name": "Printer rack, two high",
+			"kind": "bench",
+			"description": "Stacks two printers in the floor space of one.",
+			"unlock_tier": 1,
+			"price_pence": 8999,
+			"model": "printer_rack_duo",
+			"stand_offset": [0.0, 0.0, 0.8]
+		},
+		{
+			"id": "printer_rack_trio",
+			"name": "Printer rack, three high",
+			"kind": "bench",
+			"description": "Three printers one above another, for a place with the ceiling for it.",
+			"unlock_tier": 3,
+			"price_pence": 13999,
+			"model": "printer_rack_trio",
+			"stand_offset": [0.0, 0.0, 0.8]
 		}
 	]
 }

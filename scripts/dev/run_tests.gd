@@ -1373,6 +1373,12 @@ func _test_storage() -> void:
 		last_shelves = rules.limit(place, "shelf")
 		last_racks = rules.limit(place, "rack")
 
+	_check(rules.limit(data.premises["garage"], "bench") == 2 and data.fittings["printer_rack_duo"]["kind"] == "bench", "the garage has room for one printer rack beside its bench")
+	var mini: Dictionary = data.printers["plodder_mini"]
+	_check(rules.resale_value(mini, 1.0) == roundi(int(mini["price_pence"]) * float(data.settings["resale"]["as_new"])), "a printer as good as new sells second hand for a set share of its price")
+	_check(rules.resale_value(mini, 0.0) < rules.resale_value(mini, 0.5) and rules.resale_value(mini, 0.5) < rules.resale_value(mini, 1.0), "and a worn one for less")
+	_check(rules.resale_value(mini, 0.0) > 0 and rules.resale_value(mini, 1.0) < int(mini["price_pence"]), "never nothing, and never what it cost")
+
 	var supplier := Supplier.new(data)
 	var basket := {"fittings": {"shelving_unit": 2}}
 	_check(supplier.price_of(basket) == int(data.fittings["shelving_unit"]["price_pence"]) * 2, "shelving is priced by the unit")

@@ -298,7 +298,7 @@ func _upgrades() -> Control:
 func _storage() -> Control:
 	var place := Game.premises_row()
 	var rows := Ui.vbox([
-		Ui.wrap(Ui.text("More room for stock and spools. It arrives flat packed: click the box, choose where it stands, and it is put up there. You can stand it somewhere else later. If you move, it comes with you.", 14, Ui.MUTED)),
+		Ui.wrap(Ui.text("More room for stock, spools and printers. It arrives flat packed: click the box, choose where it stands, and it is put up there. You can stand it somewhere else later. If you move, it comes with you.", 14, Ui.MUTED)),
 	], 12)
 	for fitting_id: String in Game.data.fittings:
 		var fitting: Dictionary = Game.data.fittings[fitting_id]

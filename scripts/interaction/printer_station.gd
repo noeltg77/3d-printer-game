@@ -244,6 +244,7 @@ func _status_actions() -> Array[Action]:
 		actions.append(_unload_menu())
 	actions.append(_parts_menu())
 	actions.append(_upgrades_menu())
+	actions.append(_part_with_menu())
 	return actions
 
 
@@ -367,6 +368,40 @@ func _print_menu() -> Action:
 
 ## Each part's health, with the task of swapping it for a spare. Any spare
 ## that goes in the same slot will do, so a better part can replace a basic one.
+## How much life its parts have left on average, 0 (worn out) to 1 (new).
+func condition() -> float:
+	var total := 0.0
+	for slot in wear.slots():
+		total += float(wear.health[slot])
+	return total / maxf(wear.slots().size(), 1.0)
+
+
+## What it would fetch second hand, in pence.
+func resale_value() -> int:
+	return Game.storage.resale_value(spec, condition())
+
+
+## Why it can't be sold or scrapped right now, or "" if it can.
+func part_with_problem() -> String:
+	if status != Status.IDLE or item != null or not tray.is_empty():
+		return "it has to be idle, with nothing on it"
+	if spools.any(func(loaded: Spool) -> bool: return loaded != null):
+		return "unload its filament first"
+	return ""
+
+
+## Selling the printer on, or scrapping it.
+func _part_with_menu() -> Action:
+	var problem := part_with_problem()
+	if problem != "":
+		return Action.info("Sell or scrap it (%s)" % problem)
+	var sell := Action.new("Sell it second hand for %s" % Money.format(resale_value()), _sell)
+	sell.task_name = "Box up the %s to sell" % display_name
+	var bin := Action.new("Scrap it for nothing", _scrap)
+	bin.task_name = "Scrap the %s" % display_name
+	return Action.submenu("Sell or scrap it", [sell, bin])
+
+
 func _parts_menu() -> Action:
 	var lines: Array[Action] = []
 	for slot in wear.slots():
@@ -785,6 +820,62 @@ func _start(agent: Agent, product: StringName, p_preset: StringName, slots: Arra
 
 
 ## Not a task: opens the print set-up card, which queues the print itself.
+## Takes the printer off its spot and gives the character a box to carry in
+## its place. Anything fitted to it goes with it.
+func _take_away(agent: Agent) -> void:
+	(get_tree().get_first_node_in_group(&"workbench") as Workbench).remove_printer(self)
+	var box := Node3D.new()
+	box.add_child(DeliveryBox.PRINTER_MODEL.instantiate())
+	box.scale = Vector3.ONE * 0.8
+	agent.carry(box)
+	# Gone from the room, but not freed yet: the task that is getting rid of it
+	# is this printer's own, and would stop dead if the printer went first.
+	visible = false
+	remove_collider()
+	remove_from_group(&"printer")
+	remove_from_group(&"interactable")
+	set_process(false)
+
+
+## Boxes the printer up at the packing station and leaves it for the courier,
+## who brings what it fetched.
+func _sell(agent: Agent) -> void:
+	if part_with_problem() != "":
+		agent.say("Can't sell the %s right now" % display_name)
+		return
+	var rules: Dictionary = Game.data.settings["resale"]
+	var title := display_name
+	var pence := resale_value()
+	var tree := get_tree()
+	await agent.go_to(self)
+	await agent.reach(_take_away.bind(agent))
+	var station: PackingStation = tree.get_first_node_in_group(&"packing_station")
+	await agent.go_to(station)
+	await agent.work(float(rules["pack_minutes"]))
+	agent.release().queue_free()
+	await agent.reach(func() -> void: agent.carry(Parcel.create_resale(title, pence)))
+	var outbox: Outbox = tree.get_first_node_in_group(&"outbox")
+	await agent.go_to(outbox)
+	await agent.reach(func() -> void: outbox.add(agent.release() as Parcel))
+	Game.notify("%s boxed up for its buyer. You are paid %s when the courier collects it." % [title, Money.format(pence)])
+	queue_free()
+
+
+func _scrap(agent: Agent) -> void:
+	if part_with_problem() != "":
+		agent.say("Can't scrap the %s right now" % display_name)
+		return
+	var title := display_name
+	var tree := get_tree()
+	await agent.go_to(self)
+	await agent.work(float(Game.data.settings["resale"]["scrap_minutes"]))
+	await agent.reach(_take_away.bind(agent))
+	await agent.walk_to(tree.get_first_node_in_group(&"bin").global_position)
+	await agent.reach(func() -> void: agent.release().queue_free())
+	agent.say("Scrapped the %s" % title)
+	queue_free()
+
+
 func _open_print_dialog(_agent: Agent) -> void:
 	(get_tree().get_first_node_in_group(&"print_dialog") as PrintDialog).open(self)
 

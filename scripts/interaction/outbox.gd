@@ -36,7 +36,9 @@ func _on_courier_arrived() -> void:
 	var total := 0
 	var sold := 0
 	for parcel in _parcels:
-		if parcel.contract > 0:
+		if parcel.resale > 0:
+			Game.complete_resale(parcel.resale_title, parcel.resale)
+		elif parcel.contract > 0:
 			Game.ship_contract(parcel.contract, parcel.count)
 		else:
 			total += parcel.order.price
@@ -50,6 +52,8 @@ func _on_courier_arrived() -> void:
 
 func save() -> Dictionary:
 	return {"parcels": _parcels.map(func(parcel: Parcel) -> Dictionary:
+		if parcel.resale > 0:
+			return {"resale": parcel.resale, "title": parcel.resale_title}
 		if parcel.contract > 0:
 			return {"contract": parcel.contract, "count": parcel.count}
 		return {"market": parcel.order.market, "id": parcel.order.id})}
@@ -62,6 +66,9 @@ func restore(data: Dictionary) -> void:
 		if early != null:
 			add(Parcel.create(early))
 	for entry: Dictionary in data.get("parcels", []):
+		if entry.has("resale"):
+			add(Parcel.create_resale(String(entry["title"]), int(entry["resale"])))
+			continue
 		if entry.has("contract"):
 			if Game.contracts.by_id(int(entry["contract"])) != null:
 				add(Parcel.create_crate(int(entry["contract"]), int(entry["count"])))

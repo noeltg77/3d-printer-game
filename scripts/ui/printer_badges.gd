@@ -8,8 +8,9 @@ extends Control
 const LIFT := 0.92
 const BAR_WIDTH := 64.0
 
-## Printer -> { badge, state, bar }.
-var _badges: Dictionary[PrinterStation, Dictionary] = {}
+## Printer's instance id -> { badge, state, bar }. By id, so that a printer
+## which has been sold or scrapped can still be looked up to clear its badge.
+var _badges: Dictionary[int, Dictionary] = {}
 
 
 func _ready() -> void:
@@ -19,17 +20,17 @@ func _ready() -> void:
 
 func _process(_delta: float) -> void:
 	var camera := get_viewport().get_camera_3d()
-	for printer: PrinterStation in _badges.keys():
-		if not is_instance_valid(printer):
-			(_badges[printer]["badge"] as Control).queue_free()
-			_badges.erase(printer)
+	for id: int in _badges.keys():
+		if not is_instance_id_valid(id):
+			(_badges[id]["badge"] as Control).queue_free()
+			_badges.erase(id)
 	if camera == null:
 		return
 	for printer: PrinterStation in get_tree().get_nodes_in_group(&"printer"):
 		var state := _state(printer)
-		if not _badges.has(printer) or _badges[printer]["state"] != state:
+		if not _badges.has(printer.get_instance_id()) or _badges[printer.get_instance_id()]["state"] != state:
 			_rebuild(printer, state)
-		var entry := _badges[printer]
+		var entry := _badges[printer.get_instance_id()]
 		var badge: Control = entry["badge"]
 		badge.visible = state != ""
 		if entry["bar"] != null and printer.job != null:
@@ -54,8 +55,8 @@ func _state(printer: PrinterStation) -> String:
 
 
 func _rebuild(printer: PrinterStation, state: String) -> void:
-	if _badges.has(printer):
-		(_badges[printer]["badge"] as Control).queue_free()
+	if _badges.has(printer.get_instance_id()):
+		(_badges[printer.get_instance_id()]["badge"] as Control).queue_free()
 	var bar: ProgressBar = null
 	var label: Label = null
 	var badge: Control
@@ -77,4 +78,4 @@ func _rebuild(printer: PrinterStation, state: String) -> void:
 		badge = Control.new()
 	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(badge)
-	_badges[printer] = {"badge": badge, "state": state, "bar": bar, "label": label}
+	_badges[printer.get_instance_id()] = {"badge": badge, "state": state, "bar": bar, "label": label}

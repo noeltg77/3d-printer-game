@@ -107,6 +107,8 @@ func move(place: StringName) -> bool:
 		flat_packs.append_array(StorageRules.pack_for_move(world["shelf"]))
 	if world.has("rack"):
 		flat_packs.append_array(StorageRules.pack_for_move(world["rack"]))
+	if world.has("bench"):
+		flat_packs.append_array(StorageRules.pack_for_move(world["bench"]))
 	for fitting in flat_packs:
 		var box := Supplier.Delivery.new()
 		box.fitting = fitting

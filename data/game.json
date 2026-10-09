@@ -28,6 +28,12 @@
 		],
 		"designs": { "stackable_storage_bin": 12, "gridfinity_bin_pack_x6": 6 }
 	},
+	"resale": {
+		"worn_out": 0.15,
+		"as_new": 0.55,
+		"pack_minutes": 12,
+		"scrap_minutes": 5
+	},
 	"finishing": {
 		"minutes": 6,
 		"quality_gain": 1,

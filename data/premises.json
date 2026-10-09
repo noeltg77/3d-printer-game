@@ -14,6 +14,7 @@
 			"rack_slots": 24,
 			"shelf_units": 2,
 			"rack_units": 1,
+			"bench_units": 2,
 			"staff": 0
 		},
 		{
@@ -29,6 +30,7 @@
 			"rack_slots": 70,
 			"shelf_units": 3,
 			"rack_units": 2,
+			"bench_units": 3,
 			"staff": 0
 		},
 		{
@@ -44,6 +46,7 @@
 			"rack_slots": 140,
 			"shelf_units": 4,
 			"rack_units": 3,
+			"bench_units": 5,
 			"staff": 2
 		},
 		{
@@ -59,6 +62,7 @@
 			"rack_slots": 280,
 			"shelf_units": 5,
 			"rack_units": 4,
+			"bench_units": 7,
 			"staff": 6
 		}
 	]

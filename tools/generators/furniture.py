@@ -237,6 +237,36 @@ def _finishing_bench(builder, args, rng):
     _pending_parts.append(add_torch)
 
 
+def _printer_rack(builder, args, rng):
+    """Open rack that stacks printers: `--tiers` shelves, one printer to each, 0.8 x 0.68.
+
+    Posts and shelves only, so the printers show from the front and the side.
+    Markers: `printer_spot_1` (the lowest shelf) upwards.
+    """
+    width, depth, pitch = 0.8, 0.68, 0.88
+    tiers = args.tiers
+    first = 0.26 if tiers <= 2 else 0.1
+    top = first + tiers * pitch
+    half_x, half_y = width / 2 - 0.025, depth / 2 - 0.025
+    for x in (-half_x, half_x):
+        for y in (-half_y, half_y):
+            builder.box((0.05, 0.05, top), (x, y, top / 2), "charcoal")
+            builder.cylinder(0.03, 0.02, (x, y, 0.01), "ink", segments=6)
+    # The back is closed in, pale so the printers stand out against it.
+    builder.box((width - 0.06, 0.015, top - first), (0, half_y, (top + first) / 2), "metal_light")
+    for tier in range(tiers):
+        z = first + tier * pitch
+        builder.box((width, depth, 0.035), (0, 0, z - 0.0175), "slate", bevel=0.004)
+        # A strip light under the shelf above.
+        builder.box((width - 0.12, 0.02, 0.012), (0, -half_y + 0.03, z + pitch - 0.045), args.colour)
+        _pending_markers.append((f"printer_spot_{tier + 1}", (0, 0.0, z), (0, 0, 0)))
+    builder.box((width, depth, 0.05), (0, 0, top - 0.025), "charcoal", bevel=0.006)
+    if tiers <= 2:
+        # Room underneath for a drawer.
+        builder.box((width - 0.08, depth - 0.06, first - 0.08), (0, 0, (first - 0.035) / 2 + 0.02), "charcoal", bevel=0.006)
+        builder.box((0.26, 0.012, 0.03), (0, -depth / 2 + 0.025, first * 0.5), "metal_light")
+
+
 def _desk(builder, args, rng):
     """Office desk, 1.3 x 0.65, top at 0.7. Drawers on the right, sit on the -Y side."""
     width, depth, height = 1.3, 0.65, 0.7
@@ -267,7 +297,7 @@ def _chair(builder, args, rng):
 
 
 VARIANTS = {"shelving": _shelving, "filament_rack": _filament_rack, "workbench": _workbench, "packing_station": _packing_station,
-            "finishing_bench": _finishing_bench, "desk": _desk, "chair": _chair}
+            "finishing_bench": _finishing_bench, "printer_rack": _printer_rack, "desk": _desk, "chair": _chair}
 
 if __name__ == "__main__":
     common.run(sys.modules[__name__])

@@ -1,8 +1,8 @@
 class_name FittingUnit
 extends Interactable
-## A bought piece of storage standing where the player put it: a bay of
-## shelving or a filament rack (a row of data/fittings.json). It only adds
-## spaces to the premises' own StorageShelf or FilamentRack (its `host`),
+## A bought fitting standing where the player put it: a bay of shelving, a
+## filament rack or a printer rack (a row of data/fittings.json). It only adds
+## spaces to the premises' own StorageShelf, FilamentRack or Workbench (its `host`),
 ## which keeps track of what is on it: clicking it offers the host's actions,
 ## and the chance to stand it somewhere else.
 
@@ -70,6 +70,8 @@ func move_to(agent: Agent, to: Transform3D) -> void:
 	await agent.go_to(self)
 	await agent.reach()
 	global_transform = to
+	if host.has_method(&"unit_moved"):
+		host.call(&"unit_moved", self)
 	(get_tree().get_first_node_in_group(&"floor_grid") as FloorGrid).rebuild()
 	await agent.walk_to(get_stand_point())
 	await agent.face(global_position)
