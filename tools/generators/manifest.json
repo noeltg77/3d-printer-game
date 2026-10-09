@@ -192,6 +192,13 @@
 
 		{ "generator": "garage", "out": "assets/models/garage/garage.glb" },
 		{ "generator": "garage", "out": "assets/models/garage/unit.glb", "args": { "size": [8.0, 7.0, 2.8], "window": [2.5, 1.6], "door-width": 2.0, "wall": "white", "outside": "slate", "cap": "navy", "floor": "sand" } },
+		{ "generator": "outdoors", "out": "assets/models/surroundings/street.glb", "args": { "variant": "street", "seed": 3 } },
+		{ "generator": "outdoors", "out": "assets/models/surroundings/estate.glb", "args": { "variant": "estate", "seed": 5, "room": [8.0, 7.0] } },
+		{ "generator": "vehicles", "out": "assets/models/vehicles/car_red.glb", "args": { "variant": "car", "colour": "red" } },
+		{ "generator": "vehicles", "out": "assets/models/vehicles/car_teal.glb", "args": { "variant": "car", "colour": "teal" } },
+		{ "generator": "vehicles", "out": "assets/models/vehicles/car_yellow.glb", "args": { "variant": "car", "colour": "yellow" } },
+		{ "generator": "vehicles", "out": "assets/models/vehicles/car_blue.glb", "args": { "variant": "car", "colour": "blue" } },
+		{ "generator": "vehicles", "out": "assets/models/vehicles/van_white.glb", "args": { "variant": "van", "colour": "white" } },
 
 		{ "generator": "furniture", "out": "assets/models/furniture/shelving.glb", "args": { "variant": "shelving" } },
 		{ "generator": "furniture", "out": "assets/models/furniture/filament_rack_small.glb", "args": { "variant": "filament_rack", "tiers": 3, "per-tier": 8 } },

@@ -443,4 +443,5 @@ def run(module, argv=None):
     module.build(args, random.Random(args.seed))
     export_glb(args.out)
     if not args.no_preview:
-        render_preview(PREVIEW_DIR / f"{args.out.stem}.png")
+        # A module can ask for a bigger render if its asset is a whole scene.
+        render_preview(PREVIEW_DIR / f"{args.out.stem}.png", resolution=getattr(module, "PREVIEW_RESOLUTION", 512))

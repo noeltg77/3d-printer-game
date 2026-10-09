@@ -1,4 +1,4 @@
-[gd_scene load_steps=36 format=3]
+[gd_scene load_steps=43 format=3]
 
 [ext_resource type="PackedScene" path="res://assets/models/garage/unit.glb" id="1_garage"]
 [ext_resource type="PackedScene" path="res://assets/models/furniture/workbench_long.glb" id="2_workbench"]
@@ -35,6 +35,13 @@
 [ext_resource type="Script" path="res://scripts/game/world_save.gd" id="36_world_save"]
 [ext_resource type="Script" path="res://scripts/world/day_night.gd" id="37_day_night"]
 [ext_resource type="Script" path="res://scripts/world/dryer_spot.gd" id="38_dryer_spot"]
+[ext_resource type="PackedScene" path="res://assets/models/surroundings/estate.glb" id="39_surroundings"]
+[ext_resource type="Script" path="res://scripts/world/surroundings.gd" id="40_surroundings"]
+[ext_resource type="PackedScene" path="res://assets/models/vehicles/car_red.glb" id="41_car_red"]
+[ext_resource type="PackedScene" path="res://assets/models/vehicles/car_teal.glb" id="42_car_teal"]
+[ext_resource type="PackedScene" path="res://assets/models/vehicles/car_yellow.glb" id="43_car_yellow"]
+[ext_resource type="PackedScene" path="res://assets/models/vehicles/car_blue.glb" id="44_car_blue"]
+[ext_resource type="PackedScene" path="res://assets/models/vehicles/van_white.glb" id="45_van"]
 
 [sub_resource type="Environment" id="Environment_garage"]
 background_mode = 1
@@ -84,7 +91,7 @@ current = true
 size = 9.6
 far = 60.0
 script = ExtResource("18_camera")
-max_size = 11.5
+max_size = 14.0
 
 [node name="FloorGrid" type="Node3D" parent="."]
 script = ExtResource("19_grid")
@@ -92,6 +99,11 @@ area = Rect2(-3.75, -3.25, 7.5, 6.5)
 
 [node name="Shell" parent="." instance=ExtResource("1_garage")]
 script = ExtResource("20_cutaway")
+
+[node name="Surroundings" parent="." instance=ExtResource("39_surroundings")]
+script = ExtResource("40_surroundings")
+vehicles = Array[PackedScene]([ExtResource("41_car_red"), ExtResource("42_car_teal"), ExtResource("43_car_yellow"), ExtResource("44_car_blue"), ExtResource("45_van")])
+courier_van = ExtResource("45_van")
 
 [node name="Door" type="Node3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 0, 0)

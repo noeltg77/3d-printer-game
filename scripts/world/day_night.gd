@@ -8,7 +8,7 @@ extends Node
 
 ## The look at points through the day, by hour. Each moment blends into the next,
 ## and the last wraps round to the first.
-##   sun, ambient: [energy, colour]   backdrop: colour behind the room
+##   sun, ambient: [energy, colour]   backdrop: colour past the edge of the world
 ##   lamps: how bright the lamps are, times their energy in the scene
 ##   window: [energy, colour]
 const MOMENTS: Array[Dictionary] = [
@@ -63,8 +63,14 @@ func _process(_delta: float) -> void:
 	_apply()
 
 
-func _apply() -> void:
-	var hour := Game.clock.minute_of_day / 60.0
+## How dark it is at `hour`, from 0 in daylight to 1 at night. Lamps come on with it.
+static func darkness(hour: float) -> float:
+	var look := _look(hour)
+	return clampf(inverse_lerp(1.0, 1.5, lerpf(look[0]["lamps"], look[1]["lamps"], look[2])), 0.0, 1.0)
+
+
+## The two moments `hour` falls between, then how far it is from the first to the second.
+static func _look(hour: float) -> Array:
 	var from := MOMENTS[-1]
 	var to := MOMENTS[0]
 	for index in MOMENTS.size():
@@ -73,6 +79,14 @@ func _apply() -> void:
 			to = MOMENTS[(index + 1) % MOMENTS.size()]
 	var span := fposmod(float(to["hour"]) - float(from["hour"]), HOURS_IN_DAY)
 	var blend := clampf((hour - float(from["hour"])) / span, 0.0, 1.0) if span > 0.0 else 0.0
+	return [from, to, blend]
+
+
+func _apply() -> void:
+	var look := _look(Game.clock.minute_of_day / 60.0)
+	var from: Dictionary = look[0]
+	var to: Dictionary = look[1]
+	var blend: float = look[2]
 	_sun.light_energy = lerpf(from["sun"][0], to["sun"][0], blend)
 	_sun.light_color = (from["sun"][1] as Color).lerp(to["sun"][1], blend)
 	_environment.ambient_light_energy = lerpf(from["ambient"][0], to["ambient"][0], blend)
