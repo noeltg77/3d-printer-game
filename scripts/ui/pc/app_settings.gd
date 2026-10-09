@@ -79,7 +79,8 @@ func _save_card() -> Control:
 
 func _save_now() -> void:
 	var world: WorldSave = get_tree().get_first_node_in_group(&"world_save")
-	Game.notify("Game saved" if world.save_now() else "The game couldn't be saved")
+	var saved := world.save_now()
+	Game.notify("Game saved" if saved else "The game couldn't be saved", &"good" if saved else &"bad")
 	screen.refresh()
 
 

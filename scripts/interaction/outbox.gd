@@ -37,7 +37,7 @@ func _on_courier_arrived() -> void:
 		total += parcel.order.price
 		Game.complete_sale(parcel.order)
 		parcel.queue_free()
-	Game.notify("Courier collected %d parcel%s: %s in sales" % [_parcels.size(), "" if _parcels.size() == 1 else "s", Money.format(total)])
+	Game.notify("Courier collected %d parcel%s: %s in sales" % [_parcels.size(), "" if _parcels.size() == 1 else "s", Money.format(total)], &"good")
 	_parcels.clear()
 
 

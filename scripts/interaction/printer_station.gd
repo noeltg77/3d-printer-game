@@ -253,15 +253,15 @@ func _end_print() -> void:
 		Interactable.attach(scrap, _plate)
 		item = null
 		status = Status.FAILED
-		Game.notify("%s: %s. %s" % [display_name, job.failure["name"], job.failure["player_text"]])
+		Game.notify("%s: %s. %s" % [display_name, job.failure["name"], job.failure["player_text"]], &"bad")
 	elif not job.failure.is_empty():
 		item.spoil(job.failure)
 		status = Status.DONE
 		Game.notify("%s finished %s, but: %s. %s" % [
-			display_name, title, String(job.failure["name"]).to_lower(), job.failure["player_text"]])
+			display_name, title, String(job.failure["name"]).to_lower(), job.failure["player_text"]], &"bad")
 	else:
 		status = Status.DONE
-		Game.notify("%s finished printing: %s" % [display_name, title])
+		Game.notify("%s finished printing: %s" % [display_name, title], &"good")
 	Game.changed.emit()
 
 

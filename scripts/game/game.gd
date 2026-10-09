@@ -6,8 +6,8 @@ extends Node
 
 ## Something the UI shows has changed (cash, orders, designs, stock).
 signal changed
-## A short message for the player.
-signal notified(text: String)
+## A short message for the player. `tone` is &"good", &"bad" or empty.
+signal notified(text: String, tone: StringName)
 signal delivery_arrived(delivery: Supplier.Delivery)
 ## The daily courier is here to take whatever is in the outbox.
 signal courier_arrived
@@ -59,7 +59,7 @@ func _process(delta: float) -> void:
 		notify("New order: %s for %s" % [product_name(order.product), Money.format(order.price)])
 		changed.emit()
 	for order in market.expire(clock.minutes):
-		notify("Order #%d was cancelled: not dispatched in time" % order.id)
+		notify("Order #%d was cancelled: not dispatched in time" % order.id, &"bad")
 		changed.emit()
 	for outcome in market.deliver(clock.minutes, rng, data.settings["courier"]):
 		_settle_delivery(outcome)
@@ -117,7 +117,7 @@ func load_game() -> Dictionary:
 		saved_at = clock.minutes
 		return parsed.get("world", {})
 	DirAccess.rename_absolute(save_path, save_path + ".unreadable")
-	notify("The saved game couldn't be read, so this is a new one")
+	notify("The saved game couldn't be read, so this is a new one", &"bad")
 	return {}
 
 
@@ -176,8 +176,8 @@ func set_speed(new_speed: float) -> void:
 	changed.emit()
 
 
-func notify(text: String) -> void:
-	notified.emit(text)
+func notify(text: String, tone: StringName = &"") -> void:
+	notified.emit(text, tone)
 
 
 func product_name(product: StringName) -> String:
@@ -322,9 +322,10 @@ func _settle_delivery(outcome: Dictionary) -> void:
 			bank.earn(refund["fee"], "%s fees returned" % market_name, clock.minutes)
 		if refund["royalty"] > 0:
 			bank.earn(refund["royalty"], "Design royalty returned: %s" % title, clock.minutes)
-		notify("Order #%d %s: %s refunded. \"%s\"" % [order.id, why, Money.format(refund["price"]), review["text"]])
+		notify("Order #%d %s: %s refunded. \"%s\"" % [order.id, why, Money.format(refund["price"]), review["text"]], &"bad")
 	elif not review.is_empty():
-		notify("%d star review for %s: \"%s\"" % [review["stars"], title, review["text"]])
+		var stars := int(review["stars"])
+		notify("%d star review for %s: \"%s\"" % [stars, title, review["text"]], &"good" if stars >= 4 else (&"bad" if stars <= 2 else &""))
 	changed.emit()
 
 

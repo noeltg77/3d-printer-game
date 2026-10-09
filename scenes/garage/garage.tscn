@@ -1,4 +1,4 @@
-[gd_scene load_steps=34 format=3]
+[gd_scene load_steps=35 format=3]
 
 [ext_resource type="PackedScene" path="res://assets/models/garage/garage.glb" id="1_garage"]
 [ext_resource type="PackedScene" path="res://assets/models/furniture/workbench.glb" id="2_workbench"]
@@ -33,6 +33,7 @@
 [ext_resource type="Script" path="res://scripts/ui/pc/pc_screen.gd" id="34_pc_screen"]
 [ext_resource type="Script" path="res://scripts/ui/print_dialog.gd" id="35_print_dialog"]
 [ext_resource type="Script" path="res://scripts/game/world_save.gd" id="36_world_save"]
+[ext_resource type="Script" path="res://scripts/world/day_night.gd" id="37_day_night"]
 
 [sub_resource type="Environment" id="Environment_garage"]
 background_mode = 1
@@ -66,6 +67,12 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.93, 0.95, -2.2)
 light_color = Color(1, 0.78, 0.42, 1)
 light_energy = 1.2
 omni_range = 1.8
+
+[node name="DayNight" type="Node" parent="."]
+script = ExtResource("37_day_night")
+sun_path = NodePath("../Sun")
+environment_path = NodePath("../WorldEnvironment")
+lamp_paths = Array[NodePath]([NodePath("../BenchLight"), NodePath("../DeskLampLight")])
 
 [node name="Camera" type="Camera3D" parent="."]
 transform = Transform3D(0.7071, -0.4082, 0.5774, 0, 0.8165, 0.5774, -0.7071, -0.4082, 0.5774, 14.43, 15.38, 13.98)
