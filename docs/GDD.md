@@ -289,7 +289,7 @@ Build small and prove each step before moving on: assets and garage first, then 
 
 - [x] Multicolour unit with 4 slots, linkable units
 - [x] Colour change waste, batching to reduce swaps
-- [ ] Multicolour products and pricing. The way of colouring parts, one colour printing at a discount and the first six products are in; the other 172 need models
+- [x] Multicolour products and pricing
 
 ### Phase 8: Tier 3 workshop
 

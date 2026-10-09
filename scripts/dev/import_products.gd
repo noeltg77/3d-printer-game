@@ -22,7 +22,7 @@ const LEGACY: Array[String] = ["desk_organiser", "flexi_dragon"]
 
 ## Orders per game day at the typical price for the cheapest design in each catalogue
 ## size band. Small, cheap things sell fastest.
-const DEMAND_PER_DAY := {"XS": 3.0, "S": 2.5, "M": 2.0, "L": 1.5}
+const DEMAND_PER_DAY := {"XS": 3.0, "S": 2.5, "M": 2.0, "L": 1.5, "XL": 1.0}
 ## Dearer designs in a band sell slower: demand is multiplied by (cheapest price in
 ## the band / this price) to this power. At 1.0 every design in a band takes the same
 ## money in a day; at 0.0 price makes no difference to demand.
@@ -43,9 +43,16 @@ const SIZE_STEP_MM := 5
 ## What each design's card says in the Design Lab, by product id. Written by hand.
 const DESCRIPTIONS := "res://data/import/product_descriptions.json"
 
-## Per product values that replace what the rules give.
+## Per product values that replace what the rules give. The names are for
+## catalogue entries called after a real brand, which the game doesn't use.
 const OVERRIDES := {
 	"cable_management_clips_x12": {"licence": {"type": "one_off", "fee_pence": 0, "royalty_pct": 0.0}},
+	"raspberry_pi_case": {"name": "Mini computer case"},
+	"life_counter_mtg": {"name": "Life counter (card games)"},
+	"infinity_style_gauntlet": {"name": "Gem gauntlet"},
+	"replica_lightsaber_hilt": {"name": "Energy sword hilt"},
+	"spotify_code_plaque": {"name": "Music code plaque"},
+	"elf_on_the_shelf_props_set": {"name": "Shelf elf props set"},
 }
 
 ## Field order in the output, and which numbers are written as whole numbers.
@@ -69,6 +76,14 @@ func _init() -> void:
 	for entry: Dictionary in catalogue["products"]:
 		if COMPLETE_TIERS.has(entry["unlock_tier"]) and not SKIPPED_PATTERNS.has(entry["demand_pattern"]):
 			_band_floor[entry["size"]] = minf(_band_floor.get(entry["size"], INF), float(entry["base_price_gbp"]))
+	# A band the complete tiers have nothing in (XL) takes its floor from the tiers that do.
+	var later_floor := {}
+	for entry: Dictionary in catalogue["products"]:
+		if TIERS.has(entry["unlock_tier"]) and not SKIPPED_PATTERNS.has(entry["demand_pattern"]):
+			later_floor[entry["size"]] = minf(later_floor.get(entry["size"], INF), float(entry["base_price_gbp"]))
+	for band: String in later_floor:
+		if not _band_floor.has(band):
+			_band_floor[band] = later_floor[band]
 	_descriptions = JSON.parse_string(FileAccess.get_file_as_string(DESCRIPTIONS))
 	var rows: Array[Dictionary] = []
 	var skipped := 0

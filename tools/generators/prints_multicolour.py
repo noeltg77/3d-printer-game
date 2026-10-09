@@ -77,8 +77,14 @@ def build(args, rng):
 
 def build_item(variant, name, preview=False):
     """Builds one item and returns its main object. Used by preview_prints.py too."""
+    return build_from(VARIANTS, variant, name, preview)
+
+
+def build_from(variants, variant, name, preview=False):
+    """Builds one item out of a table of variants. The `prints_mc_*.py` files, one
+    per group of categories, keep their own tables and build through this."""
     parts = Parts()
-    VARIANTS[variant](parts)
+    variants[variant](parts)
     return parts.finish(name, preview)
 
 

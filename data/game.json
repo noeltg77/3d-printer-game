@@ -25,7 +25,7 @@
 		"hot_multiplier": 1.8,
 		"cool_multiplier": 0.6,
 		"min_designs": 4,
-		"seasonal": ["christmas", "halloween", "easter", "valentines_day", "mothers_day", "bonfire_night", "back_to_school"]
+		"seasonal": ["christmas", "halloween", "easter", "valentines_day", "mothers_day", "fathers_day", "new_year", "summer", "bonfire_night", "back_to_school"]
 	},
 	"design": {
 		"unlock_tier": 2,
