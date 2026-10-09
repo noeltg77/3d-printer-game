@@ -166,8 +166,11 @@ func sold_orders() -> Array[Order]:
 
 
 ## Records the order as packed, along with what the item in the parcel is like.
-func mark_packed(order: Order, durability := 3, quality := 3, flawed := false) -> void:
+## `value_multiplier` is the premium for the filament it was printed in: the
+## buyer pays that much more than the listed price.
+func mark_packed(order: Order, durability := 3, quality := 3, flawed := false, value_multiplier := 1.0) -> void:
 	order.status = Status.PACKED
+	order.price = roundi(order.price * value_multiplier)
 	order.durability = durability
 	order.quality = quality
 	order.flawed = flawed

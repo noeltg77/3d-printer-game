@@ -80,7 +80,8 @@ func _pack(agent: Agent, order: Marketplace.Order) -> void:
 	# The item goes in a box and comes back out as a parcel.
 	var item := agent.release() as PrintedItem
 	Game.packaging -= 1
-	Game.market.mark_packed(order, item.durability, item.quality, item.is_flawed())
+	Game.market.mark_packed(order, item.durability, item.quality, item.is_flawed(),
+		float(Game.data.filaments[item.material]["value_multiplier"]))
 	item.queue_free()
 	Game.changed.emit()
 	await agent.reach(func() -> void: agent.carry(Parcel.create(order)))

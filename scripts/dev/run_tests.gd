@@ -10,6 +10,7 @@ func _init() -> void:
 	_test_print_risk()
 	_test_printer_wear()
 	_test_printer_mods()
+	_test_filaments()
 	_test_clock()
 	_test_bank()
 	_test_money()
@@ -210,6 +211,73 @@ func _test_printer_mods() -> void:
 	var again := PrinterMods.new(data.upgrades)
 	again.restore(saved)
 	_check(again.fitted == mods.fitted, "upgrades come back from a save, without any the game no longer has")
+
+
+func _test_filaments() -> void:
+	var data := GameData.load_all()
+	var plodder: Dictionary = data.printers["plodder_mini"]
+	var zippy: Dictionary = data.printers["zippy_x1"]
+	var clips: Dictionary = data.products["cable_clips"]
+	var standard: Dictionary = data.presets["standard"]
+	_check(FilamentRules.problem(plodder, data.filaments["pla"]) == "", "the starter printer prints PLA")
+	_check(FilamentRules.problem(plodder, data.filaments["petg"]) == "", "and is just hot enough for PETG")
+	_check(FilamentRules.problem(plodder, data.filaments["abs"]) != "", "but not hot enough for ABS")
+	_check(FilamentRules.problem(plodder, data.filaments["tpu"]) != "", "and can't feed TPU without direct drive")
+	_check(FilamentRules.problem(zippy, data.filaments["asa"]) == "" and FilamentRules.problem(zippy, data.filaments["tpu"]) == "", "an enclosed direct drive printer handles ASA and TPU")
+	var mods := PrinterMods.new(data.upgrades)
+	mods.fit(&"direct_drive_conversion")
+	_check(FilamentRules.problem(mods.apply(plodder), data.filaments["tpu"]) == "", "a direct drive conversion lets the starter printer print TPU")
+	var hot_open := plodder.duplicate()
+	hot_open["max_nozzle_temp_c"] = 280
+	_check(FilamentRules.problem(hot_open, data.filaments["abs"]).contains("enclosed"), "ABS on an open printer is refused for want of an enclosure")
+	var tent := PrinterMods.new(data.upgrades)
+	tent.fit(&"snap_on_enclosure")
+	_check(FilamentRules.problem(tent.apply(hot_open), data.filaments["abs"]) == "", "a snap-on enclosure lets it print ABS")
+
+	_check(FilamentRules.suits(clips, data.filaments["pla"]) and FilamentRules.suits(clips, data.filaments["pla_silk"]), "a PLA design prints in any filament of the PLA family")
+	_check(FilamentRules.suits(clips, data.filaments["petg"]) and not FilamentRules.suits(clips, data.filaments["tpu"]), "and in the other filaments it names, but no others")
+	_check(FilamentRules.suits(data.products["flexi_dragon"], data.filaments["pla_glow"]) and not FilamentRules.suits(data.products["flexi_dragon"], data.filaments["petg"]), "a PLA-only design takes the fancy PLAs but not PETG")
+	_check(FilamentRules.has_a_use(data.products, data.filaments["pla_wood"]) and not FilamentRules.has_a_use(data.products, data.filaments["asa"]), "a filament no design can use is spotted")
+
+	_check(FilamentRules.spool_key("pla_silk", "pink") == "pla_silk:pink", "a spool key names material and colour")
+	_check(FilamentRules.material_of("pla_silk:pink") == "pla_silk" and FilamentRules.colour_of("pla_silk:pink") == "pink", "and can be taken apart again")
+	_check(FilamentRules.material_of("red") == "pla" and FilamentRules.colour_of("red") == "red", "a bare colour is a PLA spool")
+
+	var supplier := Supplier.new(data)
+	_check(supplier.spool_price("pla") == 1599 and supplier.spool_price("pla_cf") == 3399, "each filament has its own spool price")
+	_check(supplier.price_of({"spools": {"red": 1, "pla_cf:ink": 2, "petg:teal": 1}}) == 1599 + 2 * 3399 + 1899, "a mixed basket adds each spool at its own price")
+	var box := supplier.place({"spools": {"pla_cf:ink": 2, "red": 1}}, 0.0)[0]
+	_check(box.spools.size() == 3 and box.spools.has(&"pla_cf:ink") and box.describe() == "3 spools", "a delivery carries each spool's key")
+	_check(Supplier.Delivery.restored(_through_file(box.save())).spools == box.spools, "and keeps them through a save")
+
+	var brass: Dictionary = data.parts["brass_nozzle_0_4mm"]
+	var hardened: Dictionary = data.parts["hardened_steel_nozzle_0_4mm"]
+	_check(FilamentRules.wears_nozzle(data.filaments["pla_glow"], brass), "glow filament chews a brass nozzle")
+	_check(not FilamentRules.wears_nozzle(data.filaments["pla_glow"], hardened) and not FilamentRules.wears_nozzle(data.filaments["pla"], brass), "but not a hardened one, and plain PLA chews nothing")
+	var wear := PrinterWear.new(data.parts, plodder, 1.0)
+	var on_brass := wear.wear_per_hour(&"nozzle", standard, data.filaments["pla_cf"])
+	wear.replace(&"nozzle", &"hardened_steel_nozzle_0_4mm")
+	var on_hardened := wear.wear_per_hour(&"nozzle", standard, data.filaments["pla_cf"])
+	_check(on_brass > on_hardened * 50.0, "carbon filament wears brass far faster than hardened steel")
+	_check(is_equal_approx(on_hardened, wear.wear_per_hour(&"nozzle", standard, data.filaments["pla"])), "a hardened nozzle wears the same whatever is printed")
+
+	_check(PrintRisk.fail_chance(plodder, standard, data.filaments["pla_cf"], clips) > PrintRisk.fail_chance(plodder, standard, data.filaments["pla"], clips) * 2.5, "fussier filaments fail more often")
+	var stringing: Dictionary = data.failures["stringing"]
+	_check(PrintRisk.weight_of(stringing, [], data.filaments["tpu"]) > PrintRisk.weight_of(stringing, [], data.filaments["pla"]), "stringy filaments string more")
+
+	var market := Marketplace.new(data.marketplaces["craftsy"].duplicate(), data.products)
+	market.config["max_open_orders"] = 1000
+	market.set_listing(&"cable_clips", true, 400)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 2
+	for step in 2000:
+		market.tick(step, step + 1.0, rng)
+	var plain := market.orders[0]
+	var fancy := market.orders[1]
+	market.mark_packed(plain, 3, 3, false)
+	market.mark_packed(fancy, 3, 3, false, float(data.filaments["pla_cf"]["value_multiplier"]))
+	_check(plain.price == 400 and fancy.price == 560, "a print in a premium filament sells for more than the listed price")
+	_check(market.ship(fancy)["fee"] == market.fee_for(560), "and the marketplace takes its cut of the higher price")
 
 
 func _test_clock() -> void:

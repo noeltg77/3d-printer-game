@@ -2,9 +2,10 @@ class_name Supplier
 extends RefCounted
 ## The supplier shop: prices a basket and turns it into deliveries that arrive
 ## after a lead time. A basket is
-##   { printers: { printer_id: qty }, spools: { colour: qty }, packaging: packs,
+##   { printers: { printer_id: qty }, spools: { spool key: qty }, packaging: packs,
 ##     parts: { part or upgrade id: packs } }
-## Each printer ships in its own box; spools, packaging and spare parts share one.
+## A spool key is "material:colour" (FilamentRules.spool_key); a bare colour
+## means PLA. Each printer ships in its own box; spools, packaging and spare parts share one.
 
 
 class Delivery:
@@ -14,7 +15,7 @@ class Delivery:
 	var shop := ""
 	## Empty unless this is a printer box.
 	var printer: StringName = &""
-	## One palette colour name per spool.
+	## One spool key per spool.
 	var spools: Array[StringName] = []
 	## Individual packaging units, not packs.
 	var packaging := 0
@@ -65,17 +66,18 @@ func price_of(basket: Dictionary) -> int:
 	var total := 0
 	for printer_id: String in basket.get("printers", {}):
 		total += int(data.printers[printer_id]["price_pence"]) * int(basket["printers"][printer_id])
-	total += spool_price() * count_spools(basket)
+	for key: String in basket.get("spools", {}):
+		total += spool_price(FilamentRules.material_of(key)) * int(basket["spools"][key])
 	total += int(_config()["packaging_pack_pence"]) * int(basket.get("packaging", 0))
 	for part_id: String in basket.get("parts", {}):
 		total += int(data.kit(part_id)["price_pence"]) * int(basket["parts"][part_id])
 	return total
 
 
-## Price of one PLA spool. PLA is the only filament sold until Phase 6.
-func spool_price() -> int:
-	var pla: Dictionary = data.filaments["pla"]
-	return roundi(pla["price_pence_per_kg"] * pla["spool_grams"] / 1000.0)
+## Price of one spool of a filament.
+func spool_price(material := FilamentRules.DEFAULT_MATERIAL) -> int:
+	var filament: Dictionary = data.filaments[material]
+	return roundi(filament["price_pence_per_kg"] * filament["spool_grams"] / 1000.0)
 
 
 static func count_spools(basket: Dictionary) -> int:

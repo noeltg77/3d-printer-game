@@ -26,6 +26,11 @@ var supplier: Supplier
 var owned_designs: Array[StringName] = []
 ## Mailer boxes in stock, one used per packed order.
 var packaging := 0
+## How far the business has grown: 1 garage to 4 factory. Decides what the
+## shops will sell (each row's `unlock_tier`).
+var tier := 1
+## Dev: the tier a new game starts at, from --tier=<n>.
+var start_tier := 1
 var speed := 1
 var rng := RandomNumberGenerator.new()
 ## Dev: id of a failure the next print is certain to hit. Cleared once used.
@@ -45,6 +50,8 @@ func _ready() -> void:
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--save="):
 			save_path = arg.trim_prefix("--save=")
+		elif arg.begins_with("--tier="):
+			start_tier = arg.trim_prefix("--tier=").to_int()
 	new_game()
 
 
@@ -78,6 +85,7 @@ func new_game() -> void:
 	supplier = Supplier.new(data)
 	owned_designs.assign(start["designs"])
 	packaging = int(start["packaging"])
+	tier = start_tier
 	rng.randomize()
 	saved_at = -1.0
 	set_speed(1)
@@ -131,7 +139,7 @@ func delete_save() -> void:
 func save() -> Dictionary:
 	return {
 		"clock": clock.save(), "bank": bank.save(), "market": market.save(), "supplier": supplier.save(),
-		"owned_designs": owned_designs, "packaging": packaging,
+		"owned_designs": owned_designs, "packaging": packaging, "tier": tier,
 	}
 
 
@@ -146,6 +154,7 @@ func restore(state: Dictionary) -> void:
 		if data.products.has(product):
 			owned_designs.append(StringName(product))
 	packaging = int(state["packaging"])
+	tier = maxi(int(state.get("tier", 1)), start_tier)
 	changed.emit()
 
 
@@ -178,6 +187,17 @@ func set_speed(new_speed: float) -> void:
 
 func notify(text: String, tone: StringName = &"") -> void:
 	notified.emit(text, tone)
+
+
+## True if the business has grown enough for a data row (anything with an
+## `unlock_tier`) to be on sale.
+func unlocked(row: Dictionary) -> bool:
+	return int(row["unlock_tier"]) <= tier
+
+
+## "Garage", "Spare room" and so on.
+func tier_name() -> String:
+	return data.settings["tier_names"][tier - 1]
 
 
 func product_name(product: StringName) -> String:

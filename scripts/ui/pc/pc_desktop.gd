@@ -124,8 +124,7 @@ func _printer_row(number: int, printer: PrinterStation) -> Control:
 		PrinterStation.Status.PRINTING:
 			status = "Printing"
 			colour = Ui.GREEN
-			detail = "%s · %s %s" % [Game.product_name(printer.item.product),
-				String(printer.spool.material).to_upper(), Palette.display_name(printer.spool.colour)]
+			detail = "%s · %s" % [Game.product_name(printer.item.product), printer.spool.title()]
 		PrinterStation.Status.DONE:
 			status = "Needs you"
 			colour = Ui.RED

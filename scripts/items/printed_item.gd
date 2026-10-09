@@ -6,6 +6,8 @@ const MODEL_PATH := "res://assets/models/prints/%s.glb"
 
 var product: StringName
 var colour: StringName
+## Filament id it was printed in.
+var material: StringName = &"pla"
 ## Preset it was printed at, and the strength (1 to 5) that gave it.
 var preset: StringName = &"standard"
 var durability := 3
@@ -17,8 +19,10 @@ var flaw: StringName = &""
 var height := 0.0
 
 
-static func create(p_product: StringName, p_colour: StringName, p_preset: StringName = &"standard") -> PrintedItem:
+static func create(p_product: StringName, p_colour: StringName, p_preset: StringName = &"standard",
+		p_material: StringName = &"pla") -> PrintedItem:
 	var item := PrintedItem.new()
+	item.material = p_material
 	item.product = p_product
 	item.colour = p_colour
 	item.preset = p_preset
@@ -50,14 +54,17 @@ func describe() -> String:
 
 
 func save() -> Dictionary:
-	return {"product": product, "colour": colour, "preset": preset, "durability": durability, "quality": quality, "flaw": flaw}
+	return {"product": product, "colour": colour, "material": material, "preset": preset, "durability": durability,
+		"quality": quality, "flaw": flaw}
 
 
 ## Null if the design or preset is no longer in the game.
 static func restored(data: Dictionary) -> PrintedItem:
 	if not Game.data.products.has(data["product"]) or not Game.data.presets.has(data["preset"]):
 		return null
-	var item := PrintedItem.create(StringName(data["product"]), StringName(data["colour"]), StringName(data["preset"]))
+	var saved_material := String(data.get("material", "pla"))
+	var item := PrintedItem.create(StringName(data["product"]), StringName(data["colour"]), StringName(data["preset"]),
+		StringName(saved_material) if Game.data.filaments.has(saved_material) else &"pla")
 	item.durability = int(data["durability"])
 	item.quality = int(data["quality"])
 	if Game.data.failures.has(data["flaw"]):

@@ -17,6 +17,7 @@
 		"protection": 3
 	},
 	"default_preset": "standard",
+	"tier_names": ["Garage", "Spare room", "Workshop", "Factory"],
 	"wear_rate": 4.0,
 	"supplier": {
 		"filament_shop": "Spoolhouse",

@@ -102,12 +102,12 @@ func _check_references() -> void:
 				errors.append("printer %s: two parts in the %s slot" % [printer["id"], parts[part_id]["slot"]])
 			else:
 				fitted[parts[part_id]["slot"]] = true
-		for filament_id: String in printer.get("supported_filaments", []):
-			if not filaments.has(filament_id):
-				errors.append("printer %s: unknown filament \"%s\"" % [printer["id"], filament_id])
+	var families := {}
+	for filament: Dictionary in filaments.values():
+		families[filament.get("family", "")] = true
 	for product: Dictionary in products.values():
 		for filament_id: String in product.get("allowed_filaments", []):
-			if not filaments.has(filament_id):
+			if not filaments.has(filament_id) and not families.has(filament_id):
 				errors.append("product %s: unknown filament \"%s\"" % [product["id"], filament_id])
 	for product_id: String in settings.get("start", {}).get("designs", []):
 		if not products.has(product_id):

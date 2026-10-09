@@ -48,7 +48,7 @@ func refresh() -> void:
 func _header() -> Control:
 	var bench := _bench()
 	var spots := bench.free_spots() + get_tree().get_nodes_in_group(&"printer").size()
-	var tier := Ui.panel(Ui.text("Your tier: Garage · Space for %d printers" % spots, 14, PAGE, 800), Ui.box(NAVY_SOFT, 12, 14, 8))
+	var tier := Ui.panel(Ui.text("Your tier: %s · Space for %d printers" % [Game.tier_name(), spots], 14, PAGE, 800), Ui.box(NAVY_SOFT, 12, 14, 8))
 	tier.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	var top := Ui.hbox([
 		Ui.title(Game.data.settings["supplier"]["hardware_shop"], 32, PAGE, 700),
@@ -91,8 +91,10 @@ func _printer_card(printer_id: String, spec: Dictionary) -> Control:
 	var size: Array = spec["build_volume_mm"]
 	var litres := float(size[0]) * float(size[1]) * float(size[2]) / 1000000.0
 	var materials: PackedStringArray = []
-	for filament_id: String in spec["supported_filaments"]:
-		materials.append(Game.data.filaments[filament_id]["name"])
+	# One name per family it can print: the plain filament the family is named after.
+	for filament: Dictionary in Game.data.filaments.values():
+		if filament["id"] == filament["family"] and FilamentRules.problem(spec, filament) == "":
+			materials.append(filament["name"])
 
 	var column := Ui.vbox([
 		picture,
@@ -109,7 +111,7 @@ func _printer_card(printer_id: String, spec: Dictionary) -> Control:
 	], 12)
 
 	var order := {"printers": {printer_id: 1}}
-	var problem := "Unlocks when you move to a bigger space" if int(spec["unlock_tier"]) > 1 else Game.supplier_problem(order)
+	var problem := Game.supplier_problem(order) if Game.unlocked(spec) else "Unlocks when you move to a bigger space"
 	if problem != "":
 		column.add_child(Ui.panel(Ui.wrap(Ui.text(problem, 13, LOCK_TEXT, 800)), Ui.box(LOCK_BG, 12, 12, 10)))
 	column.add_child(Ui.hbox([
@@ -157,7 +159,7 @@ func _parts() -> Control:
 	for part_id: String in Game.data.parts:
 		var part: Dictionary = Game.data.parts[part_id]
 		var order := {"parts": {part_id: 1}}
-		var problem := Game.supplier_problem(order)
+		var problem := Game.supplier_problem(order) if Game.unlocked(part) else "Unlocks when you move to a bigger space"
 		var pack := int(part["pack_size"])
 		var words := Ui.vbox([
 			Ui.text(part["name"] if pack == 1 else "%s, pack of %d" % [part["name"], pack], 16, Ui.INK, 800),
@@ -170,7 +172,7 @@ func _parts() -> Control:
 		rows.add_child(Ui.panel(Ui.hbox([
 			Ui.icon_tile("wrench", 52, 26, TILE, NAVY),
 			words,
-			Ui.width(_worn_note(StringName(part["slot"])), 150),
+			Ui.width(_worn_note(StringName(part["slot"])) if Game.unlocked(part) else Ui.pill("Needs more space", LOCK_TEXT, LOCK_BG), 150),
 			Ui.pill("On the shelf: %d" % spare, Ui.GREEN_DARK if spare > 0 else Ui.MUTED, Ui.GREEN_SOFT if spare > 0 else TILE),
 			Ui.width(Ui.text(Money.format(int(part["price_pence"])), 17, Ui.INK, 800), 70),
 			buy,
@@ -201,7 +203,7 @@ func _upgrades() -> Control:
 	for upgrade_id: String in Game.data.upgrades:
 		var upgrade: Dictionary = Game.data.upgrades[upgrade_id]
 		var order := {"parts": {upgrade_id: 1}}
-		var problem := "Unlocks when you move to a bigger space" if int(upgrade["unlock_tier"]) > 1 else Game.supplier_problem(order)
+		var problem := Game.supplier_problem(order) if Game.unlocked(upgrade) else "Unlocks when you move to a bigger space"
 		var fitted := 0
 		var could_fit := 0
 		for station: PrinterStation in printers:

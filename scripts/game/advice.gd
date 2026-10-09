@@ -59,7 +59,7 @@ static func items(tree: SceneTree) -> Array[Dictionary]:
 			"Filament is the plastic a printer melts to build things. Click the computer, then open %s." % shops["filament_shop"])
 	for spool in spools:
 		if spool.grams < LOW_SPOOL_GRAMS:
-			_add(found, "%s %s is nearly out" % [Palette.display_name(spool.colour), String(spool.material).to_upper()],
+			_add(found, "%s is nearly out" % spool.title(),
 				"A print needs enough on the spool to finish. Order another from %s on the computer." % shops["filament_shop"])
 
 	if not printers.is_empty() and not market.listings.values().any(func(entry: Dictionary) -> bool: return entry["listed"]):

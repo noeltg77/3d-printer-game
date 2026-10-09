@@ -28,6 +28,32 @@
 			"wear_multiplier": 1.0
 		},
 		{
+			"id": "direct_drive_conversion",
+			"name": "Direct drive conversion",
+			"description": "Moves the motor that pushes the filament right onto the toolhead. Lets the printer handle soft, bendy filament, and strings less.",
+			"unlock_tier": 1,
+			"price_pence": 4899,
+			"install_minutes": 90,
+			"fits_motion": ["bed_slinger"],
+			"grants": ["direct_drive"],
+			"failure_multipliers": { "stringing": 0.8 },
+			"time_multiplier": 1.0,
+			"wear_multiplier": 1.0
+		},
+		{
+			"id": "snap_on_enclosure",
+			"name": "Snap-on enclosure",
+			"description": "A tent that keeps the warmth in. Needed for filaments that warp in a draught, and halves warping on everything else.",
+			"unlock_tier": 2,
+			"price_pence": 8899,
+			"install_minutes": 60,
+			"fits_motion": ["bed_slinger"],
+			"grants": ["enclosed"],
+			"failure_multipliers": { "warping": 0.5 },
+			"time_multiplier": 1.0,
+			"wear_multiplier": 1.0
+		},
+		{
 			"id": "anti_vibration_feet",
 			"name": "Anti vibration feet",
 			"description": "Squashy feet that soak up the shaking. Cheap and cheerful, for a slightly smoother finish.",

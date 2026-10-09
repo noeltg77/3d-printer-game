@@ -18,24 +18,25 @@ func get_actions(_agent: Agent) -> Array[Action]:
 	return actions
 
 
-## Colours with at least one spool on the rack, in rack order.
-func available_colours() -> Array[StringName]:
-	var found: Array[StringName] = []
+## Each kind of filament on the rack, in rack order, as { material, colour }.
+func kinds() -> Array[Dictionary]:
+	var found: Array[Dictionary] = []
 	for spool in spools():
-		if not found.has(spool.colour):
-			found.append(spool.colour)
+		var kind := {"material": spool.material, "colour": spool.colour}
+		if not found.has(kind):
+			found.append(kind)
 	return found
 
 
-func has_colour(colour: StringName) -> bool:
-	return spools().any(func(spool: Spool) -> bool: return spool.colour == colour)
+func has(material: StringName, colour: StringName) -> bool:
+	return spools().any(func(spool: Spool) -> bool: return spool.material == material and spool.colour == colour)
 
 
-## Grams on the fullest spool of a colour, the one take() would hand over.
-func most_grams(colour: StringName) -> float:
+## Grams on the fullest spool of a kind, the one take() would hand over.
+func most_grams(material: StringName, colour: StringName) -> float:
 	var best := 0.0
 	for spool in spools():
-		if spool.colour == colour:
+		if spool.material == material and spool.colour == colour:
 			best = maxf(best, spool.grams)
 	return best
 
@@ -44,11 +45,11 @@ func free_slots() -> int:
 	return _slots.size() - spools().size()
 
 
-## Removes the fullest spool of `colour` from the rack and returns it, or null if there is none.
-func take(colour: StringName) -> Spool:
+## Removes the fullest spool of a kind from the rack and returns it, or null if there is none.
+func take(material: StringName, colour: StringName) -> Spool:
 	var best: Spool = null
 	for spool in spools():
-		if spool.colour == colour and (best == null or spool.grams > best.grams):
+		if spool.material == material and spool.colour == colour and (best == null or spool.grams > best.grams):
 			best = spool
 	if best != null:
 		best.get_parent().remove_child(best)
