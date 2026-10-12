@@ -272,6 +272,23 @@ static func scroll(content: Control) -> ScrollContainer:
 	return node
 
 
+## A tween that runs in real time, so UI moves the same whether the game is
+## paused, sped up or running through the night.
+static func tween(node: Node) -> Tween:
+	return node.create_tween().set_ignore_time_scale(true)
+
+
+## Pops a control into view: it grows the last little way from `pivot` (in its
+## own coordinates) with a slight overshoot, fading in as it comes.
+static func pop_in(node: Control, pivot: Vector2, from := 0.88, seconds := 0.2) -> void:
+	node.pivot_offset = pivot
+	node.scale = Vector2.ONE * from
+	node.modulate.a = 0.0
+	var pop := tween(node).set_parallel()
+	pop.tween_property(node, "scale", Vector2.ONE, seconds).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	pop.tween_property(node, "modulate:a", 1.0, seconds * 0.6)
+
+
 ## Drops the cached fonts and theme. Call once as the game shuts down so they
 ## are released before the engine checks for leaks.
 static func release() -> void:

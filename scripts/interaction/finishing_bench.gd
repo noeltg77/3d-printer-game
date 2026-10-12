@@ -55,6 +55,10 @@ func _process(delta: float) -> void:
 	_torch.position = _hold_point() + Vector3(sin(_time * 4.0), 0.0, cos(_time * 2.7)) * TORCH_SWAY
 
 
+func card_icon() -> String:
+	return "wrench"
+
+
 func get_actions(_agent: Agent) -> Array[Action]:
 	var shelf := _shelf()
 	var waiting: Dictionary[StringName, int] = {}

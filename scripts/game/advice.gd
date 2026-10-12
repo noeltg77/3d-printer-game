@@ -26,7 +26,7 @@ static func items(tree: SceneTree) -> Array[Dictionary]:
 	var shops: Dictionary = Game.data.settings["supplier"]
 	var boxes_waiting := not tree.get_nodes_in_group(&"delivery_box").is_empty()
 	if tree.get_nodes_in_group(&"delivery_box").any(func(box: DeliveryBox) -> bool: return box.delivery.fitting == &""):
-		_add(found, "Unpack the delivery", "Click the box by the door and choose Unpack. Everything inside gets put away for you.")
+		_add(found, "Unpack the delivery", "Click the box by the door to unpack it. Everything inside gets put away for you.")
 
 	var printers := tree.get_nodes_in_group(&"printer")
 	var printer_coming := Game.supplier.pending.any(func(d: Supplier.Delivery) -> bool: return d.printer != &"")
@@ -38,7 +38,7 @@ static func items(tree: SceneTree) -> Array[Dictionary]:
 	var spools: Array[Spool] = rack.spools() if rack != null else ([] as Array[Spool])
 	for printer: PrinterStation in printers:
 		if printer.status == PrinterStation.Status.DONE:
-			_add(found, "Collect the finished print", "Click the printer and choose Collect. It can't start another until its plate is clear.")
+			_add(found, "Collect the finished print", "Click the printer to collect it. It can't start another until its plate is clear.")
 		if printer.has_auto_eject() and printer.tray.size() >= printer.tray_capacity():
 			_add(found, "Empty the tray on the %s" % printer.display_name, "Its auto-eject plate has nowhere left to throw prints, so it has stopped. Click the printer and choose Empty the tray.")
 		if printer.status == PrinterStation.Status.FAILED:
@@ -55,7 +55,7 @@ static func items(tree: SceneTree) -> Array[Dictionary]:
 			spools.append_array(printer.spools.filter(func(loaded: Spool) -> bool: return loaded != null))
 		elif rack != null and not rack.spools().is_empty():
 			_add(found, "Load filament into the %s" % printer.display_name,
-				"Filament is the plastic a printer melts to build things. Click the printer and choose Load filament.")
+				"Filament is the plastic a printer melts to build things. Click the printer and pick a filament to load.")
 		if printer.status == PrinterStation.Status.IDLE and printer.spool != null and printer.wear.broken().is_empty() \
 				and not Game.owned_designs.is_empty() and _nothing_to_sell(market):
 			_add(found, "Print something to sell", "Click the printer and choose Print. Standard is a safe way to print most things.")
@@ -63,9 +63,9 @@ static func items(tree: SceneTree) -> Array[Dictionary]:
 	for box in (shelf.spares() if shelf != null else ([] as Array[SparePart])):
 		var kit: Dictionary = Game.data.upgrades.get(box.part, {})
 		if kit.get("fixture", "") == MouldingMachine.FIXTURE:
-			_add(found, "Install the moulding machine", "Click the marked bay on the factory floor and choose Install. Then order a mould for the design you want made by the hundred.")
+			_add(found, "Install the moulding machine", "Click the marked bay on the factory floor to install it. Then order a mould for the design you want made by the hundred.")
 		if kit.get("fixture", "") == Conveyor.FIXTURE:
-			_add(found, "Fit the conveyor", "It carries prints from every printer with an auto-eject plate to the shelving. Click the control cabinet by the shelving and choose Fit.")
+			_add(found, "Fit the conveyor", "It carries prints from every printer with an auto-eject plate to the shelving. Click the control cabinet by the shelving to fit it.")
 		if kit.has("multicolour"):
 			_add(found, "Fit the %s" % kit["name"], "It lets one print be several colours. Unload the printer it is made for, then click that printer and open Upgrades. After that, load a spool for each colour.")
 	var spools_coming := Game.supplier.pending.any(func(d: Supplier.Delivery) -> bool: return not d.spools.is_empty())
@@ -77,7 +77,7 @@ static func items(tree: SceneTree) -> Array[Dictionary]:
 		if spool.is_wet():
 			_add(found, "%s has got wet" % spool.title(), "Filament soaks up damp from the air and then prints badly. "
 				+ ("Buy a dryer at %s, under Dryers." % shops["hardware_shop"] if not has_dryer
-				else ("Click the dryer and choose Dry a spool." if rack.spools().has(spool) else "Unload it from the printer, then click the dryer and choose Dry a spool.")))
+				else ("Click the dryer and pick the spool to dry." if rack.spools().has(spool) else "Unload it from the printer, then click the dryer and pick it to dry.")))
 		if spool.grams < LOW_SPOOL_GRAMS:
 			_add(found, "%s is nearly out" % spool.title(),
 				"A print needs enough on the spool to finish. Order another from %s on the computer." % shops["filament_shop"])
@@ -99,7 +99,7 @@ static func items(tree: SceneTree) -> Array[Dictionary]:
 			waiting += 1
 	if ready > 0:
 		_add(found, "Pack %d order%s" % [ready, "" if ready == 1 else "s"],
-			"Click the packing station and choose Pack order. The courier collects what is packed and that is when you get paid.")
+			"Click the packing station and pick an order to pack. The courier collects what is packed and that is when you get paid.")
 	if waiting > 0:
 		_add(found, "Print %d more for orders" % waiting, "Someone has ordered one you haven't made yet. Orders left too long are cancelled.")
 	for product in Game.studio.designs:
@@ -116,7 +116,7 @@ static func items(tree: SceneTree) -> Array[Dictionary]:
 	for contract in Game.contracts.active():
 		if Game.contract_ready(contract) > 0:
 			_add(found, "Send %d to %s" % [Game.contract_ready(contract), Game.client_name(contract)],
-				"Click the packing station and choose Send to a client. The courier takes the crate, and the last one gets you paid.")
+				"Click the packing station and pick the client to send to. The courier takes the crate, and the last one gets you paid.")
 		elif Game.contracts.remaining(contract) > 0:
 			_add(found, "Print %d x %s for %s" % [Game.contracts.remaining(contract), Game.product_name(contract.product), Game.client_name(contract)],
 				"A contract has a deadline and a spec. Open Inbox on the computer to see what filament, colour and strength they want.")
@@ -125,7 +125,7 @@ static func items(tree: SceneTree) -> Array[Dictionary]:
 	for box: DeliveryBox in tree.get_nodes_in_group(&"delivery_box"):
 		if box.delivery.fitting != &"":
 			_add(found, "Put up the %s" % String(Game.data.fittings[box.delivery.fitting]["name"]).to_lower(),
-				"Click its box by the door and choose Unpack. Then click the floor where you want it: green means it fits, and R turns it.")
+				"Click its box by the door to unpack it. Then click the floor where you want it: green means it fits, and R turns it.")
 	if shelf != null and shelf.bins().is_empty() and shelf.free_slots() <= 2:
 		for item in shelf._loose():
 			if Game.storage.is_bin(item.product):
@@ -135,7 +135,7 @@ static func items(tree: SceneTree) -> Array[Dictionary]:
 		_add(found, "%s are nearly out" % Game.packaging_plural(kind).capitalize(),
 			"Your designs go out in them, one to an order. Buy a pack at %s, under Packaging, or pick something else on the listing." % shops["hardware_shop"])
 	if shelf != null and not shelf.unfinished().is_empty() and tree.get_first_node_in_group(&"finishing_bench") != null and ready == 0:
-		_add(found, "Give a print a better finish", "Click the finishing bench and choose Finish. A pass with the blowtorch tidies a print up, so buyers rate it higher and send fewer back.")
+		_add(found, "Give a print a better finish", "Click the finishing bench and pick a print to finish. A pass with the blowtorch tidies a print up, so buyers rate it higher and send fewer back.")
 	return found
 
 

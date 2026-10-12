@@ -5,7 +5,8 @@ extends Node
 ##   --autoplay="Finisher 3>Load filament>Red;Finisher 3>Start print;wait>20;PC>Use computer"
 ##       Steps separated by `;`. Each is an object's display name then the menu
 ##       labels to pick (matched by prefix), `wait>seconds`, `click>x,y` for
-##       a real left click at a screen position, or `call>expression` to run
+##       a real left click at a screen position (`hover>x,y` only moves the
+##       mouse there), or `call>expression` to run
 ##       an expression on the Game autoload (what the PC screens would do),
 ##       e.g. call>buy_design("phone_stand"), or `on>group>expression` to
 ##       run one on the first node in a group, e.g.
@@ -62,6 +63,10 @@ func _play(steps: PackedStringArray) -> void:
 		if parts[0] == "click":
 			await _click(Vector2(parts[1].get_slice(",", 0).to_float(), parts[1].get_slice(",", 1).to_float()))
 			continue
+		if parts[0] == "hover":
+			_hover(Vector2(parts[1].get_slice(",", 0).to_float(), parts[1].get_slice(",", 1).to_float()))
+			await get_tree().create_timer(0.4, true, false, true).timeout
+			continue
 		if parts[0] == "on":
 			var expression := Expression.new()
 			var target := get_tree().get_first_node_in_group(parts[1])
@@ -99,12 +104,17 @@ func _zoom(display_name: String, metres: float) -> void:
 	push_error("Autoplay: nothing called '%s' to zoom to" % display_name)
 
 
-## Moves the mouse to a screen position and left clicks, as real input.
-func _click(at: Vector2) -> void:
+## Moves the mouse to a screen position, as real input.
+func _hover(at: Vector2) -> void:
 	var motion := InputEventMouseMotion.new()
 	motion.position = at
 	motion.global_position = at
 	Input.parse_input_event(motion)
+
+
+## Moves the mouse to a screen position and left clicks, as real input.
+func _click(at: Vector2) -> void:
+	_hover(at)
 	await get_tree().create_timer(0.3).timeout
 	for pressed: bool in [true, false]:
 		var button := InputEventMouseButton.new()

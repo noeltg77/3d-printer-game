@@ -62,6 +62,10 @@ func _ready() -> void:
 		_spots.append({"holder": holder, "at": holder.global_transform.affine_inverse() * place, "printer": null})
 
 
+func card_icon() -> String:
+	return "wrench"
+
+
 func get_actions(_agent: Agent) -> Array[Action]:
 	var actions: Array[Action] = [Action.info("%d of %d printer places used. This place has room for %d." % [
 		total_places() - free_spots(), total_places(), max_places()])]
@@ -78,7 +82,7 @@ func get_actions(_agent: Agent) -> Array[Action]:
 			scrap.task_name = "Scrap the %s" % bench_name(bench)
 			benches.append_array([sell, scrap])
 	if not benches.is_empty():
-		actions.append(Action.submenu("Take a bench out for good", benches))
+		actions.append(Action.submenu("Take a bench out for good", benches).tuck())
 	return actions
 
 

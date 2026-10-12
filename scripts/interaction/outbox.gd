@@ -17,6 +17,10 @@ func _ready() -> void:
 	Game.courier_arrived.connect(_on_courier_arrived)
 
 
+func card_icon() -> String:
+	return "inbox"
+
+
 func get_actions(_agent: Agent) -> Array[Action]:
 	var courier := int(Game.data.settings["courier_minute_of_day"])
 	return [Action.info("%d parcel%s waiting. Courier collects at %02d:%02d" % [

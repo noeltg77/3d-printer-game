@@ -33,6 +33,10 @@ func _ready() -> void:
 	add_to_group(&"fitting_unit")
 
 
+func card_icon() -> String:
+	return "stockroom"
+
+
 func get_actions(agent: Agent) -> Array[Action]:
 	var actions := host.get_actions(agent)
 	var move := Action.new("Stand it somewhere else...", _choose_spot)
@@ -41,7 +45,7 @@ func get_actions(agent: Agent) -> Array[Action]:
 	if in_use():
 		actions.append(Action.info("Sell or scrap it (empty it first)"))
 	else:
-		actions.append(Action.submenu("Sell or scrap it", [sell_action(), scrap_action()]))
+		actions.append(Action.submenu("Sell or scrap it", [sell_action(), scrap_action()]).tuck())
 	return actions
 
 

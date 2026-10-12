@@ -42,6 +42,10 @@ func _process(delta: float) -> void:
 		Game.notify("The moulding machine has finished %d x %s" % [int(batch["count"]), Game.product_name(batch["product"])], &"good")
 
 
+func card_icon() -> String:
+	return "settings"
+
+
 func get_actions(_agent: Agent) -> Array[Action]:
 	if not installed:
 		return _install_actions()
@@ -52,7 +56,8 @@ func get_actions(_agent: Agent) -> Array[Action]:
 	else:
 		var batch := moulding.run
 		var left := (int(batch["count"]) - int(batch["made"])) * float(rules["minutes_per_item"])
-		actions.append(Action.info("Moulding %s: %d of %d, %s left" % [Game.product_name(batch["product"]), int(batch["made"]), int(batch["count"]), GameClock.duration_label(left)]))
+		actions.append(Action.info("Moulding %s: %d of %d, %s left" % [Game.product_name(batch["product"]), int(batch["made"]), int(batch["count"]), GameClock.duration_label(left)]).with_progress(
+			float(batch["made"]) / maxf(float(batch["count"]), 1.0)))
 	actions.append(Action.info("Output bin: %d of %d" % [moulding.stored(), int(rules["output_capacity"])]))
 	actions.append(_run_menu())
 	actions.append(_mould_menu())
@@ -121,7 +126,7 @@ func _mould_menu() -> Action:
 		lines.append(order)
 	if lines.is_empty():
 		return Action.info("Order a mould (no designs to make one for)")
-	return Action.submenu("Order a mould", lines)
+	return Action.submenu("Order a mould", lines).tuck()
 
 
 ## A batch of each design with a mould, in each colour of pellet.

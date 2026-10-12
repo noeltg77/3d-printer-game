@@ -28,6 +28,11 @@ func get_actions(_agent: Agent) -> Array[Action]:
 	return []
 
 
+## The icon in assets/ui/icons shown on this object's action card.
+func card_icon() -> String:
+	return "box"
+
+
 func get_stand_point() -> Vector3:
 	var point := global_transform * stand_offset
 	return Vector3(point.x, 0.0, point.z)

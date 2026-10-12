@@ -181,6 +181,10 @@ func _process(delta: float) -> void:
 	_toolhead.position = _toolhead.position.lerp(toolhead_target, weight)
 
 
+func card_icon() -> String:
+	return "printbay"
+
+
 func get_actions(_agent: Agent) -> Array[Action]:
 	var actions := _tray_actions()
 	actions.append_array(_status_actions())
@@ -207,7 +211,7 @@ func _status_actions() -> Array[Action]:
 	match status:
 		Status.PRINTING:
 			var left := GameClock.duration_label((job.duration - job.elapsed) * GameClock.MINUTES_PER_SECOND)
-			return [Action.info("Printing %s: %d%%, %s left" % [_batch_title(Game.product_name(item.product)), roundi(job.progress * 100.0), left])]
+			return [Action.info("Printing %s: %d%%, %s left" % [_batch_title(Game.product_name(item.product)), roundi(job.progress * 100.0), left]).with_progress(job.progress)]
 		Status.DONE:
 			if _shelf().room_for(item.product) >= copies():
 				var wash := post_minutes()
@@ -244,11 +248,9 @@ func _status_actions() -> Array[Action]:
 		actions.append(_print_menu())
 		actions.append_array(_again_actions())
 		actions.append(_unload_menu())
-	actions.append(_parts_menu())
-	actions.append(_upgrades_menu())
-	actions.append(_move_menu())
-	actions.append(_box_action())
-	actions.append(_part_with_menu())
+	# Looking after the printer and parting with it stay folded away on the card.
+	for rare: Action in [_parts_menu(), _upgrades_menu(), _move_menu(), _box_action(), _part_with_menu()]:
+		actions.append(rare.tuck())
 	return actions
 
 

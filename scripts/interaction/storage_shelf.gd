@@ -31,6 +31,10 @@ func _ready() -> void:
 	_slots = _slots_of(self)
 
 
+func card_icon() -> String:
+	return "stockroom"
+
+
 func get_actions(_agent: Agent) -> Array[Action]:
 	var actions: Array[Action] = [Action.info("%d of %d spaces used" % [_slots.size() - free_slots(), _slots.size()])]
 	var counted: Array[StringName] = []
@@ -47,7 +51,7 @@ func get_actions(_agent: Agent) -> Array[Action]:
 		if item.is_flawed():
 			var scrap := Action.new("Bin %s" % item.describe(), _bin.bind(item))
 			scrap.task_name = "Bin a flawed %s" % Game.product_name(item.product)
-			actions.append(scrap)
+			actions.append(scrap.tuck())
 	# A print of a bin design can be put to use, and a bin that is empty can go back on sale.
 	var storage: Array[Action] = []
 	var offered: Array[StringName] = []
