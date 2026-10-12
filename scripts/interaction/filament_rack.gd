@@ -20,6 +20,10 @@ func _ready() -> void:
 	_slots = _slots_of(self)
 
 
+func card_icon() -> String:
+	return "spoolhouse"
+
+
 func get_actions(_agent: Agent) -> Array[Action]:
 	var actions: Array[Action] = [Action.info("%d of %d slots used" % [spools().size(), _slots.size()])]
 	# A spool nobody wants (wet, the wrong colour, nearly gone) only takes up a
@@ -27,7 +31,7 @@ func get_actions(_agent: Agent) -> Array[Action]:
 	for spool in spools():
 		var bin := Action.new("Bin it", _bin.bind(spool))
 		bin.task_name = "Bin the %s" % spool.title().to_lower()
-		actions.append(Action.submenu(spool.describe(), [bin]))
+		actions.append(Action.submenu(spool.describe(), [bin]).tuck())
 	return actions
 
 

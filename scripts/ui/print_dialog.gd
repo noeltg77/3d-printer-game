@@ -26,6 +26,7 @@ var _slots: Array[int] = []
 ## How many copies to print at once.
 var _copies := 1
 var _holder: CenterContainer
+var _backdrop: ColorRect
 
 
 func _ready() -> void:
@@ -37,6 +38,7 @@ func _ready() -> void:
 	Ui.clickable(backdrop, close)
 	backdrop.mouse_default_cursor_shape = Control.CURSOR_ARROW
 	add_child(backdrop)
+	_backdrop = backdrop
 	_holder = CenterContainer.new()
 	_holder.theme = Ui.theme()
 	_holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -64,6 +66,9 @@ func open(printer: PrinterStation) -> void:
 			break
 	visible = true
 	_rebuild()
+	_backdrop.modulate.a = 0.0
+	Ui.tween(_backdrop).tween_property(_backdrop, "modulate:a", 1.0, 0.15)
+	Ui.pop_in(_holder, _holder.size / 2.0, 0.94)
 
 
 func close() -> void:

@@ -9,6 +9,10 @@ const ROLLED_SCALE := 0.06
 var is_open := false
 
 
+func card_icon() -> String:
+	return "home"
+
+
 func get_actions(_agent: Agent) -> Array[Action]:
 	return [Action.new("Close door" if is_open else "Open door", _toggle)]
 

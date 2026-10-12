@@ -45,6 +45,10 @@ func _process(delta: float) -> void:
 				_waiting.erase(item)
 
 
+func card_icon() -> String:
+	return "settings"
+
+
 func get_actions(_agent: Agent) -> Array[Action]:
 	if installed:
 		var carrying := _riding.size() + _waiting.size()

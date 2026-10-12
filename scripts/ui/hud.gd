@@ -51,7 +51,7 @@ func _ready() -> void:
 	add_child(badges)
 	move_child(badges, 0)
 
-	_hover = Ui.panel(Ui.text("", 14, Ui.INK, 800), Ui.box(Ui.CREAM, 12, 12, 7, Ui.SHADE, 4))
+	_hover = Ui.panel(Ui.vbox([Ui.text("", 14, Ui.INK, 800), Ui.text("", 12, Ui.MUTED, 700)], 0), Ui.box(Ui.CREAM, 12, 12, 7, Ui.SHADE, 4))
 	_hover.visible = false
 	_place(_hover, Control.PRESET_TOP_LEFT, Vector2.ZERO)
 
@@ -87,9 +87,13 @@ func _process(_delta: float) -> void:
 		_hover.position = get_viewport().get_mouse_position() + Vector2(18, 20)
 
 
-## Name of the object under the mouse, or "" for none.
-func set_hover(text: String) -> void:
-	(_hover.get_child(0) as Label).text = text
+## Name of the object under the mouse, or "" for none, with a `hint` beneath
+## it of what a click will do if that needs saying.
+func set_hover(text: String, hint := "") -> void:
+	var lines := _hover.get_child(0)
+	(lines.get_child(0) as Label).text = text
+	(lines.get_child(1) as Label).text = hint
+	(lines.get_child(1) as Label).visible = not hint.is_empty()
 	_hover.visible = not text.is_empty()
 	_hover.reset_size()
 

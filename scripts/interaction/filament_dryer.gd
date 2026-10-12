@@ -42,6 +42,10 @@ func _process(delta: float) -> void:
 			Game.notify("The dryer has finished: %s is dry" % spool.title(), &"good")
 
 
+func card_icon() -> String:
+	return "spoolhouse"
+
+
 func get_actions(_agent: Agent) -> Array[Action]:
 	var actions: Array[Action] = [Action.info(spec["name"])]
 	for spool in spools():

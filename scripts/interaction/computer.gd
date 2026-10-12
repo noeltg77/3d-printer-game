@@ -11,6 +11,10 @@ func _ready() -> void:
 	add_to_group(&"computer")
 
 
+func card_icon() -> String:
+	return "home"
+
+
 func get_actions(agent: Agent) -> Array[Action]:
 	if agent.seated:
 		return [

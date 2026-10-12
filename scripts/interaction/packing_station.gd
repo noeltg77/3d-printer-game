@@ -28,6 +28,10 @@ func _ready() -> void:
 	_show_stock()
 
 
+func card_icon() -> String:
+	return "craftsy"
+
+
 func get_actions(_agent: Agent) -> Array[Action]:
 	var actions: Array[Action] = []
 	for kind: String in Game.data.packaging:

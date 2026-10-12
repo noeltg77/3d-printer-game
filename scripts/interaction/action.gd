@@ -18,6 +18,12 @@ var children: Array[Action] = []
 ## The kind of job this is, if staff may pick it up for themselves: one of the
 ## duties in data/staff.json. Empty for something only the player decides.
 var duty: StringName = &""
+## Folded away on the object's card until the player opens it: for what is
+## done rarely or can't be undone (moving, selling, scrapping, binning). A
+## tucked action is also never run straight from a click on the object.
+var tucked := false
+## 0 to 1 draws a progress bar under the line on the card. Below 0 for none.
+var progress := -1.0
 
 
 func _init(p_label: String, p_run := Callable(), p_enabled := true) -> void:
@@ -33,6 +39,18 @@ func get_task_name() -> String:
 ## Marks the action as a job staff with that duty may pick up. Returns it.
 func for_duty(p_duty: StringName) -> Action:
 	duty = p_duty
+	return self
+
+
+## Marks the action as one to keep folded away on the card. Returns it.
+func tuck() -> Action:
+	tucked = true
+	return self
+
+
+## Gives a line a progress bar, `value` of the way along. Returns it.
+func with_progress(value: float) -> Action:
+	progress = clampf(value, 0.0, 1.0)
 	return self
 
 

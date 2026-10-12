@@ -15,6 +15,7 @@ const TILE_SIZE := Vector2(168, 132)
 
 var _shelf: StorageShelf = null
 var _holder: CenterContainer
+var _backdrop: ColorRect
 var _scroll: ScrollContainer = null
 
 
@@ -36,6 +37,7 @@ func _ready() -> void:
 	Ui.clickable(backdrop, close)
 	backdrop.mouse_default_cursor_shape = Control.CURSOR_ARROW
 	add_child(backdrop)
+	_backdrop = backdrop
 	_holder = CenterContainer.new()
 	_holder.theme = Ui.theme()
 	_holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -54,6 +56,9 @@ func open(shelf: StorageShelf) -> void:
 	_shelf = shelf
 	visible = true
 	_rebuild()
+	_backdrop.modulate.a = 0.0
+	Ui.tween(_backdrop).tween_property(_backdrop, "modulate:a", 1.0, 0.15)
+	Ui.pop_in(_holder, _holder.size / 2.0, 0.94)
 
 
 func close() -> void:
