@@ -47,27 +47,30 @@ The table above was first measured with only the 160 Garage designs in the game.
 
 So the garage is where the last pass left it.
 
-## The small unit (40 runs of 28 game days, last run 2026-10-09)
+## The small unit (40 runs of 28 game days, last run 2026-10-12)
 
-The same player, carrying on. When both garage spots are full and orders would fill them, they save for the move (£399.99), then pay £9.99 rent each midnight, list on Biddle as well as Craftsy, choose from the Small unit designs too and fill the unit's four printer spots. "Fast printers" means every printer after the first is a Zippy A1 Mini (£268.99, 2.2 times the speed) and not another Plodder Mini (£158.99).
+The same player, carrying on. They fill the garage first: its bench holds two printers, and a printer rack (£89.99) stands two more in the floor space of one. When all four are busy they save for the move (£1,499.99), then pay £9.99 rent each midnight, list on Biddle as well as Craftsy, choose from the Small unit designs too and add printers up to the unit's eight. "Fast printers" means every printer after the first is a Zippy A1 Mini (£268.99, 2.2 times the speed) and not another Plodder Mini (£158.99).
 
-| Player | Second printer | Moved | Third printer | Fourth printer | Worth after 28 days | Gaining a day, last week | Sold a day | Printer busy | Sales on Biddle |
+| Player | Second printer | Third printer | Fourth printer | Moved | Worth after 28 days | Gaining a day, last week | Sold a day | Printer busy | Sales on Biddle |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Attentive, starter printers | day 2.4 | day 6.4 | day 7.4 | day 10.4 | £4,944 | £261 | 23.1 | 74% | 18% |
-| Attentive, fast printers | day 3.4 | day 8.4 | day 10.4 | day 13.4 | £5,223 | £350 | 19.8 | 66% | 14% |
-| Casual, starter printers | day 4.4 | day 8.4 | day 10.4 | day 13.4 | £3,860 | £240 | 19.2 | 66% | 21% |
-| Attentive, stays in the garage | day 2.4 | never | | | £4,452 | £163 | 23.6 | 85% | |
+| Attentive, starter printers | day 2.4 | day 5.4 | day 7.4 | day 14.4 | £3,115 | £284 | 20.5 | 60% | 6% |
+| Attentive, fast printers | day 3.4 | day 7.4 | day 10.4 | day 20.4 | £1,670 | £40 | 16.0 | 49% | 4% |
+| Casual, starter printers | day 3.4 | day 7.4 | day 9.4 | day 17.4 | £2,245 | £193 | 18.7 | 59% | 5% |
+| Attentive, stays in the garage | day 2.4 | day 5.4 | day 7.4 | never | £5,426 | £237 | 23.3 | 71% | |
 
-Worth is cash plus what the printers cost. The cost of the move and the licences are spent and not counted.
+Worth is cash plus what the printers cost. The cost of the move, the rack and the licences are spent and not counted.
 
-- **The move comes after about an hour of play** (day 6.4) for an attentive player and 84 minutes for a casual one. Every run got there.
-- **It pays, slowly.** The player who moves is gaining £261 a day by the last week against £163 for the one who stayed, and is £490 ahead after four weeks. Until then they are paying off the move, two printers and about eighteen more licences.
-- **The rent hardly registers.** £9.99 is 4% of what a day in the unit earns. Before the move the same player was gaining £87 a day in the garage; after it, £206 with the rent paid.
-- **The character is the limit, not the room.** Sales a day do not go up after the move (23 either way): one pair of hands packs about that many. The gain comes from selling dearer things. The player trades up nineteen listings and ends with the same eighteen or so on sale, and the printers are busy only 74% of the time. Four spots are worth having for the longer prints, not for more of them.
-- **Silk PLA is what the unit is for.** It is 40% of sales from 40 designs, because its jewellery and props earn £4.55 an hour in the middle of the range against £2.63 for Garage PLA. PETG is 194 designs and 5% of sales: the middle one earns £2.72, no better than what the player already owns. TPU sold nothing, even to the player with direct drive printers (£2.48).
-- **Biddle is a sideline.** 14 to 21% of sales. The same design earns about a quarter less a sale there (lower price, higher fee), so with no time to spare it only wins a place for the best designs. Its rating settles lower (4.0 to 4.1 against 4.3 to 4.4), which costs a casual player 4% of orders there and an attentive one nothing.
-- **Fast printers are the better buy, later.** They put the move back two days and end £280 ahead, gaining £89 a day more: shorter prints fit more of the long, dear designs into a day and wear out fewer parts (£185 against £318).
-- **Parts add up.** Four starter printers go through 43 parts in four weeks, about £11 a day. Still no breakdowns for a player who replaces worn parts.
+- **The move cost went from £399.99 to £1,499.99** (and the workshop from £1,499.99 to £3,999.99, the factory from £4,999.99 to £14,999.99). A few hundred pounds was pocket money next to a place to rent. The rents were left alone.
+- **The move now comes at about two weeks** (day 14.4, where it was day 8.4 with the old price and no racks) for an attentive player and day 17.4 for a casual one. Every run got there. At £1,999.99 it was day 16.4 and 19.4, which felt like waiting.
+- **The garage is a real stage now.** With a rack it runs four printers and gains £237 a day by the end, where two printers gained £164. That is what pays for the dearer move: the week between the fourth printer and the move is spent saving at about £200 a day.
+- **The move pays back slowly.** The player who moves is gaining £284 a day by the last week against £237 for the one who stayed, but is still £2,300 behind after four weeks: the move, four more printers and about eighteen more licences are all spent in the second fortnight. The unit's pull is its designs and second marketplace, not its room.
+- **Fast printers before the move are a trap.** Three Zippys cost £330 more than three Plodders, put the move back six days and leave a week in the unit, too short to earn it back in these games.
+- **The rent hardly registers.** £9.99 is about 4% of what a day in the unit earns.
+- **The character is the limit, not the room.** Sales a day do not go up after the move (about 20 either way): one pair of hands packs about that many, and the printers are busy only 60% of the time. Eight places are worth having for the longer, dearer prints, not for more of them.
+- **The workshop and factory prices are not played.** The report stops at the small unit. £3,999.99 is about the same wait again at what the unit earns (two to three weeks); £14,999.99 assumes staff and contracts lift a workshop's day well past that, which nobody has measured.
+- **Silk PLA is what the unit is for.** Its jewellery and props earn £4.55 an hour in the middle of the range against £2.63 for Garage PLA. With only the second fortnight spent in the unit it is 13 to 18% of the four weeks' sales (it was 40% when the move came on day 6). PETG is 194 designs and about 5% of sales: the middle one earns £2.72, no better than what the player already owns. TPU sold nothing.
+- **Biddle is a sideline.** 4 to 6% of the four weeks' sales, all of it after the move. The same design earns about a quarter less a sale there (lower price, higher fee), so with no time to spare it only wins a place for the best designs, and its rating settles lower (3.4 to 3.5 against 4.3).
+- **Parts add up.** Four starter printers in the garage and up to eight in the unit go through 47 parts in four weeks, about £11 a day. Almost no breakdowns for a player who replaces worn parts.
 
 ## What the report does not cover
 
@@ -108,5 +111,5 @@ Tried and dropped: halving demand with a fee of 3 times the price put the second
 - **A casual player's printers sit idle over 40% of the time.** With sixteen designs of mostly small prints, the character's attention is the limit, not the printer. That is why the casual player's second printer slipped from day 3.4 to 4.4.
 - **The starting design earns very little alone.** The free clips bring about £9 a day, so a new player has to buy designs straight away. Starting cash leaves about £125 after the first printer and spool, enough for four to eight designs.
 - **Seasons are not applied.** Seasonal designs sell all year, and two of the best ten are seasonal (the Monster tooth necklace and the Heart lithophane).
-- **The move to a small unit** (£399.99 and £9.99 a day) is covered above. The rent could be several times higher and still be paid easily; whether it should be depends on how soon staff arrive to lift the limit on the character.
+- **The move to a small unit** (£1,499.99 and £9.99 a day) is covered above. The rent could be several times higher and still be paid easily; whether it should be depends on how soon staff arrive to lift the limit on the character.
 - **PETG and TPU earn too little to be chosen.** Between them they are 227 of the 274 single colour Small unit designs the player could buy. Their prices come from the catalogue; their demand and fees from the same placeholder rules as the garage's.
