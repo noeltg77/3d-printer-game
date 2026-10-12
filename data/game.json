@@ -52,6 +52,34 @@
 		"min_designs": 4,
 		"seasonal": ["christmas", "halloween", "easter", "valentines_day", "mothers_day", "fathers_day", "new_year", "summer", "bonfire_night", "back_to_school"]
 	},
+	"colour_taste": {
+		"favourites": 3,
+		"window": 6,
+		"liked_demand": 1.3,
+		"other_demand": 0.9,
+		"categories": {
+			"christmas": ["red", "green", "white"],
+			"halloween": ["orange", "purple", "ink"],
+			"valentines_day": ["red", "pink", "white"],
+			"easter": ["yellow", "pink", "sky", "lime"],
+			"summer": ["yellow", "sky", "orange"],
+			"bonfire_night": ["orange", "red", "ink"],
+			"new_year": ["yellow", "ink", "white"],
+			"mothers_day": ["pink", "purple", "white"],
+			"fathers_day": ["blue", "ink", "teal"],
+			"tech_accessories": ["ink", "white"],
+			"tools_and_workshop": ["orange", "ink", "red"],
+			"mechanical_and_maker_parts": ["ink", "white"],
+			"industrial_and_b2b_batch": ["ink", "white"],
+			"replacement_parts": ["white", "ink"],
+			"automotive_and_bike": ["ink", "red"],
+			"garden_and_outdoor": ["green", "teal"],
+			"kitchen": ["white", "teal"],
+			"bathroom": ["white", "sky"],
+			"photography_and_film": ["ink"],
+			"music": ["ink", "red"]
+		}
+	},
 	"design": {
 		"unlock_tier": 2,
 		"base_minutes": 180,

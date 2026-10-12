@@ -124,6 +124,8 @@ func _rebuild() -> void:
 	var right := Ui.vbox([Ui.hbox([Ui.text("How to print it", 13, Ui.MUTED, 800), null, _copies_picker()], 8), presets], 8)
 	if _printer.has_unit() or Multicolour.colours_of(Game.data.products[_product]) > 1:
 		right.add_child(_colours())
+	if not Game.popular_colours(_product).is_empty():
+		right.add_child(_taste())
 	right.add_child(_meter())
 	right.custom_minimum_size.x = 600
 
@@ -150,10 +152,13 @@ func _design_row(product: StringName) -> Control:
 		note += " · too big for this printer"
 	elif not printable:
 		note += " · can't print now"
-	var row := Ui.panel(Ui.vbox([
+	var words := Ui.vbox([
 		Ui.text(Game.product_name(product), 15, fg, 800),
 		Ui.text(note, 13, Ui.CHIP_TEXT if chosen else Ui.MUTED),
-	], 0), Ui.box(Ui.INK if chosen else Ui.WHITE, 14, 14, 10, Ui.CLEAR if chosen else SHADOW, 0 if chosen else 3))
+	], 0)
+	var liked := Ui.swatches(Game.popular_colours(product).map(Palette.colour), 12)
+	liked.tooltip_text = "Buyers like it best in %s" % Game.popular_colours_label(product)
+	var row := Ui.panel(Ui.hbox([Ui.grow(words), liked], 8), Ui.box(Ui.INK if chosen else Ui.WHITE, 14, 14, 10, Ui.CLEAR if chosen else SHADOW, 0 if chosen else 3))
 	return Ui.clickable(row, _pick.bind(product, _preset))
 
 
@@ -264,6 +269,27 @@ func _pick_slot(index: int, slot: int) -> void:
 
 
 ## The risk meter: chance of failure as a bar, strength and finish as dots.
+## The colours buyers like the chosen design best in, and whether what it is
+## about to be printed in is one of them.
+func _taste() -> Control:
+	var printing: Array[StringName] = []
+	for slot in _used_slots():
+		if _printer.spools[slot] != null:
+			printing.append(_printer.spools[slot].colour)
+	var liked := Game.taste.likes(Game.data.products[_product], printing)
+	var verdict := Ui.pill("A favourite: sells faster" if liked else "Not a favourite: sells slower",
+		Ui.GREEN_DARK if liked else Ui.AMBER_DARK, Ui.GREEN_SOFT if liked else Ui.AMBER_SOFT, 13)
+	var line := Ui.hbox([
+		Ui.swatches(Game.popular_colours(_product).map(Palette.colour), 16),
+		Ui.grow(Ui.text("Buyers like it best in %s" % Game.popular_colours_label(_product), 13, Ui.INK, 800)),
+		verdict,
+	], 10)
+	line.tooltip_text = "A listing shows what you have been sending. Sent in a colour buyers like, a design gets up to %d%% more orders; in others, %d%% fewer." % [
+		roundi((float(Game.data.settings["colour_taste"]["liked_demand"]) - 1.0) * 100.0),
+		roundi((1.0 - float(Game.data.settings["colour_taste"]["other_demand"])) * 100.0)]
+	return Ui.panel(line, Ui.box(Ui.INSET, 12, 12, 8))
+
+
 func _meter() -> Control:
 	var preset: Dictionary = Game.data.presets[_preset]
 	var plan := _printer.print_plan(_product, _preset, _used_slots(), _copies)

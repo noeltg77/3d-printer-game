@@ -126,6 +126,7 @@ func _pack(agent: Agent, order: Marketplace.Order) -> void:
 		value *= float(Game.data.toggles["multicolour"]["off_price_multiplier"])
 		Game.notify("Order %s is going out in one colour, so the buyer pays less" % shop.order_label(order))
 	shop.mark_packed(order, item.durability, item.quality, item.is_flawed(), value, item.is_plain(), terms)
+	shop.note_colour(order.product, Game.taste.likes(Game.data.products[order.product], item.colours))
 	item.queue_free()
 	Game.changed.emit()
 	await agent.reach(func() -> void: agent.carry(parcel))

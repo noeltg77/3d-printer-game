@@ -17,6 +17,7 @@ func _init() -> void:
 	_test_printable_designs()
 	_test_design_studio()
 	_test_markets_and_trends()
+	_test_colour_taste()
 	_test_premises()
 	_test_stockroom()
 	_test_contracts()
@@ -34,6 +35,48 @@ func _init() -> void:
 	_test_saving()
 	print("Tests passed" if _failures == 0 else "%d test(s) FAILED" % _failures)
 	quit(1 if _failures > 0 else 0)
+
+
+func _test_colour_taste() -> void:
+	var data := GameData.load_all()
+	var taste := ColourTaste.new(data.settings["colour_taste"], data.filaments)
+	var pla_colours: Array = data.filaments["pla"]["colours"]
+	var differing := 0
+	var first: Array[StringName] = []
+	for row: Dictionary in data.products.values():
+		var wanted := taste.favourites(row)
+		_check(wanted.size() <= int(data.settings["colour_taste"]["favourites"]), "a design has no more favourite colours than the setting (%s)" % row["id"])
+		if row["allowed_filaments"] == ["pla"]:
+			_check(wanted.size() == 3 and wanted.all(func(colour: StringName) -> bool: return pla_colours.has(String(colour))),
+				"a PLA design has three favourites, all colours PLA comes in (%s)" % row["id"])
+			if first.is_empty():
+				first = wanted
+			elif wanted != first:
+				differing += 1
+		if row["allowed_filaments"] == ["pla_cf"]:
+			_check(wanted.is_empty() and taste.likes(row, [&"ink"]), "a design with one colour to its name has no favourites")
+	_check(differing > 50, "designs differ in the colours they suit")
+	_check(taste.favourites(data.products[&"desk_organiser"]) == taste.favourites(data.products[&"desk_organiser"]), "a design's favourites stay the same")
+
+	var market := Marketplace.new(data.marketplaces.values()[0], data.products)
+	market.taste = taste
+	var organiser: Dictionary = data.products[&"desk_organiser"]
+	var liked: StringName = taste.favourites(organiser)[0]
+	var other := StringName(pla_colours.filter(func(colour: String) -> bool: return not taste.favourites(organiser).has(StringName(colour)))[0])
+	_check(taste.likes(organiser, [liked]) and not taste.likes(organiser, [other]) and taste.likes(organiser, [other, liked]), "a print is liked if any of its colours is a favourite")
+	var plain := market.orders_per_day(&"desk_organiser", market.typical_price(&"desk_organiser"))
+	_check(is_equal_approx(market.colour_multiplier(&"desk_organiser"), 1.0), "colour makes no difference before anything is sent")
+	for sent in 10:
+		market.note_colour(&"desk_organiser", true)
+	_check(market.listing(&"desk_organiser")["colours"].size() == taste.window(), "only the last few sent count")
+	_check(market.orders_per_day(&"desk_organiser", market.typical_price(&"desk_organiser")) > plain, "sending favourite colours brings more orders")
+	for sent in taste.window():
+		market.note_colour(&"desk_organiser", false)
+	_check(market.orders_per_day(&"desk_organiser", market.typical_price(&"desk_organiser")) < plain, "sending colours nobody asked for brings fewer")
+	var copy := Marketplace.new(market.config, data.products)
+	copy.taste = taste
+	copy.restore(JSON.parse_string(JSON.stringify(market.save())))
+	_check(is_equal_approx(copy.colour_multiplier(&"desk_organiser"), market.colour_multiplier(&"desk_organiser")), "what has been sent survives a save")
 
 
 func _check(condition: bool, what: String) -> void:
