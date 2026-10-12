@@ -17,8 +17,9 @@ extends SceneTree
 ## buy everything. They take the listing (a design on a marketplace) that earns
 ## most for the time it takes, then the next, until the orders they expect would
 ## fill PRINTER_SHARE of the printers' day or all of the character's. When it is
-## the printers that are full they save for another one, and when there is no
-## room for another, for the move. When it is the character who is full they
+## the printers that are full they save for another one (and for a rack to stand
+## it on, once the benches are full), and when there is no room for another, for
+## the move. When it is the character who is full they
 ## trade up: a listing that earns more a sale takes the place of the worst one.
 
 const STEP := 5.0
@@ -78,6 +79,9 @@ var _starter := ""
 var _shops: Array[String] = []
 ## The premises the long games move to.
 var _unit: Dictionary = {}
+## The rack a printer goes on once the benches are full: what it costs and how many it holds.
+var _rack_price := 0
+var _rack_holds := 1
 ## Every listing with its figures (see _figures), best earner for the time first.
 var _wishlist: Array[Dictionary] = []
 ## product id -> the row of the filament it is printed in.
@@ -110,6 +114,10 @@ func _init() -> void:
 	for place: Dictionary in _data.premises.values():
 		if int(place["tier"]) == UNIT_TIER:
 			_unit = place
+	for fitting: Dictionary in _data.fittings.values():
+		if String(fitting["kind"]) == "bench" and int(fitting["unlock_tier"]) <= 1 and (fitting["printer_spots"] as Array).size() > _rack_holds:
+			_rack_price = int(fitting["price_pence"])
+			_rack_holds = (fitting["printer_spots"] as Array).size()
 	for product: String in _data.products:
 		var row: Dictionary = _data.products[product]
 		# A multicolour design wants a multicolour unit, which this player never buys.
@@ -352,7 +360,7 @@ func _play(player: Dictionary, seed_value: int, days: int) -> Dictionary:
 		"worth_at_move": 0.0, "worth_days": [], "traded_up": 0, "sold_on": {}, "sold_in": {}}
 	# Everything _tend and _choose need to see, so they take one argument.
 	var s := {"rng": rng, "preset": preset, "bank": bank, "shops": shops, "tier": 1, "owned": owned, "printers": printers,
-		"place": _data.premises[String(settings["start"]["premises"])], "stock": {}, "spools": {}, "spares": {}, "short": {},
+		"place": _data.premises[String(settings["start"]["premises"])], "racks": 0, "stock": {}, "spools": {}, "spares": {}, "short": {},
 		"selling": {}, "tally": tally}
 	# The scripted player sends everything the usual way: its usual box, the usual service.
 	var usual := Shipping.new(_data).default_terms(_data.products.values()[0], 1)
@@ -631,11 +639,17 @@ func _shop(s: Dictionary, player: Dictionary, supplier: Supplier, listed: Dictio
 	if not printers_full:
 		return again_at
 	var day := (now - start) / GameClock.DAY
-	if bought.size() < int(s["place"]["printer_spots"]):
+	if bought.size() < int(s["place"]["max_printers"]):
 		var printer_id: String = player.get("buys", _starter)
-		var price := int(_data.printers[printer_id]["price_pence"]) + RESERVE
+		# Past the benches the place came with, a printer needs a rack to stand on.
+		var places := int(s["place"]["printer_spots"]) + int(s["racks"]) * _rack_holds
+		var rack := _rack_price if bought.size() >= places else 0
+		var price := int(_data.printers[printer_id]["price_pence"]) + rack + RESERVE
 		if bank.cash < price:
 			return mini(again_at, price)
+		if rack > 0:
+			bank.spend(rack, "Printer rack", now)
+			s["racks"] = int(s["racks"]) + 1
 		_order(supplier, bank, {"printers": {printer_id: 1}}, now)
 		bought.append(printer_id)
 		tally["printer_days"].append(day)

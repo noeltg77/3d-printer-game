@@ -2,7 +2,8 @@ extends VBoxContainer
 ## PC app: Design Lab, the catalogue of designs to license, and where the
 ## business makes its own versions of them. No mock-up existed for this one, so
 ## it follows the shop screens: a banner with a search box, categories down the
-## left and a card per matching design.
+## left and a card per matching design. A design none of the business's
+## printers can print says so on its card, and can be left out of the list.
 
 const PURPLE := Color("7A5BC4")
 const PURPLE_DARK := Color("573F92")
@@ -21,6 +22,11 @@ var screen: PcScreen
 ## Category id being shown, or ALL.
 var _category := ALL
 var _search := ""
+## Whether designs the business's printers can't print are left out.
+var _printable_only := false
+## Product id -> why it can't be printed ("" if it can), worked out afresh each refresh.
+var _problems: Dictionary[StringName, String] = {}
+var _printers: Array[Dictionary] = []
 var _content: MarginContainer = null
 var _categories_scroll: ScrollContainer = null
 var _designs_scroll: ScrollContainer = null
@@ -32,6 +38,8 @@ func refresh() -> void:
 	# A refresh rebuilds both lists, so put them back where the player had scrolled to.
 	var categories_at := _categories_scroll.scroll_vertical if _categories_scroll != null else 0
 	var designs_at := _designs_scroll.scroll_vertical if _designs_scroll != null else 0
+	_problems.clear()
+	_printers = Game.printer_specs()
 	Ui.clear(_content)
 	_content.add_child(Ui.hbox([_sidebar(), _catalogue()], 24))
 	_restore_scroll.call_deferred(_categories_scroll, categories_at)
@@ -106,19 +114,46 @@ func _sidebar() -> Control:
 		if not names.has(category):
 			names[category] = category_label(row)
 			counts[category] = 0
-		if matches(row, ALL, _search):
+		if _shown(row, ALL):
 			counts[category] += 1
 			total += 1
 	var own := 0
 	for product in Game.studio.designs:
-		own += 1 if matches(Game.data.products[product], OWN, _search) else 0
+		own += 1 if _shown(Game.data.products[product], OWN) else 0
 	var list := Ui.vbox([_category_button(ALL, "All designs", total), _category_button(OWN, "Your own designs", own)], 6)
 	for category: String in names:
 		list.add_child(_category_button(category, names[category], counts[category]))
 	_categories_scroll = Ui.scroll(list)
-	var column := Ui.vbox([Ui.title("Category", 18), _categories_scroll], 12)
+	var column := Ui.vbox([_printable_toggle(), Ui.title("Category", 18), _categories_scroll], 12)
 	column.custom_minimum_size.x = 260
 	return column
+
+
+## Why none of the business's printers can print a design, or "" if one can.
+func _problem(product: StringName) -> String:
+	if not _problems.has(product):
+		_problems[product] = FilamentRules.design_problem(_printers, Game.data.products[product], Game.data.filaments)
+	return _problems[product]
+
+
+## True if a design is in the list as it stands: it matches the category and
+## search, and can be printed if only printable designs are wanted.
+func _shown(row: Dictionary, category: String) -> bool:
+	return matches(row, category, _search) and not (_printable_only and _problem(StringName(row["id"])) != "")
+
+
+## The switch that leaves out what the business's printers can't print.
+func _printable_toggle() -> Control:
+	var flip := func() -> void:
+		_printable_only = not _printable_only
+		_show_from_top()
+	var button := Ui.button("Only what I can print: %s" % ("on" if _printable_only else "off"), flip,
+		PURPLE if _printable_only else Ui.WHITE, Ui.PAPER if _printable_only else Ui.INK, 44, 14, PURPLE_DARK if _printable_only else SHADOW)
+	button.tooltip_text = "Leaves out designs that are too big for your printers, or need a material none of them can print."
+	button.disabled = _printers.is_empty()
+	if _printers.is_empty():
+		button.tooltip_text = "You need a printer first."
+	return button
 
 
 func _category_button(category: String, label: String, count: int) -> Button:
@@ -142,7 +177,7 @@ func _catalogue() -> Control:
 	var held_back := 0
 	for product: String in Game.data.products:
 		var row: Dictionary = Game.data.products[product]
-		if not matches(row, _category, _search):
+		if not _shown(row, _category):
 			continue
 		if offered(row):
 			grid.add_child(_card(StringName(product), row))
@@ -154,7 +189,8 @@ func _catalogue() -> Control:
 		_designs_scroll = null
 		var nothing := Ui.card(Ui.vbox([
 			Ui.title("No designs match" if held_back == 0 else "Nothing here yet", 20),
-			Ui.text("Try a different search, or pick All designs." if held_back == 0 else later, 14, Ui.MUTED),
+			Ui.text(("Try a different search, pick All designs, or turn off Only what I can print." if _printable_only
+				else "Try a different search, or pick All designs.") if held_back == 0 else later, 14, Ui.MUTED),
 		], 6), 22, 24, SHADOW)
 		nothing.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		nothing.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
@@ -185,16 +221,26 @@ func _card(product: StringName, row: Dictionary) -> Control:
 	var licence: Dictionary = row["licence"]
 	var fee := int(licence["fee_pence"])
 	var royalty := float(licence["royalty_pct"])
-	var facts := Ui.hbox([
+	# The facts wrap onto a second line when there are too many for the card.
+	var facts := HFlowContainer.new()
+	facts.add_theme_constant_override(&"h_separation", 6)
+	facts.add_theme_constant_override(&"v_separation", 6)
+	for fact: Control in [
 		Ui.pill(GameClock.duration_label(row["print_minutes"]), FACT_TEXT, FACT_BG),
 		Ui.pill("%d g" % row["filament_grams"], FACT_TEXT, FACT_BG),
 		Ui.pill("Sells for about %s" % Money.format(int(row["base_price_pence"])), FACT_TEXT, FACT_BG),
-	], 6)
+	]:
+		facts.add_child(fact)
 	var column := Ui.vbox([
 		Ui.hbox([Ui.panel(ModelPicture.of_product(product, 84), Ui.box(TILE, 14, 4, 4)), Ui.wrap(Ui.title(row["name"], 20))], 14),
 		Ui.wrap(Ui.text(row["description"], 13, Ui.MUTED)),
 		facts,
 	], 12)
+	var problem := _problem(product)
+	if problem != "":
+		facts.add_child(Ui.pill("Can't print it yet", Ui.RED_DARK, Ui.RED_SOFT))
+		facts.move_child(facts.get_child(-1), 0)
+		column.add_child(Ui.wrap(Ui.text("None of your printers can print this. %s." % problem, 13, Ui.RED_DARK, 800)))
 	if royalty > 0.0 and not Game.studio.has(product):
 		column.add_child(Ui.text("The designer takes %d%% of each sale" % roundi(royalty * 100.0), 13, Ui.AMBER_DARK, 800))
 	var colours := Multicolour.colours_of(row)
@@ -212,7 +258,10 @@ func _card(product: StringName, row: Dictionary) -> Control:
 	elif Game.owns(product):
 		action = Ui.pill("Owned", Ui.GREEN_DARK, Ui.GREEN_SOFT, 14)
 	else:
+		# Still for sale to a business that can't print it: the printer may be next on the list.
 		var buy := Ui.button("Get it" if fee == 0 else "Buy", func() -> void: Game.buy_design(product), PURPLE, Ui.WHITE, 44, 14, PURPLE_DARK, 15)
+		if problem != "":
+			buy = Ui.button("Buy anyway", func() -> void: Game.buy_design(product), Ui.WHITE, PURPLE_DARK, 44, 14, SHADOW, 15)
 		buy.disabled = not Game.bank.can_afford(fee)
 		action = buy
 	column.add_child(Ui.spacer())

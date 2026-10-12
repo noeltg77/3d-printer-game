@@ -195,7 +195,7 @@ func _install(agent: Agent) -> void:
 func _order_mould(_agent: Agent, product: StringName) -> void:
 	if moulding.mould_problem(product) != "":
 		return
-	if not Game.bank.spend(moulding.mould_fee(product), "Mould: %s" % Game.product_name(product), Game.clock.minutes):
+	if not Game.bank.spend(moulding.mould_fee(product), "Mould: %s" % Game.product_name(product), Game.clock.minutes, Bank.MOULDING):
 		return
 	moulding.order_mould(product, Game.clock.minutes)
 	Game.notify("Mould ordered for the %s. It will be here in %s." % [Game.product_name(product),
@@ -211,7 +211,7 @@ func _run(agent: Agent, product: StringName, colour: StringName, count: int) -> 
 	await agent.work(float(Game.data.settings["moulding"]["setup_minutes"]))
 	if moulding.run_problem(product, Game.clock.minutes, count) != "":
 		return
-	if Game.bank.spend(moulding.run_cost(product, count), "Pellets: %s" % Game.product_name(product), Game.clock.minutes):
+	if Game.bank.spend(moulding.run_cost(product, count), "Pellets: %s" % Game.product_name(product), Game.clock.minutes, Bank.MOULDING):
 		moulding.start(product, colour, count)
 		Game.changed.emit()
 

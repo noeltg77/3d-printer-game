@@ -33,6 +33,29 @@ static func suits(product: Dictionary, filament: Dictionary) -> bool:
 	return allowed.has(filament["id"]) or allowed.has(filament["family"])
 
 
+## Why none of these printers can print a design, or "" if at least one can.
+## Each printer is its row with any upgrades applied; `filaments` is the whole
+## table. With no printers to judge by there is no problem to report.
+static func design_problem(printers: Array[Dictionary], product: Dictionary, filaments: Dictionary) -> String:
+	if printers.is_empty():
+		return ""
+	var big_enough := printers.filter(func(printer: Dictionary) -> bool: return PrintRisk.fits(printer, product))
+	if big_enough.is_empty():
+		var size: Array = product["size_mm"]
+		return "It is too big for your printers: %d x %d x %d mm" % [int(size[0]), int(size[1]), int(size[2])]
+	var reason := ""
+	for printer: Dictionary in big_enough:
+		for filament: Dictionary in filaments.values():
+			if not suits(product, filament):
+				continue
+			var why := problem(printer, filament)
+			if why == "":
+				return ""
+			if reason == "":
+				reason = why
+	return reason
+
+
 ## True if any design in the game can be printed in a filament.
 static func has_a_use(products: Dictionary, filament: Dictionary) -> bool:
 	return products.values().any(func(product: Dictionary) -> bool: return suits(product, filament))

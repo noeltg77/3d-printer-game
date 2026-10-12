@@ -69,6 +69,8 @@ func _ready() -> void:
 	_toasts.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	_toasts.position.y -= 84
 
+	add_child(NightOverlay.new())
+
 	_agent.status_changed.connect(_refresh)
 	_agent.said.connect(_show_toast)
 	Game.notified.connect(_show_toast)
