@@ -31,8 +31,10 @@
 	"resale": {
 		"worn_out": 0.15,
 		"as_new": 0.55,
+		"fitting_share": 0.5,
 		"pack_minutes": 12,
-		"scrap_minutes": 5
+		"scrap_minutes": 5,
+		"box_minutes": 4
 	},
 	"finishing": {
 		"minutes": 6,
@@ -110,7 +112,8 @@
 		"main_colour_share": 0.6,
 		"contrast_purge": 1.0,
 		"many_swaps": 6,
-		"reference_jam_chance": 0.001
+		"reference_jam_chance": 0.001,
+		"rack_link_metres": 1.3
 	},
 	"supplier": {
 		"filament_shop": "Spoolhouse",

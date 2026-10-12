@@ -19,6 +19,9 @@ class Delivery:
 	var shop := ""
 	## Empty unless this is a printer box.
 	var printer: StringName = &""
+	## What a printer that was boxed up off the bench was like (PrinterStation.save):
+	## its wear, its upgrades. Empty for a new one.
+	var printer_state: Dictionary = {}
 	## Empty unless this is a filament dryer's box.
 	var dryer: StringName = &""
 	## Empty unless this is a flat packed fitting: shelving or a rack (data/fittings.json).
@@ -31,7 +34,7 @@ class Delivery:
 	var parts: Dictionary[StringName, int] = {}
 
 	func save() -> Dictionary:
-		return {"arrive_at": arrive_at, "shop": shop, "printer": printer, "dryer": dryer, "fitting": fitting, "spools": spools,
+		return {"arrive_at": arrive_at, "shop": shop, "printer": printer, "dryer": dryer, "fitting": fitting, "printer_state": printer_state, "spools": spools,
 			"packaging": packaging, "parts": parts}
 
 	static func restored(data: Dictionary) -> Delivery:
@@ -41,6 +44,7 @@ class Delivery:
 		delivery.printer = StringName(data["printer"])
 		delivery.dryer = StringName(data.get("dryer", ""))
 		delivery.fitting = StringName(data.get("fitting", ""))
+		delivery.printer_state = data.get("printer_state", {})
 		for colour: String in data["spools"]:
 			delivery.spools.append(StringName(colour))
 		# Saves from before there were kinds of packaging hold a count of mailer boxes.

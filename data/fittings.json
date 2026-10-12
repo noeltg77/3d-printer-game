@@ -29,6 +29,7 @@
 			"unlock_tier": 1,
 			"price_pence": 8999,
 			"model": "printer_rack_duo",
+			"units_beside": true,
 			"printer_spots": [[0.0, 0.26, 0.0], [0.0, 1.14, 0.0]],
 			"stand_offset": [0.0, 0.0, 0.8]
 		},
@@ -40,8 +41,20 @@
 			"unlock_tier": 3,
 			"price_pence": 13999,
 			"model": "printer_rack_trio",
+			"units_beside": true,
 			"printer_spots": [[0.0, 0.1, 0.0], [0.0, 0.98, 0.0], [0.0, 1.86, 0.0]],
 			"stand_offset": [0.0, 0.0, 0.8]
+		},
+		{
+			"id": "colour_unit_rack",
+			"name": "Colour unit rack",
+			"kind": "units",
+			"description": "Three bays for multicolour units. A printer on a rack has no room for one on top, so its unit sits here and feeds it from the side.",
+			"unlock_tier": 2,
+			"price_pence": 6999,
+			"model": "unit_rack",
+			"unit_bays": [[0.0, 0.3, 0.0], [0.0, 0.9, 0.0], [0.0, 1.5, 0.0]],
+			"stand_offset": [0.0, 0.0, 0.7]
 		},
 		{
 			"id": "workbench_unit",

@@ -97,9 +97,16 @@ func _unit_section(unit: Interactable, index: int) -> Control:
 		Ui.text("%d of %d used" % [used, slots.size()], 13, Ui.MUTED), null,
 	], 12)
 	if unit is FittingUnit:
+		var bought := unit as FittingUnit
 		heading.add_child(Ui.button("Stand it somewhere else", func() -> void:
 			close()
-			(unit as FittingUnit).choose_spot(), Ui.WHITE, Ui.INK, 32, 12, SHADOW, 13))
+			bought.choose_spot(), Ui.WHITE, Ui.INK, 32, 12, SHADOW, 13))
+		var sell := Ui.button("Sell it for %s" % Money.format(bought.resale_value()), _part_with.bind(bought, true), Ui.WHITE, Ui.INK, 32, 12, SHADOW, 13)
+		var scrap := Ui.button("Scrap it", _part_with.bind(bought, false), Ui.WHITE, Ui.INK, 32, 12, SHADOW, 13)
+		for button: Button in [sell, scrap]:
+			button.disabled = bought.in_use()
+			button.tooltip_text = "Empty it first" if bought.in_use() else ""
+			heading.add_child(button)
 	var grid := GridContainer.new()
 	grid.columns = COLUMNS
 	grid.add_theme_constant_override(&"h_separation", 10)
@@ -107,6 +114,12 @@ func _unit_section(unit: Interactable, index: int) -> Control:
 	for slot in slots:
 		grid.add_child(_tile(slot))
 	return Ui.vbox([heading, grid], 8)
+
+
+func _part_with(unit: FittingUnit, sell: bool) -> void:
+	close()
+	var agent: Agent = get_tree().get_first_node_in_group(&"player")
+	agent.enqueue(unit.sell_action() if sell else unit.scrap_action())
 
 
 func _tile(slot: Node3D) -> Control:

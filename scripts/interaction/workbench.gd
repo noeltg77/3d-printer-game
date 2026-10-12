@@ -33,6 +33,9 @@ var _units: Array[FittingUnit] = []
 var _benches: Array[Node3D] = []
 ## Names of the ones taken out.
 var _removed: Array[String] = []
+## The bays of the colour unit racks, where the multicolour unit of a printer
+## on a rack sits: { holder: the unit rack, node: where in it, printer: whose unit is there or null }.
+var _bays: Array[Dictionary] = []
 
 
 func _ready() -> void:
@@ -69,9 +72,11 @@ func get_actions(_agent: Agent) -> Array[Action]:
 		if places.any(func(spot: Dictionary) -> bool: return spot["printer"] != null):
 			benches.append(Action.info("%s: move or sell its printers first" % title))
 		else:
-			var remove := Action.new(title, _take_out.bind(bench))
-			remove.task_name = "Take out the %s" % bench_name(bench)
-			benches.append(remove)
+			var sell := Action.new("Sell %s for %s" % [title.to_lower(), Money.format(bench_value())], _take_out.bind(bench, true))
+			sell.task_name = "Take out the %s to sell" % bench_name(bench)
+			var scrap := Action.new("Scrap %s" % title.to_lower(), _take_out.bind(bench, false))
+			scrap.task_name = "Scrap the %s" % bench_name(bench)
+			benches.append_array([sell, scrap])
 	if not benches.is_empty():
 		actions.append(Action.submenu("Take a bench out for good", benches))
 	return actions
@@ -107,11 +112,32 @@ func add_unit(fitting: StringName, at: Transform3D) -> FittingUnit:
 	get_parent().add_child(unit)
 	unit.global_transform = at
 	_units.append(unit)
-	for place: Array in Game.data.fittings[fitting]["printer_spots"]:
+	for place: Array in Game.data.fittings[fitting].get("printer_spots", []):
 		_spots.append({"holder": unit, "at": Vector3(place[0], place[1], place[2]), "printer": null})
+	for place: Array in Game.data.fittings[fitting].get("unit_bays", []):
+		var bay := Node3D.new()
+		unit.add_child(bay)
+		bay.position = Vector3(place[0], place[1], place[2])
+		_bays.append({"holder": unit, "node": bay, "printer": null})
+	relink()
 	(get_tree().get_first_node_in_group(&"floor_grid") as FloorGrid).rebuild.call_deferred()
 	Game.changed.emit()
 	return unit
+
+
+## True if a printer stands on a bought rack or bench, or a unit sits in a colour unit rack.
+func unit_in_use(unit: FittingUnit) -> bool:
+	return _places_on(unit).any(func(spot: Dictionary) -> bool: return spot["printer"] != null) \
+		or _bays.any(func(bay: Dictionary) -> bool: return bay["holder"] == unit and bay["printer"] != null)
+
+
+## Gives up a bought rack's places, for it to be sold or scrapped. It has to be empty.
+func remove_unit(unit: FittingUnit) -> void:
+	_spots = _spots.filter(func(spot: Dictionary) -> bool: return spot["holder"] != unit)
+	_bays = _bays.filter(func(bay: Dictionary) -> bool: return bay["holder"] != unit)
+	_units.erase(unit)
+	relink()
+	Game.changed.emit()
 
 
 ## A rack has been stood somewhere else: its printers go with it.
@@ -119,6 +145,67 @@ func unit_moved(unit: FittingUnit) -> void:
 	for spot in _spots:
 		if spot["holder"] == unit and spot["printer"] != null:
 			_seat(spot)
+	relink()
+
+
+## True if a printer stands somewhere with no room on top of it for a
+## multicolour unit: on a printer rack. Its unit has to sit in a colour unit rack beside it.
+func needs_bay(station: PrinterStation) -> bool:
+	for spot in _spots:
+		if spot["printer"] == station:
+			return spot["holder"] is FittingUnit and bool(Game.data.fittings[(spot["holder"] as FittingUnit).fitting].get("units_beside", false))
+	return false
+
+
+## True if a printer could have a multicolour unit where it stands: on a
+## bench, or on a rack with a bay for it in reach.
+func can_take_unit(station: PrinterStation) -> bool:
+	return not needs_bay(station) or _bay_of(station) != null or _free_bay_near(station) != null
+
+
+## Works out afresh which unit sits in which bay, after anything has been
+## moved, fitted or taken away. A unit keeps its bay while it is in reach;
+## one with no bay in reach goes back on its printer, which can't then print.
+func relink() -> void:
+	for bay in _bays:
+		var station: PrinterStation = bay["printer"] if is_instance_valid(bay["printer"]) else null
+		if station == null or not station.has_unit() or not needs_bay(station) or not _in_reach(bay, station):
+			bay["printer"] = null
+	for spot in _spots:
+		var station: PrinterStation = spot["printer"]
+		if station == null or not is_instance_valid(station):
+			continue
+		var bay: Variant = _bay_of(station)
+		if bay == null and station.has_unit() and needs_bay(station):
+			bay = _free_bay_near(station)
+			if bay != null:
+				bay["printer"] = station
+		station.set_unit_bay(bay["node"] if bay != null else null)
+
+
+func _bay_of(station: PrinterStation) -> Variant:
+	for bay in _bays:
+		if bay["printer"] == station:
+			return bay
+	return null
+
+
+## The nearest empty bay close enough to feed a printer, or null.
+func _free_bay_near(station: PrinterStation) -> Variant:
+	var best: Variant = null
+	for bay in _bays:
+		if bay["printer"] == null and _in_reach(bay, station) and (best == null or _gap(bay, station) < _gap(best, station)):
+			best = bay
+	return best
+
+
+func _gap(bay: Dictionary, station: PrinterStation) -> float:
+	var from: Vector3 = (bay["holder"] as Node3D).global_position
+	return Vector2(from.x - station.global_position.x, from.z - station.global_position.z).length()
+
+
+func _in_reach(bay: Dictionary, station: PrinterStation) -> bool:
+	return Game.storage.in_reach(_gap(bay, station))
 
 
 ## Where to stand to put a printer on the next free place, and what to face. {} if there is none.
@@ -158,6 +245,7 @@ func move_printer(station: PrinterStation, holder: Node3D, seat_now := true) -> 
 						spot["printer"] = null
 				target["printer"] = station
 				_seat(target)
+				relink()
 				Game.changed.emit()
 			return _approach(target)
 	return {}
@@ -178,6 +266,7 @@ func install_printer(printer_id: StringName, at_spot := -1) -> PrinterStation:
 	get_parent().add_child(station)
 	_spots[index]["printer"] = station
 	_seat(_spots[index])
+	relink()
 	Game.changed.emit()
 	return station
 
@@ -187,6 +276,7 @@ func remove_printer(station: PrinterStation) -> void:
 	for spot in _spots:
 		if spot["printer"] == station:
 			spot["printer"] = null
+	relink()
 	Game.changed.emit()
 
 
@@ -211,7 +301,12 @@ func remove_bench(bench: Node3D) -> bool:
 	return true
 
 
-func _take_out(agent: Agent, bench: Node3D) -> void:
+## What one of the premises' own benches fetches second hand, in pence.
+func bench_value() -> int:
+	return roundi(float(Game.data.fittings["workbench_unit"]["price_pence"]) * float(Game.data.settings["resale"]["fitting_share"]))
+
+
+func _take_out(agent: Agent, bench: Node3D, sell: bool) -> void:
 	if not is_instance_valid(bench) or not _benches.has(bench) or _places_on(bench).any(func(spot: Dictionary) -> bool: return spot["printer"] != null):
 		agent.say("That bench can't come out right now")
 		return
@@ -221,7 +316,24 @@ func _take_out(agent: Agent, bench: Node3D) -> void:
 	await agent.face(bench.global_position)
 	await agent.work(float(Game.data.settings["resale"]["scrap_minutes"]))
 	remove_bench(bench)
-	agent.say("The %s is out. There is floor there now for a rack." % title)
+	var tree := get_tree()
+	var flat_pack := Node3D.new()
+	flat_pack.add_child(DeliveryBox.PRINTER_MODEL.instantiate())
+	agent.carry(flat_pack)
+	if sell:
+		var pence := bench_value()
+		await agent.go_to(tree.get_first_node_in_group(&"packing_station") as PackingStation)
+		await agent.work(float(Game.data.settings["resale"]["pack_minutes"]))
+		agent.release().queue_free()
+		await agent.reach(func() -> void: agent.carry(Parcel.create_resale(title.capitalize(), pence)))
+		var outbox: Outbox = tree.get_first_node_in_group(&"outbox")
+		await agent.go_to(outbox)
+		await agent.reach(func() -> void: outbox.add(agent.release() as Parcel))
+		Game.notify("The %s is boxed up for its buyer. You are paid %s when the courier collects it." % [title, Money.format(pence)])
+	else:
+		await agent.walk_to(tree.get_first_node_in_group(&"bin").global_position)
+		await agent.reach(func() -> void: agent.release().queue_free())
+		agent.say("The %s is out. There is floor there now for a rack." % title)
 
 
 func _usable(index: int) -> bool:
@@ -269,3 +381,4 @@ func restore(data: Dictionary) -> void:
 			var station := install_printer(StringName(entry["id"]), int(entry.get("spot", -1)))
 			if station != null:
 				station.restore(entry)
+	relink()

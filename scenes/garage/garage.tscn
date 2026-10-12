@@ -69,13 +69,13 @@ directional_shadow_mode = 0
 directional_shadow_max_distance = 60.0
 
 [node name="BenchLight" type="OmniLight3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.9, 2.15, -2.1)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.9, 2.15, -2.6)
 light_color = Color(1, 0.86, 0.62, 1)
 light_energy = 1.5
 omni_range = 4.0
 
 [node name="DeskLampLight" type="OmniLight3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.93, 0.95, -2.2)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.93, 0.95, -2.7)
 light_color = Color(1, 0.78, 0.42, 1)
 light_energy = 1.2
 omni_range = 1.8
@@ -90,13 +90,14 @@ lamp_paths = Array[NodePath]([NodePath("../BenchLight"), NodePath("../DeskLampLi
 transform = Transform3D(0.7071, -0.4082, 0.5774, 0, 0.8165, 0.5774, -0.7071, -0.4082, 0.5774, 14.43, 15.38, 13.98)
 projection = 1
 current = true
-size = 7.4
+size = 7.9
 far = 60.0
 script = ExtResource("18_camera")
 max_size = 12.0
 
 [node name="FloorGrid" type="Node3D" parent="."]
 script = ExtResource("19_grid")
+area = Rect2(-2.75, -2.75, 5.5, 5.5)
 
 [node name="Shell" parent="." instance=ExtResource("1_garage")]
 script = ExtResource("20_cutaway")
@@ -114,46 +115,46 @@ stand_offset = Vector3(0.9, 0, 0)
 visual_path = NodePath("../Shell/wall_west/roller_door")
 
 [node name="Workbench" parent="." groups=["obstacle"] instance=ExtResource("2_workbench")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.9, 0, -2.13)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.9, 0, -2.63)
 script = ExtResource("21_workbench")
 display_name = "Workbench"
 stand_offset = Vector3(0, 0, 0.75)
 
 [node name="FilamentRack" parent="." groups=["obstacle"] instance=ExtResource("7_rack")]
-transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 1.3, 0, 2.32)
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 1.3, 0, 2.82)
 script = ExtResource("23_rack")
 display_name = "Filament rack"
 stand_offset = Vector3(0, 0, 0.65)
 
 [node name="Desk" parent="." groups=["obstacle"] instance=ExtResource("4_desk")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5, 0, -2.165)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5, 0, -2.665)
 
 [node name="PC" parent="." instance=ExtResource("9_pc")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5, 0.7, -2.165)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5, 0.7, -2.665)
 script = ExtResource("25_computer")
 seat_path = NodePath("../Chair")
 display_name = "PC"
 stand_offset = Vector3(-0.12, 0, 1.15)
 
 [node name="DeskLamp" parent="." instance=ExtResource("10_lamp")]
-transform = Transform3D(0.866, 0, 0.5, 0, 1, 0, -0.5, 0, 0.866, 0.95, 0.7, -2.36)
+transform = Transform3D(0.866, 0, 0.5, 0, 1, 0, -0.5, 0, 0.866, 0.95, 0.7, -2.86)
 
 [node name="Chair" parent="." groups=["obstacle"] instance=ExtResource("5_chair")]
-transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 1.38, 0, -1.55)
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 1.38, 0, -2.05)
 
 [node name="Rug" parent="." instance=ExtResource("11_rug")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.2, 0, -0.7)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.2, 0, -1.0)
 
 [node name="Plant" parent="." groups=["obstacle"] instance=ExtResource("12_plant")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.65, 0, -2.15)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.65, 0, -2.65)
 
 [node name="Bin" parent="." groups=["obstacle", "bin"] instance=ExtResource("13_bin")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.7, 0, -1.5)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.7, 0, -2.0)
 script = ExtResource("30_interactable")
 display_name = "Bin"
 
 [node name="DryerSpot" type="Node3D" parent="."]
-transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 2.15, 0, 2.3)
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 2.15, 0, 2.8)
 script = ExtResource("38_dryer_spot")
 
 [node name="DeliveryZone" type="Node3D" parent="."]
@@ -167,28 +168,28 @@ display_name = "Outbox"
 stand_offset = Vector3(0.8, 0, 0)
 
 [node name="Shelving" parent="." groups=["obstacle"] instance=ExtResource("3_shelving")]
-transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0.1, 0, 2.26)
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0.1, 0, 2.76)
 script = ExtResource("24_shelf")
 display_name = "Shelving"
 stand_offset = Vector3(0, 0, 0.7)
 
 [node name="FloorBox1" parent="." groups=["obstacle"] instance=ExtResource("15_box_b")]
-transform = Transform3D(0.9659, 0, 0.2588, 0, 1, 0, -0.2588, 0, 0.9659, -1.3, 0, 2.2)
+transform = Transform3D(0.9659, 0, 0.2588, 0, 1, 0, -0.2588, 0, 0.9659, -1.3, 0, 2.7)
 
 [node name="FloorBox2" parent="." groups=["obstacle"] instance=ExtResource("16_box_open")]
 transform = Transform3D(0.866, 0, -0.5, 0, 1, 0, 0.5, 0, 0.866, 2.65, 0, 0.6)
 
 [node name="FloorBox3" parent="." groups=["obstacle"] instance=ExtResource("14_box_a")]
-transform = Transform3D(0.9659, 0, -0.2588, 0, 1, 0, 0.2588, 0, 0.9659, 2.7, 0, 1.3)
+transform = Transform3D(0.9659, 0, -0.2588, 0, 1, 0, 0.2588, 0, 0.9659, 2.7, 0, 1.7)
 
 [node name="PackingStation" parent="." groups=["obstacle"] instance=ExtResource("60_packing_station")]
-transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -2.62, 0, 1.62)
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -2.62, 0, 2.14)
 script = ExtResource("61_packing_station")
 display_name = "Packing station"
 stand_offset = Vector3(0, 0, 0.75)
 
 [node name="FinishingBench" parent="." groups=["obstacle"] instance=ExtResource("62_finishing_bench")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.35, 0, -2.16)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.35, 0, -2.66)
 script = ExtResource("63_finishing_bench")
 display_name = "Finishing bench"
 stand_offset = Vector3(0, 0, 0.75)

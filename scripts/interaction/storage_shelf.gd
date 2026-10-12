@@ -185,6 +185,18 @@ func add_unit(fitting: StringName, at: Transform3D) -> FittingUnit:
 	return unit
 
 
+## True if anything is on a bought unit.
+func unit_in_use(unit: FittingUnit) -> bool:
+	return _slots.any(func(slot: Node3D) -> bool: return slot.get_meta(&"unit") == unit and slot.get_child_count() > 0)
+
+
+## Gives up a bought unit's spaces, for it to be sold or scrapped. It has to be empty.
+func remove_unit(unit: FittingUnit) -> void:
+	_slots = _slots.filter(func(slot: Node3D) -> bool: return slot.get_meta(&"unit") != unit)
+	_units.erase(unit)
+	Game.changed.emit()
+
+
 ## Where to go to fetch or put away. `what` is a print being carried (the unit
 ## with room for it), a design's id (the unit holding one), a part's or kit's
 ## id (the unit with its box), or nothing (the first unit with an empty space).

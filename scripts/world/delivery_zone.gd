@@ -11,6 +11,11 @@ func _ready() -> void:
 	Game.delivery_arrived.connect(_on_delivery_arrived)
 
 
+## Sets a box down on the next free spot: a delivery, or a printer boxed up off the bench.
+func put_down(delivery: Supplier.Delivery) -> void:
+	_on_delivery_arrived(delivery)
+
+
 func _on_delivery_arrived(delivery: Supplier.Delivery) -> void:
 	# Boxes still waiting to be unpacked are the ones in the group.
 	var taken: Array[int] = []

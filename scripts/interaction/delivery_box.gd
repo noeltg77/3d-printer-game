@@ -23,6 +23,8 @@ static func create(p_delivery: Supplier.Delivery) -> DeliveryBox:
 	box.stand_offset = Vector3(0.65, 0.0, 0.0)
 	if p_delivery.fitting != &"":
 		box.display_name = "Delivery: %s" % Game.data.fittings[p_delivery.fitting]["name"]
+	if not p_delivery.printer_state.is_empty():
+		box.display_name = "Boxed up: %s" % Game.data.printers[p_delivery.printer]["name"]
 	box.add_child((PRINTER_MODEL if p_delivery.printer != &"" or p_delivery.dryer != &"" or p_delivery.fitting != &"" else SUPPLIES_MODEL).instantiate())
 	return box
 
@@ -52,6 +54,8 @@ func _choose_spot(_agent: Agent) -> void:
 ## Sets the character to putting the fitting up at `at`. In a dev run:
 ## on>delivery_box>place_at(Transform3D(Basis(), Vector3(1.0, 0, 0.5)))
 func place_at(at: Transform3D) -> void:
+	if _spot_chosen:
+		return
 	_spot_chosen = true
 	var agent: Agent = get_tree().get_first_node_in_group(&"player")
 	var action := Action.new("Put up the %s" % String(Game.data.fittings[delivery.fitting]["name"]).to_lower(), _put_up.bind(at))
@@ -93,7 +97,12 @@ func _unpack(agent: Agent) -> void:
 		if not place.is_empty():
 			await agent.walk_to(place["stand"])
 			await agent.face(place["face"])
-		await agent.reach(func() -> void: bench.install_printer(delivery.printer))
+		await agent.reach(func() -> void:
+			var station := bench.install_printer(delivery.printer)
+			# One that was boxed up off the bench comes out as it went in.
+			if station != null and not delivery.printer_state.is_empty():
+				station.restore(delivery.printer_state)
+				bench.relink())
 	if delivery.dryer != &"":
 		var front := spot.global_transform * Vector3(0.0, 0.0, 0.6)
 		await agent.walk_to(Vector3(front.x, 0.0, front.z))

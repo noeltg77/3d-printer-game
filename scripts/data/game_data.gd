@@ -114,8 +114,10 @@ static func load_all() -> GameData:
 
 func _check_storage() -> void:
 	for row: Dictionary in fittings.values():
-		if not ["shelf", "rack", "bench"].has(row.get("kind", "")):
-			errors.append("fitting %s: kind must be \"shelf\", \"rack\" or \"bench\"" % row["id"])
+		if not ["shelf", "rack", "bench", "units"].has(row.get("kind", "")):
+			errors.append("fitting %s: kind must be \"shelf\", \"rack\", \"bench\" or \"units\"" % row["id"])
+		if row.get("kind", "") == "units" and row.get("unit_bays", []).is_empty():
+			errors.append("fitting %s: a colour unit rack needs unit_bays" % row["id"])
 		if not ResourceLoader.exists("res://assets/models/furniture/%s.glb" % row.get("model", "")):
 			errors.append("fitting %s: no model \"%s\"" % [row["id"], row.get("model", "")])
 		if row.get("kind", "") == "bench" and row.get("printer_spots", []).is_empty():

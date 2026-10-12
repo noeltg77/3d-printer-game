@@ -267,6 +267,29 @@ def _printer_rack(builder, args, rng):
         builder.box((0.26, 0.012, 0.03), (0, -depth / 2 + 0.025, first * 0.5), "metal_light")
 
 
+def _unit_rack(builder, args, rng):
+    """Narrow open rack for multicolour units, to stand beside a printer rack: `--tiers` bays, 0.52 x 0.42.
+
+    A unit in a bay feeds a printer on the rack next to it. The bays are 0.6
+    apart, which is room for a unit with another linked on top of it.
+    """
+    width, depth, pitch, first = 0.52, 0.42, 0.6, 0.3
+    top = first + args.tiers * pitch
+    half_x, half_y = width / 2 - 0.02, depth / 2 - 0.02
+    for x in (-half_x, half_x):
+        for y in (-half_y, half_y):
+            builder.box((0.04, 0.04, top), (x, y, top / 2), "charcoal")
+            builder.cylinder(0.025, 0.02, (x, y, 0.01), "ink", segments=6)
+    builder.box((width - 0.05, 0.012, top - first), (0, half_y, (top + first) / 2), "metal_light")
+    for tier in range(args.tiers):
+        z = first + tier * pitch
+        builder.box((width, depth, 0.03), (0, 0, z - 0.015), "slate", bevel=0.004)
+        # The bundle of feed tubes, running off towards the printers.
+        builder.cylinder(0.012, 0.16, (width / 2 + 0.03, 0.05, z + 0.1), args.colour, axis="X", segments=6)
+    builder.box((width, depth, 0.04), (0, 0, top - 0.02), "charcoal", bevel=0.005)
+    builder.box((width - 0.06, depth - 0.05, first - 0.07), (0, 0, (first - 0.03) / 2 + 0.02), "charcoal", bevel=0.005)
+
+
 def _desk(builder, args, rng):
     """Office desk, 1.3 x 0.65, top at 0.7. Drawers on the right, sit on the -Y side."""
     width, depth, height = 1.3, 0.65, 0.7
@@ -297,7 +320,7 @@ def _chair(builder, args, rng):
 
 
 VARIANTS = {"shelving": _shelving, "filament_rack": _filament_rack, "workbench": _workbench, "packing_station": _packing_station,
-            "finishing_bench": _finishing_bench, "printer_rack": _printer_rack, "desk": _desk, "chair": _chair}
+            "finishing_bench": _finishing_bench, "printer_rack": _printer_rack, "unit_rack": _unit_rack, "desk": _desk, "chair": _chair}
 
 if __name__ == "__main__":
     common.run(sys.modules[__name__])

@@ -20,7 +20,7 @@ const SAVE_VERSION := 1
 ## What the mailer boxes of an old save are now.
 const LEGACY_PACKAGING := Supplier.LEGACY_PACKAGING
 ## Kind of fitting (data/fittings.json) -> group of the node it adds to.
-const FITTING_HOSTS := {"shelf": &"print_storage", "rack": &"filament_rack", "bench": &"workbench"}
+const FITTING_HOSTS := {"shelf": &"print_storage", "rack": &"filament_rack", "bench": &"workbench", "units": &"workbench"}
 
 var data: GameData
 var clock: GameClock
@@ -614,6 +614,17 @@ func supplier_problem(basket: Dictionary) -> String:
 		if wanted > 0 and fitting_count(kind) + wanted > storage.limit(premises_row(), kind):
 			return "No room here for more %s" % {"shelf": "shelving", "rack": "filament racks"}[kind]
 	return ""
+
+
+## How many of one fitting the business has: standing in the room, waiting
+## to be put up, or on their way.
+func fittings_owned(fitting: StringName) -> int:
+	var count := get_tree().get_nodes_in_group(&"fitting_unit").filter(func(unit: FittingUnit) -> bool: return unit.fitting == fitting).size()
+	for delivery in supplier.pending:
+		count += 1 if delivery.fitting == fitting else 0
+	for box: DeliveryBox in get_tree().get_nodes_in_group(&"delivery_box"):
+		count += 1 if box.delivery.fitting == fitting else 0
+	return count
 
 
 ## How many places for printers the business has: on the benches and racks in

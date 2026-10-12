@@ -85,6 +85,13 @@ static func max_printers(premises: Dictionary) -> int:
 	return int(premises["max_printers"])
 
 
+## True if a colour unit rack `metres` from a printer is close enough to feed
+## it (the `rack_link_metres` of the multicolour rules): the next rack along,
+## not the far end of the room.
+func in_reach(metres: float) -> bool:
+	return metres <= float(data.settings["multicolour"]["rack_link_metres"])
+
+
 ## Readies a saved shelf or rack (StorageShelf.save, FilamentRack.save) to be
 ## handed to other premises: the bought units come down, to be stood again
 ## there, and what was on them is left to find new places. Returns the

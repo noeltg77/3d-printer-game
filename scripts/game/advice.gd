@@ -44,6 +44,9 @@ static func items(tree: SceneTree) -> Array[Dictionary]:
 		if printer.status == PrinterStation.Status.FAILED:
 			_add(found, "Sort out the failed print on the %s" % printer.display_name,
 				"Click the printer and pick the fix. Prints fail now and then; it costs a little time and plastic.")
+		if not printer.unit_linked():
+			_add(found, "The %s's colour unit has nowhere to sit" % printer.display_name,
+				"A printer on a rack has no room on top for its multicolour unit. Stand a colour unit rack (Printbay, Storage) right beside its rack, or move the one you have closer, and the unit goes in a bay by itself.")
 		for slot in printer.wear.broken():
 			var part := String(printer.wear.part(slot)["slot_name"]).to_lower()
 			_add(found, "Fit a new %s to the %s" % [part, printer.display_name],

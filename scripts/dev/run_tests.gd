@@ -1384,6 +1384,14 @@ func _test_storage() -> void:
 	_check(rules.resale_value(mini, 0.0) < rules.resale_value(mini, 0.5) and rules.resale_value(mini, 0.5) < rules.resale_value(mini, 1.0), "and a worn one for less")
 	_check(rules.resale_value(mini, 0.0) > 0 and rules.resale_value(mini, 1.0) < int(mini["price_pence"]), "never nothing, and never what it cost")
 
+	_check(rules.in_reach(0.7) and rules.in_reach(float(data.settings["multicolour"]["rack_link_metres"])) and not rules.in_reach(2.5), "a colour unit rack feeds the rack next to it, not one across the room")
+	_check(data.fittings["printer_rack_duo"].get("units_beside", false) and not data.fittings["workbench_unit"].get("units_beside", false), "a unit sits beside a printer on a rack, and on top of one on a bench")
+	var boxed := Supplier.Delivery.new()
+	boxed.printer = &"plodder_mini"
+	boxed.printer_state = {"id": "plodder_mini", "wear": {"nozzle": 0.4}}
+	var unboxed := Supplier.Delivery.restored(_through_file(boxed.save()))
+	_check(unboxed.printer == &"plodder_mini" and is_equal_approx(float(unboxed.printer_state["wear"]["nozzle"]), 0.4), "a printer boxed up off the bench is saved as it was")
+
 	var supplier := Supplier.new(data)
 	var basket := {"fittings": {"shelving_unit": 2}}
 	_check(supplier.price_of(basket) == int(data.fittings["shelving_unit"]["price_pence"]) * 2, "shelving is priced by the unit")

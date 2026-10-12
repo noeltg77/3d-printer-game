@@ -543,11 +543,11 @@
 		{ "generator": "props", "out": "assets/models/props/outbox_mat.glb", "args": { "variant": "floor_mat", "colour": "yellow" } },
 		{ "generator": "boxes", "out": "assets/models/props/parcel.glb", "args": { "variant": "closed", "seed": 3, "size": [0.26, 0.2, 0.14] } },
 
-		{ "generator": "garage", "out": "assets/models/garage/garage.glb" },
+		{ "generator": "garage", "out": "assets/models/garage/garage.glb", "args": { "size": [6.0, 6.0, 2.6] } },
 		{ "generator": "garage", "out": "assets/models/garage/unit.glb", "args": { "size": [8.0, 7.0, 2.8], "window": [2.5, 1.6], "door-width": 2.0, "wall": "white", "outside": "slate", "cap": "navy", "floor": "sand" } },
 		{ "generator": "garage", "out": "assets/models/garage/workshop.glb", "args": { "size": [12.0, 9.0, 3.0], "window": [3.9, 2.2], "door-width": 2.8, "door-height": 2.4, "wall": "cream", "outside": "brick", "cap": "charcoal", "floor": "stone" } },
 		{ "generator": "garage", "out": "assets/models/garage/factory.glb", "args": { "size": [18.0, 12.0, 3.6], "window": [7.4, 2.4], "door-width": 3.4, "door-height": 2.8, "wall": "white", "outside": "metal_light", "cap": "teal", "floor": "metal_light" } },
-		{ "generator": "outdoors", "out": "assets/models/surroundings/street.glb", "args": { "variant": "street", "seed": 3 } },
+		{ "generator": "outdoors", "out": "assets/models/surroundings/street.glb", "args": { "variant": "street", "seed": 3, "room": [6.0, 6.0] } },
 		{ "generator": "outdoors", "out": "assets/models/surroundings/estate.glb", "args": { "variant": "estate", "seed": 5, "room": [8.0, 7.0] } },
 		{ "generator": "outdoors", "out": "assets/models/surroundings/estate_workshop.glb", "args": { "variant": "estate", "seed": 9, "room": [12.0, 9.0] } },
 		{ "generator": "outdoors", "out": "assets/models/surroundings/estate_factory.glb", "args": { "variant": "estate", "seed": 11, "room": [18.0, 12.0] } },
@@ -591,6 +591,7 @@
 		{ "generator": "parcels", "out": "assets/models/packaging/custom_printed_shipping_box_stack.glb", "args": { "variant": "stack", "seed": 10, "kind": "box", "size": [0.3, 0.24, 0.18], "colour": "white", "accent": "teal" } },
 		{ "generator": "furniture", "out": "assets/models/furniture/printer_rack_duo.glb", "args": { "variant": "printer_rack", "tiers": 2, "colour": "orange" } },
 		{ "generator": "furniture", "out": "assets/models/furniture/printer_rack_trio.glb", "args": { "variant": "printer_rack", "tiers": 3, "colour": "orange" } },
+		{ "generator": "furniture", "out": "assets/models/furniture/unit_rack.glb", "args": { "variant": "unit_rack", "tiers": 3, "colour": "teal" } },
 		{ "generator": "furniture", "out": "assets/models/furniture/desk.glb", "args": { "variant": "desk" } },
 		{ "generator": "furniture", "out": "assets/models/furniture/chair.glb", "args": { "variant": "chair", "colour": "teal" } },
 

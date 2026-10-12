@@ -38,7 +38,77 @@ func get_actions(agent: Agent) -> Array[Action]:
 	var move := Action.new("Stand it somewhere else...", _choose_spot)
 	move.immediate = true
 	actions.append(move)
+	if in_use():
+		actions.append(Action.info("Sell or scrap it (empty it first)"))
+	else:
+		actions.append(Action.submenu("Sell or scrap it", [sell_action(), scrap_action()]))
 	return actions
+
+
+## True while anything stands on it: it can't be sold or scrapped until it is empty.
+func in_use() -> bool:
+	return host.call(&"unit_in_use", self)
+
+
+## What it would fetch second hand, in pence.
+func resale_value() -> int:
+	return roundi(float(Game.data.fittings[fitting]["price_pence"]) * float(Game.data.settings["resale"]["fitting_share"]))
+
+
+## The task of taking it down and boxing it for whoever buys it second hand.
+func sell_action() -> Action:
+	var action := Action.new("Sell it second hand for %s" % Money.format(resale_value()), _part_with.bind(true))
+	action.task_name = "Take down the %s to sell" % display_name.to_lower()
+	return action
+
+
+## The task of taking it down and throwing it out.
+func scrap_action() -> Action:
+	var action := Action.new("Scrap it for nothing", _part_with.bind(false))
+	action.task_name = "Scrap the %s" % display_name.to_lower()
+	return action
+
+
+func _part_with(agent: Agent, sell: bool) -> void:
+	if in_use():
+		agent.say("The %s has to be empty first" % display_name.to_lower())
+		return
+	var rules: Dictionary = Game.data.settings["resale"]
+	var title := display_name
+	var pence := resale_value()
+	var tree := get_tree()
+	await agent.go_to(self)
+	await agent.work(float(rules["scrap_minutes"]))
+	if in_use():
+		agent.say("The %s has to be empty first" % title.to_lower())
+		return
+	await agent.reach(func() -> void:
+		host.call(&"remove_unit", self)
+		# Gone from the room, but not freed until this task, which is its own, is over.
+		visible = false
+		remove_collider()
+		remove_from_group(&"obstacle")
+		remove_from_group(&"fitting_unit")
+		remove_from_group(&"interactable")
+		(tree.get_first_node_in_group(&"floor_grid") as FloorGrid).rebuild()
+		var flat_pack := Node3D.new()
+		flat_pack.add_child(DeliveryBox.PRINTER_MODEL.instantiate())
+		agent.carry(flat_pack))
+	if sell:
+		var station: PackingStation = tree.get_first_node_in_group(&"packing_station")
+		await agent.go_to(station)
+		await agent.work(float(rules["pack_minutes"]))
+		agent.release().queue_free()
+		await agent.reach(func() -> void: agent.carry(Parcel.create_resale(title, pence)))
+		var outbox: Outbox = tree.get_first_node_in_group(&"outbox")
+		await agent.go_to(outbox)
+		await agent.reach(func() -> void: outbox.add(agent.release() as Parcel))
+		Game.notify("%s boxed up for its buyer. You are paid %s when the courier collects it." % [title, Money.format(pence)])
+	else:
+		await agent.walk_to(tree.get_first_node_in_group(&"bin").global_position)
+		await agent.reach(func() -> void: agent.release().queue_free())
+		agent.say("Scrapped the %s" % title.to_lower())
+	queue_free()
 
 
 ## A shelving unit opens the shelving's panel when clicked, as the shelving

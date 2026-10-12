@@ -305,20 +305,22 @@ func _storage() -> Control:
 		var kind: String = fitting["kind"]
 		var order := {"fittings": {fitting_id: 1}}
 		var places := Game.storage.places(StringName(fitting_id))
-		var have := Game.printer_places() if places > 0 else Game.fitting_count(kind)
-		var limit := StorageRules.max_printers(place) if places > 0 else Game.storage.limit(place, kind)
+		var free_standing := kind == "units"
+		var have := Game.fittings_owned(StringName(fitting_id)) if free_standing else (Game.printer_places() if places > 0 else Game.fitting_count(kind))
+		var limit := 9999 if free_standing else (StorageRules.max_printers(place) if places > 0 else Game.storage.limit(place, kind))
 		var problem := Game.supplier_problem(order) if Game.unlocked(fitting) else "Unlocks when you move to a bigger space"
 		var words := Ui.vbox([
 			Ui.text(fitting["name"], 16, Ui.INK, 800),
 			Ui.wrap(Ui.text(fitting["description"], 13, Ui.MUTED)),
 			Ui.text(("Places for %d printer%s. The %s has room for %d printers in all: take a bench out to make room." % [places, "" if places == 1 else "s", String(place["name"]).to_lower(), limit]) if places > 0
-				else "The %s has room for %d in all, counting the one that was here." % [String(place["name"]).to_lower(), limit], 13, NAVY, 800),
+				else ("Feeds printers on the rack next to it: within %.1f m. As many as you have floor for." % float(Game.data.settings["multicolour"]["rack_link_metres"]) if free_standing
+				else "The %s has room for %d in all, counting the one that was here." % [String(place["name"]).to_lower(), limit]), 13, NAVY, 800),
 		], 2)
 		words.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		var buy := _disabled_if(Ui.button("Buy", _buy.bind(order), BLUE, Ui.WHITE, 44, 14), problem != "")
 		buy.tooltip_text = problem
 		var cells: Array = [ModelPicture.tile(FittingUnit.MODEL_PATH % fitting["model"], ROW_PICTURE, TILE), words]
-		cells.append(Ui.pill(("%d of %d printer places" if places > 0 else "You have %d of %d") % [have, limit],
+		cells.append(Ui.pill("You have %d" % have if free_standing else ("%d of %d printer places" if places > 0 else "You have %d of %d") % [have, limit],
 			Ui.GREEN_DARK if have < limit else LOCK_TEXT, Ui.GREEN_SOFT if have < limit else LOCK_BG))
 		cells.append_array([Ui.width(Ui.text(Money.format(int(fitting["price_pence"])), 17, Ui.INK, 800), 70), buy])
 		rows.add_child(Ui.panel(Ui.hbox(cells, 18), Ui.box(Ui.WHITE, 18, 18, 14, SHADOW, 3)))

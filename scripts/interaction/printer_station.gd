@@ -97,6 +97,8 @@ var _time := 0.0
 var _spool_mount: Node3D
 ## Where the spool in each entry of `spools` sits.
 var _mounts: Array[Node3D] = []
+## The bay of a colour unit rack its multicolour unit sits in, or null if the unit is on the printer.
+var _unit_bay: Node3D = null
 ## The model of each multicolour unit fitted, the first at the bottom of the stack.
 var _unit_models: Array[Node3D] = []
 ## How far the copies on the plate are shrunk so they all fit. 1 for a single print.
@@ -245,6 +247,7 @@ func _status_actions() -> Array[Action]:
 	actions.append(_parts_menu())
 	actions.append(_upgrades_menu())
 	actions.append(_move_menu())
+	actions.append(_box_action())
 	actions.append(_part_with_menu())
 	return actions
 
@@ -428,6 +431,36 @@ func _move(agent: Agent, holder: Node3D) -> void:
 	(get_tree().get_first_node_in_group(&"floor_grid") as FloorGrid).rebuild.call_deferred()
 
 
+## Boxing the printer up and leaving it by the door, to be unpacked again
+## later: the way to clear a bench before it goes, or wait for a rack.
+func _box_action() -> Action:
+	var problem := part_with_problem()
+	if problem != "":
+		return Action.info("Box it up (%s)" % problem)
+	var action := Action.new("Box it up for later", _box_up)
+	action.task_name = "Box up the %s" % display_name
+	return action
+
+
+func _box_up(agent: Agent) -> void:
+	if part_with_problem() != "":
+		agent.say("Can't box up the %s right now" % display_name)
+		return
+	var tree := get_tree()
+	var zone: Node3D = tree.get_first_node_in_group(&"delivery_zone")
+	await agent.go_to(self)
+	await agent.work(float(Game.data.settings["resale"]["box_minutes"]))
+	var boxed := Supplier.Delivery.new()
+	boxed.printer = StringName(spec["id"])
+	boxed.printer_state = save()
+	await agent.reach(_take_away.bind(agent))
+	await agent.walk_to(Vector3(zone.global_position.x + 0.65, 0.0, zone.global_position.z))
+	await agent.reach(func() -> void:
+		agent.release().queue_free()
+		zone.call(&"put_down", boxed))
+	queue_free()
+
+
 ## Selling the printer on, or scrapping it.
 func _part_with_menu() -> Action:
 	var problem := part_with_problem()
@@ -494,6 +527,9 @@ func upgrade_problem(upgrade: StringName) -> String:
 	# The first unit takes the place of the printer's own spool mount. One linked later only adds slots.
 	if problem == "" and Game.data.upgrades[upgrade].has("multicolour") and not has_unit() and spool != null:
 		return "Unload the filament first"
+	var bench: Workbench = get_tree().get_first_node_in_group(&"workbench")
+	if problem == "" and Game.data.upgrades[upgrade].has("multicolour") and not has_unit() and bench != null and not bench.can_take_unit(self):
+		return "No room on top of it in a rack. Stand a colour unit rack beside it, with a bay free"
 	return problem
 
 
@@ -566,6 +602,8 @@ func print_problem(product: StringName, p_preset: StringName, slots: Array[int] 
 		return "No filament loaded"
 	if status != Status.IDLE:
 		return "The printer is busy"
+	if not unit_linked():
+		return "Its colour unit has nowhere to sit. Stand a colour unit rack beside it"
 	for slot in wear.broken():
 		return "The %s is worn out. Fit a new one first" % String(wear.part(slot)["slot_name"]).to_lower()
 	var row: Dictionary = Game.data.products[product]
@@ -1048,6 +1086,25 @@ func _mount_tray() -> void:
 	_build_collider.call_deferred()
 
 
+## True unless the printer has a multicolour unit that should be sitting in a
+## colour unit rack (the printer is on a printer rack) and has no bay there.
+func unit_linked() -> bool:
+	var bench: Workbench = get_tree().get_first_node_in_group(&"workbench") if is_inside_tree() else null
+	return not has_unit() or bench == null or not bench.needs_bay(self) or _unit_bay != null
+
+
+## Puts the printer's multicolour unit in a bay of a colour unit rack, or with
+## null back on the printer itself. The Workbench decides which (relink).
+func set_unit_bay(bay: Node3D) -> void:
+	_unit_bay = bay
+	if _unit_models.is_empty():
+		return
+	var own: Node3D = find_child("unit_mount", true, false)
+	var mount: Node3D = bay if bay != null else (own if own != null else _spool_mount)
+	if _unit_models[0].get_parent() != mount:
+		Interactable.attach(_unit_models[0], mount)
+
+
 ## Sets up the multicolour units among the upgrades that aren't up already.
 ## The first goes on the printer's `unit_mount` and takes over from the
 ## printer's own spool mount, which has to be empty; each one linked after it
@@ -1076,6 +1133,9 @@ func _mount_unit() -> void:
 		var slot := StringName(Game.data.parts[part_id]["slot"])
 		if not wear.fitted.has(slot):
 			wear.replace(slot, StringName(part_id))
+	var bench: Workbench = get_tree().get_first_node_in_group(&"workbench") if is_inside_tree() else null
+	if bench != null:
+		bench.relink()
 	# The unit is part of what gets clicked.
 	remove_collider()
 	_build_collider.call_deferred()
