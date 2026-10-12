@@ -244,6 +244,7 @@ func _status_actions() -> Array[Action]:
 		actions.append(_unload_menu())
 	actions.append(_parts_menu())
 	actions.append(_upgrades_menu())
+	actions.append(_move_menu())
 	actions.append(_part_with_menu())
 	return actions
 
@@ -388,6 +389,43 @@ func part_with_problem() -> String:
 	if spools.any(func(loaded: Spool) -> bool: return loaded != null):
 		return "unload its filament first"
 	return ""
+
+
+## Moving the printer to another bench or rack that has a place free.
+func _move_menu() -> Action:
+	var bench: Workbench = get_tree().get_first_node_in_group(&"workbench")
+	var places := bench.other_places(self)
+	if places.is_empty():
+		return Action.info("Move it (nowhere else has a place free)")
+	if status != Status.IDLE or item != null:
+		return Action.info("Move it (it has to be idle, with nothing on its plate)")
+	var choices: Array[Action] = []
+	for place in places:
+		var action := Action.new("To the %s" % place["title"], _move.bind(place["holder"]))
+		action.task_name = "Move the %s to the %s" % [display_name, place["title"]]
+		choices.append(action)
+	return Action.submenu("Move it", choices)
+
+
+func _move(agent: Agent, holder: Node3D) -> void:
+	var bench: Workbench = get_tree().get_first_node_in_group(&"workbench")
+	if status != Status.IDLE or item != null or not is_instance_valid(holder) or bench.move_printer(self, holder, false).is_empty():
+		agent.say("Can't move the %s there right now" % display_name)
+		return
+	await agent.go_to(self)
+	await agent.reach()
+	var place := bench.move_printer(self, holder, false)
+	if place.is_empty():
+		agent.say("Somebody got there first")
+		return
+	# Carried over out of sight, then set down in its new place.
+	visible = false
+	await agent.walk_to(place["stand"])
+	await agent.face(place["face"])
+	await agent.reach(func() -> void:
+		bench.move_printer(self, holder)
+		visible = true)
+	(get_tree().get_first_node_in_group(&"floor_grid") as FloorGrid).rebuild.call_deferred()
 
 
 ## Selling the printer on, or scrapping it.

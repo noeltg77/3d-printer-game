@@ -598,16 +598,35 @@ func supplier_problem(basket: Dictionary) -> String:
 		if spot != null and spot.problem() != "":
 			return spot.problem()
 	var bench: Workbench = get_tree().get_first_node_in_group(&"workbench")
-	if bench != null and Supplier.count_printers(basket) + incoming_printers > bench.free_spots() - _unpacked(&"printers"):
-		return "No bench space for another printer"
-	for kind: String in FITTING_HOSTS:
+	var more_places := 0
+	for fitting_id: String in basket.get("fittings", {}):
+		more_places += storage.places(StringName(fitting_id)) * int(basket["fittings"][fitting_id])
+	# A rack in the basket, or one not yet put up, counts as somewhere for a printer to go.
+	if bench != null and Supplier.count_printers(basket) + incoming_printers > bench.free_spots() + printer_places() - bench.total_places() + more_places - _unpacked(&"printers"):
+		return "Nowhere to stand another printer"
+	if more_places > 0 and printer_places() + more_places > StorageRules.max_printers(premises_row()):
+		return "This place only has room for %d printers. Take a bench out to make room for a rack." % StorageRules.max_printers(premises_row())
+	for kind: String in ["shelf", "rack"]:
 		var wanted := 0
 		for fitting_id: String in basket.get("fittings", {}):
 			if data.fittings[fitting_id]["kind"] == kind:
 				wanted += int(basket["fittings"][fitting_id])
 		if wanted > 0 and fitting_count(kind) + wanted > storage.limit(premises_row(), kind):
-			return "No room here for more %s" % {"shelf": "shelving", "rack": "filament racks", "bench": "printer racks"}[kind]
+			return "No room here for more %s" % {"shelf": "shelving", "rack": "filament racks"}[kind]
 	return ""
+
+
+## How many places for printers the business has: on the benches and racks in
+## the room, and on any waiting to be put up or on their way.
+func printer_places() -> int:
+	var bench: Workbench = get_tree().get_first_node_in_group(&"workbench")
+	var count := bench.total_places() if bench != null else 0
+	var boxed: Array[Supplier.Delivery] = supplier.pending.duplicate()
+	for box: DeliveryBox in get_tree().get_nodes_in_group(&"delivery_box"):
+		boxed.append(box.delivery)
+	for delivery in boxed:
+		count += storage.places(delivery.fitting)
+	return count
 
 
 ## The node that takes on bought fittings of a kind: the shelving, the

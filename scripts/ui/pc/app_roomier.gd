@@ -43,7 +43,7 @@ func _card(place: StringName) -> Control:
 		Ui.title(row["name"], 22),
 		Ui.wrap(Ui.text(row["description"], 13, Ui.MUTED)),
 		Ui.vbox([
-			_fact("Printers", str(int(row["printer_spots"]))),
+			_fact("Printers", "%d, or %d on racks" % [int(row["printer_spots"]), int(row["max_printers"])]),
 			_fact("Shelf spaces", str(int(row["shelf_slots"]))),
 			_fact("Filament rack", "%d spools" % int(row["rack_slots"])),
 			_fact("Staff", str(int(row["staff"])) if int(row["staff"]) > 0 else "Just you"),

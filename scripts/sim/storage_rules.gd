@@ -68,10 +68,21 @@ func resale_value(printer: Dictionary, health: float) -> int:
 	return roundi(float(printer["price_pence"]) * lerpf(float(rules["worn_out"]), float(rules["as_new"]), clampf(health, 0.0, 1.0)))
 
 
-## How many units of a kind of fitting ("shelf", "rack" or "bench") the
-## premises may have in all, counting the one built in.
+## How many units of a kind of fitting ("shelf" or "rack") the premises may
+## have in all, counting the one built in. Benches and printer racks are
+## limited another way: by the places for printers they add up to.
 func limit(premises: Dictionary, kind: String) -> int:
 	return int(premises.get("%s_units" % kind, 1))
+
+
+## How many places for printers a bench or printer rack adds. 0 for anything else.
+func places(fitting: StringName) -> int:
+	return (data.fittings.get(String(fitting), {}).get("printer_spots", []) as Array).size()
+
+
+## How many places for printers the premises has room for, on benches and racks together.
+static func max_printers(premises: Dictionary) -> int:
+	return int(premises["max_printers"])
 
 
 ## Readies a saved shelf or rack (StorageShelf.save, FilamentRack.save) to be
@@ -83,6 +94,8 @@ static func pack_for_move(saved: Dictionary) -> Array[StringName]:
 	for entry: Dictionary in saved.get("units", []):
 		taken_down.append(StringName(entry["fitting"]))
 	saved["units"] = []
+	# The benches taken out were the old place's own. The new one has its own.
+	saved.erase("removed")
 	for entry: Dictionary in saved.get("slots", []):
 		if int(entry.get("unit", 0)) > 0:
 			entry["unit"] = MOVED_UNIT

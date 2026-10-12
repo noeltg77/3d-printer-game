@@ -118,6 +118,8 @@ func _check_storage() -> void:
 			errors.append("fitting %s: kind must be \"shelf\", \"rack\" or \"bench\"" % row["id"])
 		if not ResourceLoader.exists("res://assets/models/furniture/%s.glb" % row.get("model", "")):
 			errors.append("fitting %s: no model \"%s\"" % [row["id"], row.get("model", "")])
+		if row.get("kind", "") == "bench" and row.get("printer_spots", []).is_empty():
+			errors.append("fitting %s: a bench or printer rack needs printer_spots" % row["id"])
 	for design: String in settings.get("storage_bins", {}).get("designs", {}):
 		if not products.has(design):
 			errors.append("game.json storage_bins: unknown design \"%s\"" % design)

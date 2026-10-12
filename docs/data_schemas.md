@@ -252,6 +252,7 @@ The places the business can run from, smallest first.
 | `move_cost_pence` | Paid once to move in |
 | `rent_pence_per_day` | Charged at midnight every game day |
 | `staff` | How many staff the place has room for. Staff also need a `StaffRoom` node in the scene, where they come in |
+| `max_printers` | The most places for printers the premises can have, on its own benches and on bought benches and racks together. More than `printer_spots`, so that taking benches out for racks is worth it |
 | `shelf_units`, `rack_units` | How many bays of shelving and how many filament racks the place has room for, counting the one in the scene. The rest are bought (fittings.json) |
 | `printer_spots`, `shelf_slots`, `rack_slots` | Shown on the place's card. They describe the scene; they don't set it. A scene with several benches still has one `Workbench`, whose `printer_spots` reach onto the others |
 
@@ -352,7 +353,9 @@ Storage that is bought and stood wherever the player likes.
 | `stand_offset` | Where the character stands to use it, from its origin |
 | `price_pence`, `unlock_tier` | As elsewhere |
 
-How many a place holds is on its row in premises.json: `shelf_units`, `rack_units` and `bench_units`, each counting the one built in to the scene.
+A `bench` row also has `printer_spots`: where on it each printer stands, as `[x, y, z]` from its origin.
+
+How many shelving units and racks a place holds is on its row in premises.json: `shelf_units` and `rack_units`, each counting the one built in to the scene. Benches and printer racks are limited together, by the places for printers they add up to: the row's `max_printers`.
 
 ## packaging.json
 

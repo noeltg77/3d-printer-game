@@ -75,6 +75,9 @@ func _put_up(agent: Agent, at: Transform3D) -> void:
 
 func _unpack(agent: Agent) -> void:
 	var shelf: StorageShelf = get_tree().get_first_node_in_group(&"print_storage")
+	if delivery.printer != &"" and (get_tree().get_first_node_in_group(&"workbench") as Workbench).free_spots() <= 0:
+		agent.say("There is nowhere to stand the printer. Put up a rack or a bench first.")
+		return
 	if not shelf.can_store_parts(delivery.parts.keys()):
 		agent.say("No shelf space for the spare parts")
 		return
@@ -86,7 +89,10 @@ func _unpack(agent: Agent) -> void:
 	await agent.reach(_pick_up.bind(agent))
 	if delivery.printer != &"":
 		var bench: Workbench = get_tree().get_first_node_in_group(&"workbench")
-		await agent.go_to(bench.spot())
+		var place := bench.next_place()
+		if not place.is_empty():
+			await agent.walk_to(place["stand"])
+			await agent.face(place["face"])
 		await agent.reach(func() -> void: bench.install_printer(delivery.printer))
 	if delivery.dryer != &"":
 		var front := spot.global_transform * Vector3(0.0, 0.0, 0.6)

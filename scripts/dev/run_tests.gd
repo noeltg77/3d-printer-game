@@ -1373,7 +1373,12 @@ func _test_storage() -> void:
 		last_shelves = rules.limit(place, "shelf")
 		last_racks = rules.limit(place, "rack")
 
-	_check(rules.limit(data.premises["garage"], "bench") == 2 and data.fittings["printer_rack_duo"]["kind"] == "bench", "the garage has room for one printer rack beside its bench")
+	_check(rules.places(&"printer_rack_duo") == 2 and rules.places(&"printer_rack_trio") == 3 and rules.places(&"shelving_unit") == 0, "a printer rack adds a place for each of its shelves")
+	_check(StorageRules.max_printers(data.premises["garage"]) == 4, "the garage has room for four printers: its bench and one rack, or two racks")
+	for place: Dictionary in data.premises.values():
+		_check(StorageRules.max_printers(place) >= int(place["printer_spots"]), "%s has room for at least the printers its benches hold" % place["name"])
+	var bench_save := {"printers": [], "removed": ["Workbench"], "units": [{"fitting": "printer_rack_duo", "x": 0.0, "z": 0.0, "yaw": 0.0}]}
+	_check(StorageRules.pack_for_move(bench_save) == ([&"printer_rack_duo"] as Array[StringName]) and not bench_save.has("removed"), "racks come along on a move, and the new place keeps its own benches")
 	var mini: Dictionary = data.printers["plodder_mini"]
 	_check(rules.resale_value(mini, 1.0) == roundi(int(mini["price_pence"]) * float(data.settings["resale"]["as_new"])), "a printer as good as new sells second hand for a set share of its price")
 	_check(rules.resale_value(mini, 0.0) < rules.resale_value(mini, 0.5) and rules.resale_value(mini, 0.5) < rules.resale_value(mini, 1.0), "and a worn one for less")
