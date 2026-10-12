@@ -102,6 +102,11 @@ static func items(tree: SceneTree) -> Array[Dictionary]:
 			"Click the packing station and pick an order to pack. The courier collects what is packed and that is when you get paid.")
 	if waiting > 0:
 		_add(found, "Print %d more for orders" % waiting, "Someone has ordered one you haven't made yet. Orders left too long are cancelled.")
+	for product in market.listings:
+		if market.listings[product]["listed"] and market.colour_multiplier(product) < 1.0:
+			_add(found, "Print %s in a colour buyers like" % Game.product_name(product),
+				"It has been going out in colours few people want, so it gets fewer orders. Buyers like it best in %s." % Game.popular_colours_label(product))
+			break
 	for product in Game.studio.designs:
 		if Game.studio.needs_fix(product):
 			_add(found, "Fix the fault in your %s design" % Game.product_name(product),

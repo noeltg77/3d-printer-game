@@ -97,7 +97,8 @@ var products: Dictionary
 ## Review wording from data/reviews.json: "damaged", "returned" and "1" to "5",
 ## each a list of lines. Optional.
 var comments: Dictionary = {}
-## product id -> { listed: bool, price: int, sold: int }
+## product id -> { listed: bool, price: int, sold: int, colours: Array }.
+## `colours` is whether each of the last few sent was in a colour buyers like.
 var listings: Dictionary[StringName, Dictionary] = {}
 var orders: Array[Order] = []
 ## What is in or out of fashion: product category -> demand multiplier (Trends).
@@ -108,6 +109,8 @@ var boost: Dictionary[StringName, float] = {}
 ## The business's own designs: product id -> how well each sells against the
 ## bought design (1.0 the same). Own designs owe no royalty.
 var own_appeal: Dictionary[StringName, float] = {}
+## What colours buyers like and what that does for demand. Optional.
+var taste: ColourTaste = null
 ## Stars a buyer knocks off a multicolour design that arrives in one colour.
 var plain_star_penalty := 0.0
 ## Oldest first. Each: { order, product, stars, text, minute }.
@@ -124,7 +127,7 @@ func _init(p_config: Dictionary, p_products: Dictionary) -> void:
 ## The listing for a design, created at its typical price and unlisted if new.
 func listing(product: StringName) -> Dictionary:
 	if not listings.has(product):
-		listings[product] = {"listed": false, "price": typical_price(product), "sold": 0}
+		listings[product] = {"listed": false, "price": typical_price(product), "sold": 0, "colours": []}
 	return listings[product]
 
 
@@ -151,7 +154,25 @@ func demand_multiplier(product: StringName, price: int) -> float:
 func orders_per_day(product: StringName, price: int) -> float:
 	return (products[product]["demand_per_day"] * demand_multiplier(product, price) * rating_multiplier()
 		* float(own_appeal.get(product, 1.0)) * float(config.get("audience", 1.0))
-		* float(trend.get(products[product]["category"], 1.0)) * float(boost.get(product, 1.0)))
+		* float(trend.get(products[product]["category"], 1.0)) * float(boost.get(product, 1.0))
+		* colour_multiplier(product))
+
+
+## How the colours a design has been going out in scale its demand
+## (ColourTaste.demand): 1.0 until some have been sent.
+func colour_multiplier(product: StringName) -> float:
+	return 1.0 if taste == null else taste.demand(listing(product)["colours"])
+
+
+## Notes the colours of a print that has just been packed for a buyer:
+## `liked` if they are among the ones buyers like the design best in.
+func note_colour(product: StringName, liked: bool) -> void:
+	if taste == null or taste.favourites(products[product]).is_empty():
+		return
+	var recent: Array = listing(product)["colours"]
+	recent.append(liked)
+	while recent.size() > taste.window():
+		recent.pop_front()
 
 
 ## Rolls for new orders over a span of game minutes. Returns the ones placed.
@@ -364,7 +385,8 @@ func restore(data: Dictionary) -> void:
 	for product: String in data["listings"]:
 		if products.has(product):
 			var entry: Dictionary = data["listings"][product]
-			listings[StringName(product)] = {"listed": bool(entry["listed"]), "price": int(entry["price"]), "sold": int(entry["sold"])}
+			listings[StringName(product)] = {"listed": bool(entry["listed"]), "price": int(entry["price"]), "sold": int(entry["sold"]),
+				"colours": (entry.get("colours", []) as Array).map(func(liked: Variant) -> bool: return bool(liked))}
 	for entry: Dictionary in data["orders"]:
 		if products.has(entry["product"]):
 			var order := Order.restored(entry)

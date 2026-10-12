@@ -209,6 +209,19 @@ static func clickable(node: Control, on_pressed: Callable) -> Control:
 	return node
 
 
+## A row of round swatches, one for each colour: a filament's, say.
+static func swatches(colours: Array, dot := 14) -> HBoxContainer:
+	var row := hbox([], 4)
+	row.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	for colour: Color in colours:
+		var swatch := Panel.new()
+		swatch.custom_minimum_size = Vector2(dot, dot)
+		swatch.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		swatch.add_theme_stylebox_override(&"panel", outlined(colour, Color(INK, 0.25), dot / 2, 0, 0, 1))
+		row.add_child(swatch)
+	return row
+
+
 ## A score out of `total` as a row of dots, `value` of them filled in.
 static func pips(value: int, total: int, colour: Color, track := TRACK, dot := 12) -> HBoxContainer:
 	var row := hbox([], 4)

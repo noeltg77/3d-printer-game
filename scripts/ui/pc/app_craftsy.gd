@@ -187,7 +187,7 @@ func _listing_row(product: StringName) -> Control:
 			roundi(Game.damage_chance(int(Game.data.presets[Game.data.settings["default_preset"]]["durability"]), product, market) * 100.0),
 			"\nClick for the next thing it fits in." if options.size() > 1 else ""]
 	return _table_row([
-		Ui.hbox([ModelPicture.of_product(product, 40), Ui.wrap(Ui.text(Game.product_name(product), 15, Ui.INK, 800))], 10),
+		Ui.hbox([ModelPicture.of_product(product, 40), _name_cell(product)], 10),
 		Ui.hbox([cheaper, Ui.width(Ui.text(Money.format(price), 15), 66),
 			Ui.button("+", _update.bind(product, listed, price + PRICE_STEP), Ui.WHITE, Ui.INK, 30, 10)], 4),
 		sent_in,
@@ -196,6 +196,29 @@ func _listing_row(product: StringName) -> Control:
 		Ui.text(str(entry["sold"]), 15),
 		Ui.hbox([toggle, Ui.text("%.1f a day" % market.orders_per_day(product, price) if listed else "", 13, LABEL)], 10),
 	])
+
+
+## A listing's name, with the colours buyers like it in beneath and what the
+## colours it has been going out in are doing for its orders.
+func _name_cell(product: StringName) -> Control:
+	var title := Ui.wrap(Ui.text(Game.product_name(product), 15, Ui.INK, 800))
+	var wanted := Game.popular_colours(product)
+	if wanted.is_empty():
+		return title
+	var effect := _market().colour_multiplier(product)
+	var recent: Array = _market().listing(product)["colours"]
+	var note := Ui.text("Sells best in these", 12, LABEL)
+	if effect > 1.005:
+		note = Ui.text("+%d%% orders" % roundi((effect - 1.0) * 100.0), 12, Ui.GREEN_DARK, 800)
+	elif effect < 0.995:
+		note = Ui.text("%d%% fewer orders" % roundi((1.0 - effect) * 100.0), 12, Ui.RED_DARK, 800)
+	var cell := Ui.vbox([title, Ui.hbox([Ui.swatches(wanted.map(Palette.colour), 12), note], 6)], 2)
+	cell.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	cell.mouse_filter = Control.MOUSE_FILTER_STOP
+	cell.tooltip_text = "Buyers like it best in %s.\n%s" % [Game.popular_colours_label(product),
+		"Send some out to see what the colour does for orders." if recent.is_empty()
+		else "%d of the last %d sent were in a colour they like." % [recent.count(true), recent.size()]]
+	return cell
 
 
 ## Lays cells out in the listings table's column proportions.

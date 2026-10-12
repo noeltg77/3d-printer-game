@@ -30,6 +30,7 @@ var markets: Dictionary[StringName, Marketplace] = {}
 ## The first marketplace: the one a new business starts on.
 var market: Marketplace
 var trends: Trends
+var taste: ColourTaste
 var supplier: Supplier
 var studio: DesignStudio
 ## The rules for reordering what runs low (the Stockroom app).
@@ -164,9 +165,11 @@ func new_game() -> void:
 	clock = GameClock.new()
 	clock.minutes = start["minute_of_day"]
 	bank = Bank.new(int(start["cash_pence"]))
+	taste = ColourTaste.new(data.settings["colour_taste"], data.filaments)
 	markets.clear()
 	for market_id: String in data.marketplaces:
 		var shop := Marketplace.new(data.marketplaces[market_id], data.products)
+		shop.taste = taste
 		shop.comments = data.review_comments
 		shop.plain_star_penalty = float(data.toggles["multicolour"]["off_star_penalty"])
 		markets[StringName(market_id)] = shop
@@ -468,6 +471,21 @@ func tier_name() -> String:
 
 func product_name(product: StringName) -> String:
 	return data.products[product]["name"]
+
+
+## The colours buyers like a design best in. Empty if any colour does as well.
+func popular_colours(product: StringName) -> Array[StringName]:
+	return taste.favourites(data.products[product])
+
+
+## "Red, Green or White": a design's favourite colours as the player reads them.
+func popular_colours_label(product: StringName) -> String:
+	var names: PackedStringArray = []
+	for colour in popular_colours(product):
+		names.append(Palette.display_name(colour))
+	if names.size() < 2:
+		return "".join(names)
+	return "%s or %s" % [", ".join(names.slice(0, -1)), names[-1]]
 
 
 func owns(product: StringName) -> bool:
