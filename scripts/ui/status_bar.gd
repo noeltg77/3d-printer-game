@@ -1,7 +1,8 @@
 class_name StatusBar
 extends HBoxContainer
 ## The speed control, cash and clock chips, as on the PlateOS taskbar. Used on
-## the PC's taskbar and on the in-game HUD so both read the same.
+## the PC's taskbar and on the in-game HUD so both read the same. Once the
+## working day is over it also offers to end the day and skip the night.
 
 const SPEED_LABELS := {0: "||", 1: "1x", 2: "2x", 4: "4x"}
 const ACTIVE := Color("F3EDE2")
@@ -10,6 +11,7 @@ var _speed_buttons: Dictionary[int, Button] = {}
 var _cash: Label
 var _day: Label
 var _time: Label
+var _end_day: Button
 
 
 func _ready() -> void:
@@ -30,12 +32,19 @@ func _ready() -> void:
 	_time = Ui.text("", 15, Ui.CHIP_MUTED, 800)
 	add_child(_chip(Ui.hbox([_day, _time], 10)))
 
+	# Only there once the working day is over.
+	_end_day = Ui.button("End the day", _end_the_day, Ui.ORANGE, Ui.WHITE, 44, 14, Ui.ORANGE_DARK, 15)
+	_end_day.tooltip_text = "Skip the night. Printers carry on and orders keep coming in."
+	_end_day.visible = false
+	add_child(_end_day)
+
 	Game.changed.connect(_refresh)
 	_refresh()
 
 
 func _process(_delta: float) -> void:
 	var clock := Game.clock
+	_end_day.visible = Game.day_over() and not Game.sleeping
 	var minute := int(clock.minute_of_day)
 	_day.text = "Day %d" % clock.day
 	_time.text = "%02d:%02d" % [minute / 60, minute % 60]
@@ -58,3 +67,11 @@ func _chip(content: Control) -> PanelContainer:
 	chip.custom_minimum_size.y = 44
 	content.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	return chip
+
+
+func _end_the_day() -> void:
+	var problem := Game.end_day_problem()
+	if problem != "":
+		Game.notify(problem, &"bad")
+	else:
+		Game.end_day()

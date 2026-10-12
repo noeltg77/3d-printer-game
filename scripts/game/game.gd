@@ -70,6 +70,13 @@ var start_premises := ""
 var _handover: Dictionary = {}
 var _has_handover := false
 var speed := 1
+## The hours the business keeps (data/game.json, `work_day`).
+var work_day: WorkDay
+## True while the night is being skipped: the game runs fast and the character rests.
+var sleeping := false
+var _wake_at := 0.0
+## Whether the character was already being held (at the PC) when the night began.
+var _held_before := false
 var rng := RandomNumberGenerator.new()
 ## Dev: id of a failure the next print is certain to hit. Cleared once used.
 var force_failure := ""
@@ -100,6 +107,11 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	var before := clock.minutes
 	clock.advance(delta)
+	if sleeping and clock.minutes >= _wake_at:
+		wake()
+	elif not sleeping and clock.crossed(before, closing_minute()):
+		notify("%s: that's the working day done. End the day from the clock when you're ready." % WorkDay.time_label(closing_minute()))
+		changed.emit()
 	for delivery in supplier.collect_due(clock.minutes):
 		delivery_arrived.emit(delivery)
 		notify("Delivery arrived: %s" % delivery.describe())
@@ -123,7 +135,7 @@ func _process(delta: float) -> void:
 		courier_arrived.emit()
 	var rent := int(premises_row()["rent_pence_per_day"])
 	if rent > 0 and clock.crossed(before, 0.0):
-		bank.charge(rent, "Rent: %s" % premises_row()["name"], clock.minutes)
+		bank.charge(rent, "Rent: %s" % premises_row()["name"], clock.minutes, Bank.RENT)
 		notify("Rent paid on the %s: %s" % [String(premises_row()["name"]).to_lower(), Money.format(rent)])
 		changed.emit()
 	if staff_capacity() > 0 and (clock.crossed(before, 0.0) or (staff.applicants.is_empty() and staff.team.size() < staff_capacity())):
@@ -131,7 +143,7 @@ func _process(delta: float) -> void:
 		changed.emit()
 	var wages := staff.wages_per_day()
 	if wages > 0 and clock.crossed(before, 0.0):
-		bank.charge(wages, "Wages", clock.minutes)
+		bank.charge(wages, "Wages", clock.minutes, Bank.WAGES)
 		notify("Wages paid: %s" % Money.format(wages))
 		changed.emit()
 	if contracts_unlocked():
@@ -165,6 +177,8 @@ func new_game() -> void:
 	stock = Stockroom.new(data)
 	contracts = Contracts.new(data)
 	staff = Staff.new(data)
+	work_day = WorkDay.new(data.settings["work_day"])
+	sleeping = false
 	events = Events.new(data.events, data.settings["events"])
 	milestones = Milestones.new(data.milestones)
 	stats = {"sales": 0, "month": 0, "month_pence": 0, "best_month_pence": 0, "streak": 0, "best_streak": 0,
@@ -324,7 +338,59 @@ func _load_settings() -> void:
 ## 0 pauses. Everything in the scene follows, because it scales engine time.
 func set_speed(new_speed: float) -> void:
 	speed = int(new_speed)
-	Engine.time_scale = new_speed
+	if not sleeping:
+		Engine.time_scale = new_speed
+	changed.emit()
+
+
+## The minute of the day the working day ends: later once staff work late shifts.
+func closing_minute() -> float:
+	return work_day.closes_at(staff)
+
+
+## True if the working day is over, so the night can be skipped.
+func day_over() -> bool:
+	return work_day.over(clock.minute_of_day, closing_minute())
+
+
+## Why the day can't be ended now, or "" if it can.
+func end_day_problem() -> String:
+	if sleeping:
+		return "Already closed for the night"
+	if not day_over():
+		return "The working day runs until %s" % WorkDay.time_label(closing_minute())
+	var player: Agent = get_tree().get_first_node_in_group(&"player")
+	if player != null and player.is_busy():
+		return "Finish the job in hand first"
+	return ""
+
+
+## Skips the night: the character rests and the game runs fast until the next
+## working day starts. Printers, orders and deliveries all carry on meanwhile.
+func end_day() -> bool:
+	if end_day_problem() != "":
+		return false
+	var player: Agent = get_tree().get_first_node_in_group(&"player")
+	if player != null:
+		_held_before = player.held
+		player.held = true
+	sleeping = true
+	_wake_at = work_day.next_start(clock.minutes)
+	Engine.time_scale = float(data.settings["work_day"]["night_speed"])
+	changed.emit()
+	return true
+
+
+## Ends the skip, at the start of the day or sooner if the player asks.
+func wake() -> void:
+	if not sleeping:
+		return
+	sleeping = false
+	Engine.time_scale = speed
+	var player: Agent = get_tree().get_first_node_in_group(&"player")
+	if player != null and not _held_before:
+		player.held = false
+	notify("Good morning. It's %s on day %d." % [WorkDay.time_label(clock.minute_of_day), clock.day])
 	changed.emit()
 
 
@@ -363,7 +429,7 @@ func move_to(place: StringName) -> bool:
 	if move_problem(place) != "":
 		return false
 	var row: Dictionary = data.premises[place]
-	bank.spend(int(row["move_cost_pence"]), "Move to the %s" % String(row["name"]).to_lower(), clock.minutes)
+	bank.spend(int(row["move_cost_pence"]), "Move to the %s" % String(row["name"]).to_lower(), clock.minutes, Bank.PREMISES)
 	premises = place
 	tier = maxi(tier, int(row["tier"]))
 	notify("Moved in to the %s" % String(row["name"]).to_lower(), &"good")
@@ -553,13 +619,35 @@ func anything_listed() -> bool:
 	return false
 
 
+## Every printer the business has, as its row with any upgrades applied: on the
+## benches, boxed by the door and on its way from the shop.
+func printer_specs() -> Array[Dictionary]:
+	var specs: Array[Dictionary] = []
+	for printer: PrinterStation in get_tree().get_nodes_in_group(&"printer"):
+		specs.append(printer.mods.apply(printer.spec))
+	var boxed: Array[Supplier.Delivery] = []
+	boxed.assign(supplier.pending)
+	for box: DeliveryBox in get_tree().get_nodes_in_group(&"delivery_box"):
+		boxed.append(box.delivery)
+	for delivery in boxed:
+		if data.printers.has(String(delivery.printer)):
+			specs.append(data.printers[String(delivery.printer)])
+	return specs
+
+
+## Why the business can't print a design on any printer it has, or "" if it can
+## (or has no printer yet to judge by).
+func print_problem(product: StringName) -> String:
+	return FilamentRules.design_problem(printer_specs(), data.products[product], data.filaments)
+
+
 ## Buys a design licence. False if it is already owned, is for a later tier than the
 ## business has reached, or can't be afforded.
 func buy_design(product: StringName) -> bool:
 	if owns(product) or not unlocked(data.products[product]):
 		return false
 	var fee := int(data.products[product]["licence"]["fee_pence"])
-	if not bank.spend(fee, "Design licence: %s" % product_name(product), clock.minutes):
+	if not bank.spend(fee, "Design licence: %s" % product_name(product), clock.minutes, Bank.DESIGNS):
 		return false
 	owned_designs.append(product)
 	changed.emit()
@@ -648,7 +736,7 @@ func fitting_host(kind: String) -> Interactable:
 
 ## Takes payment for a printer sold second hand, once the courier has it.
 func complete_resale(title: String, pence: int) -> void:
-	bank.earn(pence, "Sold second hand: %s" % title, clock.minutes)
+	bank.earn(pence, "Sold second hand: %s" % title, clock.minutes, Bank.RESALE)
 	notify("The %s has gone to its buyer: %s" % [title, Money.format(pence)], &"good")
 	changed.emit()
 
@@ -675,7 +763,13 @@ func place_supplier_order(basket: Dictionary, shop := "", quiet := false) -> boo
 		return false
 	if shop == "":
 		shop = data.settings["supplier"]["hardware_shop"]
-	bank.spend(supplier.price_of(basket), "%s order" % shop, clock.minutes)
+	# Printers, racks and dryers are kit that lasts; the rest gets used up.
+	var kit := {}
+	for kind: String in ["printers", "fittings", "dryers"]:
+		if basket.has(kind):
+			kit[kind] = basket[kind]
+	var price := supplier.price_of(basket)
+	bank.spend(price, "%s order" % shop, clock.minutes, Bank.EQUIPMENT if supplier.price_of(kit) * 2 > price else Bank.SUPPLIES)
 	supplier.place(basket, clock.minutes, shop)
 	if not quiet:
 		notify("Order placed with %s" % shop)
@@ -708,7 +802,7 @@ func _begin_event(event: Dictionary) -> void:
 			var contract := contracts.by_id(int(event["target"]))
 			var paid := contracts.bust(contract, clock.minutes)
 			if paid > 0:
-				bank.earn(paid, "Contract wound up: %s" % client_name(contract), clock.minutes)
+				bank.earn(paid, "Contract wound up: %s" % client_name(contract), clock.minutes, Bank.CONTRACTS)
 	_share_events()
 	notify(String(row["text"]).format({"what": what}), StringName(row["tone"]))
 	changed.emit()
@@ -833,7 +927,7 @@ func _run_contracts(before: float) -> void:
 	for lost in contracts.fail_overdue(clock.minutes):
 		var contract: Contracts.Contract = lost["contract"]
 		if lost["payment"] > 0:
-			bank.earn(lost["payment"], "Contract cut short: %s" % client_name(contract), clock.minutes)
+			bank.earn(lost["payment"], "Contract cut short: %s" % client_name(contract), clock.minutes, Bank.CONTRACTS)
 		notify("%s have given up waiting for their %s and cancelled. They paid %s for the %d that arrived." % [
 			client_name(contract), product_name(contract.product), Money.format(lost["payment"]), contract.delivered], &"bad")
 		changed.emit()
@@ -880,7 +974,7 @@ func ship_contract(id: int, count: int) -> void:
 		return
 	var outcome := contracts.deliver(contract, count, clock.minutes)
 	if not outcome.is_empty():
-		bank.earn(outcome["payment"], "Contract: %s" % client_name(contract), clock.minutes)
+		bank.earn(outcome["payment"], "Contract: %s" % client_name(contract), clock.minutes, Bank.CONTRACTS)
 		stats["contracts_done"] += 1
 		stats["largest_contract"] = maxi(stats["largest_contract"], contract.quantity)
 		_count_takings(outcome["payment"])
@@ -1113,14 +1207,14 @@ func complete_sale(order: Marketplace.Order) -> void:
 	order.late = rng.randf() < float(order.shipping["late_chance"])
 	var sale := shop.ship(order, clock.minutes, shipping.arrival(service, clock.minutes, order.late, rng))
 	var market_name: String = shop.config["name"]
-	bank.earn(sale["price"], "Sale: %s (%s)" % [product_name(order.product), market_name], clock.minutes)
+	bank.earn(sale["price"], "Sale: %s (%s)" % [product_name(order.product), market_name], clock.minutes, Bank.SALES)
 	stats["sales"] += 1
 	_count_takings(sale["price"])
-	bank.charge(sale["fee"], "%s fees" % market_name, clock.minutes)
-	bank.charge(sale["royalty"], "Design royalty: %s" % product_name(order.product), clock.minutes)
+	bank.charge(sale["fee"], "%s fees" % market_name, clock.minutes, Bank.FEES)
+	bank.charge(sale["royalty"], "Design royalty: %s" % product_name(order.product), clock.minutes, Bank.FEES)
 	if int(order.shipping["buyer_pays"]) > 0:
-		bank.earn(int(order.shipping["buyer_pays"]), "Postage paid by the buyer (%s)" % shop.order_label(order), clock.minutes)
-	bank.charge(int(order.shipping["cost"]), "Postage: %s (%s)" % [service["name"], shop.order_label(order)], clock.minutes)
+		bank.earn(int(order.shipping["buyer_pays"]), "Postage paid by the buyer (%s)" % shop.order_label(order), clock.minutes, Bank.POSTAGE)
+	bank.charge(int(order.shipping["cost"]), "Postage: %s (%s)" % [service["name"], shop.order_label(order)], clock.minutes, Bank.POSTAGE)
 	changed.emit()
 
 
@@ -1141,17 +1235,17 @@ func _settle_delivery(outcome: Dictionary) -> void:
 		var refund: Dictionary = outcome["refund"]
 		var market_name: String = market_of(order).config["name"]
 		var why: String = {"damaged": "arrived broken", "lost": "lost in the post"}.get(order.refund_reason, "sent back")
-		bank.charge(refund["price"], "Refund: %s (%s)" % [title, why], clock.minutes)
+		bank.charge(refund["price"], "Refund: %s (%s)" % [title, why], clock.minutes, Bank.REFUNDS)
 		if int(order.shipping.get("buyer_pays", 0)) > 0:
-			bank.charge(int(order.shipping["buyer_pays"]), "Postage refunded (%s)" % market_of(order).order_label(order), clock.minutes)
+			bank.charge(int(order.shipping["buyer_pays"]), "Postage refunded (%s)" % market_of(order).order_label(order), clock.minutes, Bank.REFUNDS)
 		# A tracked service pays out for what it loses, up to what it insures.
 		var cover := mini(int(order.shipping.get("insured_pence", 0)), int(refund["price"]) + int(order.shipping.get("buyer_pays", 0)))
 		if order.refund_reason == "lost" and cover > 0:
-			bank.earn(cover, "Insurance: %s" % data.services[order.shipping["service"]]["name"], clock.minutes)
+			bank.earn(cover, "Insurance: %s" % data.services[order.shipping["service"]]["name"], clock.minutes, Bank.REFUNDS)
 		if refund["fee"] > 0:
-			bank.earn(refund["fee"], "%s fees returned" % market_name, clock.minutes)
+			bank.earn(refund["fee"], "%s fees returned" % market_name, clock.minutes, Bank.FEES)
 		if refund["royalty"] > 0:
-			bank.earn(refund["royalty"], "Design royalty returned: %s" % title, clock.minutes)
+			bank.earn(refund["royalty"], "Design royalty returned: %s" % title, clock.minutes, Bank.FEES)
 		stats["streak"] = 0
 		notify("Order %s %s: %s refunded. \"%s\"" % [market_of(order).order_label(order), why, Money.format(refund["price"]), review["text"]], &"bad")
 	elif not review.is_empty():
@@ -1165,7 +1259,7 @@ func _settle_delivery(outcome: Dictionary) -> void:
 ## Charges for the electricity a finished print used.
 func charge_electricity(watts: float, game_minutes: float, what: String) -> void:
 	var kwh := watts / 1000.0 * game_minutes / 60.0
-	bank.charge(roundi(kwh * float(data.settings["electricity_pence_per_kwh"])), "Electricity: %s" % what, clock.minutes)
+	bank.charge(roundi(kwh * float(data.settings["electricity_pence_per_kwh"])), "Electricity: %s" % what, clock.minutes, Bank.ELECTRICITY)
 	changed.emit()
 
 

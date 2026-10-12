@@ -14,6 +14,7 @@ func _init() -> void:
 	_test_resin()
 	_test_filaments()
 	_test_moisture()
+	_test_printable_designs()
 	_test_design_studio()
 	_test_markets_and_trends()
 	_test_premises()
@@ -474,6 +475,34 @@ func _test_filaments() -> void:
 	market.mark_packed(fancy, 3, 3, false, float(data.filaments["pla_cf"]["value_multiplier"]))
 	_check(plain.price == 400 and fancy.price == 560, "a print in a premium filament sells for more than the listed price")
 	_check(market.ship(fancy)["fee"] == market.fee_for(560), "and the marketplace takes its cut of the higher price")
+
+
+## Whether the printers a business has can print a design at all.
+func _test_printable_designs() -> void:
+	var data := GameData.load_all()
+	var plodder: Dictionary = data.printers["plodder_mini"]
+	var mini: Dictionary = data.printers["zippy_a1_mini"]
+	var clips: Dictionary = data.products["cable_management_clips_x12"]
+	var none: Array[Dictionary] = []
+	var small: Array[Dictionary] = [mini]
+	var both: Array[Dictionary] = [mini, plodder]
+	_check(FilamentRules.design_problem(none, clips, data.filaments) == "", "with no printer yet nothing is marked as unprintable")
+	_check(FilamentRules.design_problem(small, clips, data.filaments) == "", "a small design prints on a small printer")
+	var too_big := {}
+	var too_hot := {}
+	for product: Dictionary in data.products.values():
+		if too_big.is_empty() and not PrintRisk.fits(mini, product) and PrintRisk.fits(plodder, product) and (product["allowed_filaments"] as Array).has("pla"):
+			too_big = product
+		if too_hot.is_empty() and PrintRisk.fits(plodder, product) and product["allowed_filaments"] == ["abs"]:
+			too_hot = product
+	_check(not too_big.is_empty(), "the catalogue has a PLA design too big for the small printer that fits the starter one")
+	if not too_big.is_empty():
+		_check(FilamentRules.design_problem(small, too_big, data.filaments).contains("too big"), "a design too big for every printer says so")
+		_check(FilamentRules.design_problem(both, too_big, data.filaments) == "", "one printer big enough is enough")
+	if not too_hot.is_empty():
+		var plain: Array[Dictionary] = [plodder]
+		_check(FilamentRules.design_problem(plain, too_hot, data.filaments) == FilamentRules.problem(plodder, data.filaments["abs"]),
+			"a design in a material no printer can run gives the reason")
 
 
 func _test_moisture() -> void:
@@ -1020,6 +1049,25 @@ func _test_clock() -> void:
 	_check(GameClock.duration_label(1680.0) == "1d 4h", "duration label in days and hours")
 	_check(is_equal_approx(GameClock.to_seconds(240.0), 100.0), "a 4 hour print lasts 100 real seconds")
 
+	var data := GameData.load_all()
+	var hours := WorkDay.new({"start_minute": 420, "end_minute": 1080})
+	var team := Staff.new(data)
+	_check(hours.closes_at(team) == 1080.0, "on their own the owner's day ends at the set time")
+	_check(not hours.over(1079.0, 1080.0) and hours.over(1080.0, 1080.0) and hours.over(300.0, 1080.0) and not hours.over(420.0, 1080.0), "the day is over from closing until the next start")
+	_check(hours.next_start(1100.0) == GameClock.DAY + 420.0 and hours.next_start(GameClock.DAY + 60.0) == GameClock.DAY + 420.0, "the next start is the coming morning, before or after midnight")
+	_check(hours.next_start(420.0) == GameClock.DAY + 420.0, "at the start of the day the next start is tomorrow's")
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 5
+	team.refresh_applicants(rng, 4)
+	var hired := team.hire(0, 0.0, 6)
+	var latest := 0.0
+	for shift: Dictionary in team.shifts.values():
+		latest = maxf(latest, float(shift["end_minute"]))
+	_check(hours.closes_at(team) == maxf(1080.0, float(team.shifts[hired["shift"]]["end_minute"])), "with staff on an early shift the day still ends when the owner's does")
+	team.set_shift(int(hired["id"]), "late")
+	_check(latest > 1080.0 and hours.closes_at(team) == latest, "with staff on lates the day runs until their shift ends")
+	_check(WorkDay.time_label(1080.0) == "18:00", "a minute of the day as a time")
+
 
 func _test_bank() -> void:
 	var bank := Bank.new(1000)
@@ -1031,6 +1079,22 @@ func _test_bank() -> void:
 	_check(bank.cash == 2400, "earn adds cash")
 	var totals := bank.totals_since(15.0)
 	_check(totals["income"] == 2500 and totals["expenses"] == 700, "totals only count entries since the given minute")
+	# Day 2: rent at midnight, then a sale. Day 3: nothing. The cash in hand is day 3's close.
+	bank.charge(1000, "rent", GameClock.DAY, Bank.RENT)
+	bank.earn(4000, "sale", GameClock.DAY + 600.0, Bank.SALES)
+	var days := bank.by_day(1, 3)
+	_check(days.size() == 3 and days[0]["income"] == 2500 and days[0]["expenses"] == 1100 and days[0]["net"] == 1400, "by_day adds up each day's income and expenses")
+	_check(days[1]["net"] == 3000 and days[2]["net"] == 0, "a charge at midnight belongs to the day it starts")
+	_check(days[0]["closing"] == 2400 and days[1]["closing"] == 5400 and days[2]["closing"] == bank.cash, "by_day works each day's closing balance back from the cash in hand")
+	_check(bank.by_day(1, 1)[0]["closing"] == 2400, "a day's closing balance leaves out what came after it")
+	var kinds := bank.by_category(GameClock.DAY)
+	_check(kinds["income"] == {Bank.SALES: 4000} and kinds["expenses"] == {Bank.RENT: 1000}, "by_category splits what came in and went out by kind, since the given minute")
+	_check(bank.by_category(0.0)["expenses"][Bank.OTHER] == 1100, "a movement with no category given counts as other")
+	var copy := Bank.new()
+	var saved: Dictionary = JSON.parse_string(JSON.stringify(bank.save()))
+	(saved["entries"][0] as Dictionary).erase("category")
+	copy.restore(saved)
+	_check(copy.cash == bank.cash and copy.entries[-1]["category"] == Bank.SALES and copy.entries[0]["category"] == Bank.OTHER, "the ledger saves its categories, and an old entry without one is other")
 
 
 func _test_money() -> void:

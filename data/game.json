@@ -11,6 +11,7 @@
 	"business_name": "Garage Prints",
 	"electricity_pence_per_kwh": 30,
 	"courier_minute_of_day": 1020,
+	"work_day": { "start_minute": 420, "end_minute": 1080, "night_speed": 40 },
 	"shipping": {
 		"default_service": "postie_1st_class",
 		"buyer_pays": { "economy": "postie_2nd_class", "standard": "postie_1st_class" },
