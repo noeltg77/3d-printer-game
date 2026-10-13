@@ -16,6 +16,8 @@ const TEXT_SIZE := 13
 ## where it stood when measured, so it is only measured again once moved.
 var _boxes: Dictionary[int, Dictionary] = {}
 var _icons: Dictionary[String, Texture2D] = {}
+## Where the tokens opened out into words were last drawn.
+var _worded: Array[Rect2] = []
 
 
 func _ready() -> void:
@@ -36,6 +38,7 @@ func _draw() -> void:
 	for id: int in _boxes.keys():
 		if not is_instance_id_valid(id):
 			_boxes.erase(id)
+	_worded.clear()
 	var opened: Array[PrinterStation] = []
 	for printer: PrinterStation in get_tree().get_nodes_in_group(&"printer"):
 		if _state(printer) == "":
@@ -49,6 +52,12 @@ func _draw() -> void:
 		var at := _spot(camera, printer)
 		_draw_words(at, printer)
 		_draw_token(at, printer)
+
+
+## True if a token's words are showing anywhere under `rect`. The label by
+## the mouse asks, so that it can keep off them.
+func words_under(rect: Rect2) -> bool:
+	return _worded.any(func(words: Rect2) -> bool: return words.grow(4.0).intersects(rect))
 
 
 ## What the token should say.
@@ -127,6 +136,7 @@ func _draw_words(at: Vector2, printer: PrinterStation) -> void:
 	var wide := font.get_string_size(words, HORIZONTAL_ALIGNMENT_LEFT, -1, TEXT_SIZE).x
 	var tall := (RADIUS + 2.0) * 2.0
 	var rect := Rect2(at.x - tall / 2.0, at.y - tall / 2.0, tall + 6.0 + wide + 12.0, tall)
+	_worded.append(rect)
 	draw_style_box(Ui.box(Ui.WHITE, int(tall / 2.0), 0, 0), rect)
 	draw_style_box(Ui.box(fill, int(tall / 2.0), 0, 0), rect.grow(-2.0))
 	draw_string(font, Vector2(at.x + RADIUS + 6.0, at.y + 5.0), words, HORIZONTAL_ALIGNMENT_LEFT, -1, TEXT_SIZE, ink)
