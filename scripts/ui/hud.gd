@@ -9,6 +9,8 @@ const TOAST_SECONDS := 4.0
 const MAX_TOASTS := 4
 ## Toasts wider than this wrap onto more lines.
 const TOAST_WIDTH := 760.0
+## Pixels the label by the mouse moves at a time to get clear of a printer's status.
+const HOVER_STEP := 18.0
 const TOAST_COLOURS := {
 	&"": [Ui.CREAM, Ui.INK],
 	&"good": [Ui.GREEN_SOFT, Ui.GREEN_DARK],
@@ -25,6 +27,10 @@ var _hover: PanelContainer
 var _orders: Label
 var _packed: Label
 var _toasts: VBoxContainer
+var _badges: PrinterBadges
+## Where the mouse last moved to. Taken from the events and not asked of the
+## window, so a dev run's `hover>x,y` puts the label where it pointed.
+var _mouse := Vector2.ZERO
 
 @onready var _agent: Agent = get_node(agent_path)
 
@@ -51,10 +57,10 @@ func _ready() -> void:
 	_place(Ui.panel(Ui.text(CONTROLS, 13, Ui.CHIP_TEXT), Ui.box(Color(Ui.TASKBAR, 0.85), 14, 14, 8)),
 		Control.PRESET_BOTTOM_LEFT, Vector2(16, -16))
 
-	var badges := PrinterBadges.new()
-	badges.theme = Ui.theme()
-	add_child(badges)
-	move_child(badges, 0)
+	_badges = PrinterBadges.new()
+	_badges.theme = Ui.theme()
+	add_child(_badges)
+	move_child(_badges, 0)
 
 	_hover = Ui.panel(Ui.vbox([Ui.text("", 14, Ui.INK, 800), Ui.text("", 12, Ui.MUTED, 700)], 0), Ui.box(Ui.CREAM, 12, 12, 7, Ui.SHADE, 4))
 	_hover.visible = false
@@ -89,9 +95,31 @@ func _exit_tree() -> void:
 	Ui.release()
 
 
+func _input(event: InputEvent) -> void:
+	if event is InputEventMouseMotion:
+		_mouse = event.position
+
+
 func _process(_delta: float) -> void:
 	if _hover.visible:
-		_hover.position = get_viewport().get_mouse_position() + Vector2(18, 20)
+		_hover.position = _hover_spot()
+
+
+## Where the label by the mouse goes: below and right of it as a rule, but
+## clear of a printer's status when that is opened out there, since pointing
+## at a printer is how its status is read.
+func _hover_spot() -> Vector2:
+	var mouse := _mouse
+	var tall := _hover.size.y
+	var spots: Array[Vector2] = [mouse + Vector2(18, 20)]
+	# Further down, then above the mouse, a step at a time.
+	for step in range(1, 5):
+		spots.append(mouse + Vector2(18, 20 + step * HOVER_STEP))
+		spots.append(mouse + Vector2(18, -tall - 12 - (step - 1) * HOVER_STEP))
+	for spot in spots:
+		if not _badges.words_under(Rect2(spot, _hover.size)):
+			return spot
+	return spots[0]
 
 
 ## Name of the object under the mouse, or "" for none, with a `hint` beneath
