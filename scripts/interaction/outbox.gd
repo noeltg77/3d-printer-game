@@ -4,9 +4,11 @@ extends Interactable
 ## here once a day, which is when each sale is paid and each crate for a
 ## contract counts as delivered.
 
-## Parcels sit in a 2 x 2 grid and stack upwards.
-const GRID := 0.3
-const LAYER_HEIGHT := 0.15
+## Parcels sit in four piles, two by two, each stood on the one beneath.
+const PILES := 4
+## The gap left between piles, and how far the first parcel sits off the floor.
+const GAP := 0.012
+const FLOOR := 0.012
 
 var _parcels: Array[Parcel] = []
 
@@ -28,10 +30,28 @@ func get_actions(_agent: Agent) -> Array[Action]:
 
 
 func add(parcel: Parcel) -> void:
-	var index := _parcels.size()
 	Interactable.attach(parcel, self)
-	parcel.position = Vector3((index % 2 - 0.5) * GRID, 0.012 + (index / 4) * LAYER_HEIGHT, (index / 2 % 2 - 0.5) * GRID)
+	if parcel.footprint == Vector2.ZERO:
+		var box := Bounds.of(parcel)
+		parcel.footprint = Vector2(box.size.x, box.size.z)
 	_parcels.append(parcel)
+	_arrange()
+
+
+## Stands every parcel in its place: each on whichever pile is lowest when
+## its turn comes, with the piles as far apart as the biggest parcel needs,
+## so nothing floats over a thinner one or sits apart from its neighbour.
+func _arrange() -> void:
+	var pitch := Vector2.ZERO
+	for parcel in _parcels:
+		pitch = pitch.max(parcel.footprint + Vector2.ONE * GAP)
+	var tops: Array[float] = []
+	tops.resize(PILES)
+	tops.fill(FLOOR)
+	for parcel in _parcels:
+		var pile := tops.find(tops.min())
+		parcel.position = Vector3((pile % 2 - 0.5) * pitch.x, tops[pile], (pile / 2 - 0.5) * pitch.y)
+		tops[pile] += parcel.height
 
 
 func _on_courier_arrived() -> void:

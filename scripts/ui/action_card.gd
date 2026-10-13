@@ -10,6 +10,8 @@ extends CanvasLayer
 ## The InteractionController opens it and is told what was `chosen`.
 
 signal chosen(action: Action)
+## The card was put away, whether or not anything was chosen.
+signal closed
 
 const WIDTH := 356.0
 ## Gap kept between the card and the edges of the screen, and the mouse.
@@ -98,11 +100,14 @@ func open(target: Interactable, agent: Agent, at: Vector2) -> void:
 
 
 func close() -> void:
+	var was_open := is_open()
 	_target = null
 	_clear_stale()
 	if _card != null:
 		_dismiss(_card)
 		_card = null
+	if was_open:
+		closed.emit()
 
 
 ## A chip that floats up from `at` and fades: what a click just set going
