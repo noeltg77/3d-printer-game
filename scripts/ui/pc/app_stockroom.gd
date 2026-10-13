@@ -1,7 +1,10 @@
 extends VBoxContainer
-## PC app: Stockroom. Everything the business uses up, a tile each: what is on
-## hand, what is on its way, and a rule that orders more when it runs low. No
-## mock-up existed for this one, so it follows the shop screens.
+## PC app: Stockroom. The finished prints on the shelving, with what each lot
+## would make if it sold, and then what the business uses up, a tile each:
+## what is on hand, what is on its way, and a rule that orders more when it
+## runs low. Only what is in stock, coming or set to reorder shows, unless the
+## player asks for everything. No mock-up existed for this one, so it follows
+## the shop screens.
 
 const SLATE := Color("4A6A8A")
 const SLATE_DARK := Color("34506B")
@@ -12,6 +15,9 @@ const LOCK_TEXT := Color("5A4A1C")
 const LOCK_BG := Color("F4EBCF")
 const COLUMNS := 5
 const PICTURE := 92
+
+## Kept between visits: whether to list what there is none of as well.
+static var _everything := false
 
 var screen: PcScreen
 
@@ -33,23 +39,34 @@ func refresh() -> void:
 	var config: Dictionary = Game.data.settings["supplier"]
 	var spools := _grid()
 	for key in _spool_keys(levels):
-		spools.add_child(_spool_tile(key, levels.get(key, {})))
+		if _shown(key, levels):
+			spools.add_child(_spool_tile(key, levels.get(key, {})))
 	var parts := _grid()
 	for part_id: String in Game.data.parts:
-		if Game.unlocked(Game.data.parts[part_id]):
+		if Game.unlocked(Game.data.parts[part_id]) and _shown(Stockroom.part_key(part_id), levels):
 			parts.add_child(_part_tile(part_id, levels.get(Stockroom.part_key(part_id), {})))
 	var packaging := _grid()
 	for kind: String in Game.data.packaging:
-		if Game.unlocked(Game.data.packaging[kind]):
+		if Game.unlocked(Game.data.packaging[kind]) and _shown(Stockroom.packaging_key(kind), levels):
 			packaging.add_child(_packaging_tile(kind, levels.get(Stockroom.packaging_key(kind), {})))
+	var designs := Game.stocked_designs()
+	var prints := _grid()
+	var sat := 0
+	for product in designs:
+		prints.add_child(_print_tile(product))
+		sat += Game.stock_of(product) * int(Game.best_sale(product)["profit"])
+	var worth := Ui.pill("%s of profit sat on the shelf" % Money.format(sat), Ui.GREEN_DARK if sat > 0 else Ui.RED_DARK, Ui.GREEN_SOFT if sat > 0 else Ui.RED_SOFT, 14)
 	_scroll = Ui.scroll(Ui.vbox([
-		_intro(),
+		Ui.hbox([Ui.grow(_intro()), _everything_toggle()], 24),
+		Ui.hbox([_heading("Finished prints", "On the shelving, ready to pack. Profit is what is left from selling each at its price, after costs and fees."), null,
+			worth if not designs.is_empty() else Ui.spacer()], 14),
+		_or_nothing(prints, "Nothing printed and waiting. What comes off the printers shows here until it is packed."),
 		_heading("Filament", "Counted in spools with a decent amount left, on the rack or in a printer. Arrives in %s." % GameClock.duration_label(config["filament_lead_minutes"])),
-		spools,
+		_or_nothing(spools, "No filament in stock or on its way."),
 		_heading("Spare parts", "Counted on the shelving. Arrives in %s." % GameClock.duration_label(config["parts_lead_minutes"])),
-		parts,
+		_or_nothing(parts, "No spare parts in stock or on their way."),
 		_heading("Packaging", "Counted at the packing station. One goes out with every order."),
-		packaging,
+		_or_nothing(packaging, "No packaging in stock or on its way."),
 	], 12))
 	var page := Ui.panel(Ui.margin(_scroll, 40, 24, 40, 24), Ui.box(PAGE, 0, 0, 0))
 	page.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -71,6 +88,66 @@ func _intro() -> Control:
 		return Ui.wrap(Ui.text("Switch on a rule and the stockroom orders for you: when what you have, plus what is already on its way, drops to the level you set, it buys the amount you set. It won't order what you can't afford or have no room for.", 14, Ui.MUTED))
 	return Ui.panel(Ui.wrap(Ui.text("Automatic reordering comes with a bigger space: there is more to keep track of in a %s. Until then this is your stock at a glance." % String(
 		Game.data.settings["tier_names"][int(Game.data.settings["stock"]["unlock_tier"]) - 1]).to_lower(), 14, LOCK_TEXT, 800)), Ui.box(LOCK_BG, 14, 16, 12))
+
+
+## True if a stock belongs on the page: there is some, some is coming or it
+## is set to reorder itself. Everything does once the player asks for it.
+func _shown(key: String, levels: Dictionary) -> bool:
+	if _everything or Game.stock.rule(key)["on"]:
+		return true
+	var level: Dictionary = levels.get(key, {})
+	return int(level.get("have", 0)) > 0 or int(level.get("coming", 0)) > 0
+
+
+func _everything_toggle() -> Control:
+	var flip := func() -> void:
+		_everything = not _everything
+		refresh()
+	var button := Ui.button("Showing everything" if _everything else "Showing what is in stock", flip,
+		SLATE if _everything else Ui.WHITE, Ui.PAPER if _everything else Ui.INK, 40, 14, SLATE_DARK if _everything else SHADOW)
+	button.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	button.tooltip_text = "Click to list only what you have, what is coming and what reorders itself" if _everything \
+		else "Click to list everything you could stock, to set it reordering"
+	return button
+
+
+## A section's tiles, or a line saying there are none.
+func _or_nothing(grid: GridContainer, note: String) -> Control:
+	if grid.get_child_count() > 0:
+		return grid
+	grid.queue_free()
+	return Ui.panel(Ui.text(note, 14, Ui.MUTED), Ui.box(TILE, 14, 16, 12))
+
+
+## The finished prints of one design: how many, how many are spoken for, and
+## what the lot would leave if it sold.
+func _print_tile(product: StringName) -> Control:
+	var count := Game.stock_of(product)
+	var sale := Game.best_sale(product)
+	var shop: Marketplace = sale["shop"]
+	var profit: int = sale["profit"]
+	var ordered := Game.open_orders().filter(func(order: Marketplace.Order) -> bool: return order.product == product).size()
+	var backdrop := Ui.panel(ModelPicture.of_product(product, PICTURE), Ui.box(TILE, 14, 0, 0))
+	backdrop.custom_minimum_size.y = PICTURE + 16
+	var name_line := Ui.text(Game.product_name(product), 16, Ui.INK, 800)
+	name_line.clip_text = true
+	name_line.tooltip_text = Game.product_name(product)
+	name_line.mouse_filter = Control.MOUSE_FILTER_PASS
+	var counts := Ui.hbox([Ui.pill("In stock: %d" % count, Ui.GREEN_DARK, Ui.GREEN_SOFT)], 6)
+	if ordered > 0:
+		counts.add_child(Ui.pill("Ordered: %d" % ordered, SLATE_DARK, TILE))
+	var where := "%s on %s" % [Money.format(sale["price"]), shop.config["name"]] if sale["listed"] else "Not listed: %s if it were" % Money.format(sale["price"])
+	var column := Ui.vbox([
+		backdrop,
+		Ui.vbox([name_line, Ui.text(where, 13, Ui.MUTED if sale["listed"] else Ui.AMBER_DARK)], 0),
+		counts,
+		Ui.hbox([Ui.text("Profit each", 13, Ui.MUTED), null, Ui.text(Money.format(profit), 14, Ui.INK, 800)]),
+		Ui.hbox([Ui.text("Sat on the shelf", 13, Ui.MUTED), null,
+			Ui.title(Money.format(profit * count), 18, Ui.GREEN_DARK if profit > 0 else Ui.RED_DARK)]),
+	], 10)
+	var card := Ui.panel(column, Ui.box(Ui.WHITE, 18, 14, 14, SHADOW, 3))
+	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	return card
 
 
 func _grid() -> GridContainer:
