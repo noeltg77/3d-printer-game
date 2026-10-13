@@ -143,6 +143,7 @@ func _ready() -> void:
 	_gantry_rest = _gantry.position
 	_toolhead_rest = _toolhead.position
 	_mount_tray()
+	add_child(PrinterSound.new())
 
 
 func _process(delta: float) -> void:

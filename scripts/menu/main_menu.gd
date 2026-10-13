@@ -15,6 +15,9 @@ const PANEL_WIDTH := 640
 const SPLASH_SECONDS := 2.2
 ## Real seconds a line of news from the workshop stays up.
 const NEWS_SECONDS := 5.0
+const MUSIC := &"menu_theme"
+## Steps on each volume control.
+const VOLUME_STEPS := 5
 
 var _showcase: Showcase
 var _ui: Control
@@ -30,6 +33,8 @@ var _news_chip: PanelContainer
 var _clock: Label
 var _news_until := 0.0
 var _name_box: LineEdit = null
+## The whirr of the name being printed, during the opening.
+var _printing: AudioStreamPlayer = null
 
 
 func _ready() -> void:
@@ -54,6 +59,7 @@ func _ready() -> void:
 
 	if Screens.seen_splash or OS.get_cmdline_user_args().has("--no-splash"):
 		_showcase.reveal(0.01 if not Screens.seen_splash else Showcase.CURTAIN_SECONDS)
+		Sound.music(MUSIC)
 		_arrive(false)
 	else:
 		_play_splash()
@@ -243,7 +249,11 @@ func _play_splash() -> void:
 	_ui.add_child(_splash)
 	var splash := _splash
 	logo.play(SPLASH_SECONDS)
+	_printing = Sound.start_loop("printer/motion_a", -10.0)
 	await logo.printed
+	if _splash == splash:
+		_stop_printing()
+		Sound.ui(&"chime")
 	# Held until the workshop behind is ready to be seen.
 	while not _showcase.ready_to_show:
 		await get_tree().process_frame
@@ -252,9 +262,18 @@ func _play_splash() -> void:
 		_end_splash()
 
 
+## Ends the whirr of the name being printed, if it is still going.
+func _stop_printing() -> void:
+	if _printing != null:
+		Sound.fade_out(_printing, 0.25)
+		_printing = null
+
+
 func _end_splash() -> void:
 	var splash := _splash
 	_splash = null
+	_stop_printing()
+	Sound.music(MUSIC, 2.0)
 	_showcase.reveal(0.01)
 	var lift := Ui.tween(self)
 	lift.tween_property(splash, "modulate:a", 0.0, 0.7)
@@ -276,6 +295,7 @@ func _arrive(after_splash: bool) -> void:
 ## name of the one already open.
 func _show_panel(which: String) -> void:
 	_open = "" if which == _open else which
+	Sound.ui(&"back" if _open == "" else &"open")
 	if _panel != null:
 		_panel.queue_free()
 		_panel = null
@@ -350,26 +370,48 @@ func _settings_panel() -> Control:
 		Ui.title("Currency", 20),
 		Ui.wrap(Ui.text("The money you think in. The business runs in pounds underneath, so changing this never alters what anything costs.", 14, Ui.MUTED)),
 		options,
-		Ui.wrap(Ui.text("Sound and display settings will go here when the game has them.", 13, Ui.MUTED)),
+		Ui.margin(Ui.title("Sound", 20), 0, 8, 0, 0),
+		_volume_row("Music", Sound.MUSIC),
+		_volume_row("Sounds", Sound.SFX),
 	], 12)
+
+
+## A named volume control for one of the things the player can turn down.
+func _volume_row(label: String, bus: StringName) -> Control:
+	var steps := Ui.steps(int(round(Sound.level(bus) * VOLUME_STEPS)), VOLUME_STEPS, Ui.ORANGE, _set_volume.bind(bus))
+	return Ui.hbox([Ui.width(Ui.text(label, 15, Ui.INK, 800), 90), steps], 12)
+
+
+func _set_volume(step: int, bus: StringName) -> void:
+	Sound.set_level(bus, float(step) / VOLUME_STEPS)
+	_reopen_settings()
 
 
 func _set_currency(code: String) -> void:
 	Game.set_currency(code)
-	if _open == "settings":
-		_open = ""
-		_show_panel("settings")
+	_reopen_settings()
+
+
+## Draws the settings panel afresh after one of them has changed.
+func _reopen_settings() -> void:
+	if _open != "settings" or _panel == null:
+		return
+	var content := _settings_panel()
+	Ui.clear(_panel)
+	_panel.add_child(content)
 
 
 func _start_new() -> void:
 	var called := _name_box.text if _name_box != null else ""
 	var start: Dictionary = Game.data.settings["start"]
 	var scene: String = Game.data.premises[StringName(start["premises"])]["scene"]
+	Sound.ui(&"start")
 	Screens.go(scene, "Unlocking the garage", _begin.bind(SaveSlots.fresh_path(), called))
 
 
 ## Carries on a saved game: a row from SaveSlots.list().
 func _play(slot: Dictionary) -> void:
+	Sound.ui(&"start")
 	Screens.go(Game.scene_of(slot), "Opening %s" % slot["name"], _begin.bind(slot["path"], ""))
 
 
@@ -377,4 +419,5 @@ func _play(slot: Dictionary) -> void:
 ## Game is pointed at the save.
 func _begin(path: String, called: String) -> void:
 	_showcase.close()
+	Sound.music(&"")
 	Game.begin(path, called)

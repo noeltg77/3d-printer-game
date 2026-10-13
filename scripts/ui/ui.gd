@@ -188,7 +188,26 @@ static func button(label: String, on_pressed: Callable, bg := INK, fg := PAPER, 
 	node.add_theme_color_override(&"font_disabled_color", Color(fg, 0.75) if bg.a > 0.0 else Color(fg, 0.4))
 	if on_pressed.is_valid():
 		node.pressed.connect(on_pressed)
+	# Every button ticks under the mouse and clicks when pressed.
+	node.mouse_entered.connect(func() -> void:
+		if not node.disabled:
+			Sound.ui(&"hover"))
+	node.pressed.connect(Sound.ui.bind(&"click"))
 	return node
+
+
+## A volume control: `total` chunky steps in a row, lit up to `value`. A click
+## on one calls `on_picked` with its number, and on the first with 0 for off.
+static func steps(value: int, total: int, colour: Color, on_picked: Callable) -> HBoxContainer:
+	var row := hbox([], 6)
+	for index in total + 1:
+		var lit := index <= value and index > 0
+		var label := "Off" if index == 0 else ""
+		var step := button(label, on_picked.bind(index), INK if index == 0 and value == 0 else (colour if lit else TRACK),
+			PAPER if index == 0 and value == 0 else INK, 36, 10, CLEAR, 13)
+		step.custom_minimum_size.x = 56 if index == 0 else 36
+		row.add_child(step)
+	return row
 
 
 ## A small rounded label, for statuses and tags.

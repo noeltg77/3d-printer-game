@@ -77,6 +77,7 @@ func _ready() -> void:
 	_curtain.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layer.add_child(_curtain)
 	add_child(layer)
+	Sound.set_backdrop(true)
 	_stage()
 
 
@@ -104,6 +105,7 @@ func _unhandled_input(event: InputEvent) -> void:
 ## Stops the show and clears the room, as a real game is about to start.
 func close() -> void:
 	_closed = true
+	Sound.set_backdrop(false)
 	_set_hovered(null)
 	if _room != null:
 		_room.queue_free()

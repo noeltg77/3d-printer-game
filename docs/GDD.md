@@ -272,6 +272,7 @@ Build small and prove each step before moving on: assets and garage first, then 
 - [x] Opening, main menu over a live workshop, loading screen and pause menu (first draft, for review)
 - [x] Several saved games: slots with a picture each, load, delete and keep a copy
 - [ ] UI polish, sound effects, music, lighting pass
+- [x] First sounds: menu music, UI clicks, and printers heard while they run (generated, first draft)
 - [x] Light onboarding hints for non printer owners
 - [x] Balance pass on the garage tier
 - [ ] Playtest with printer owners and complete beginners
