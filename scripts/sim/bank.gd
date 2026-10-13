@@ -18,6 +18,7 @@ const WAGES := &"wages"
 const ELECTRICITY := &"electricity"
 const PREMISES := &"premises"
 const MOULDING := &"moulding"
+const TRAINING := &"training"
 const OTHER := &"other"
 
 var cash := 0

@@ -151,7 +151,7 @@ func _stat(label: String, value: float, colour: Color) -> Control:
 
 func _packaging() -> Control:
 	var rows := Ui.vbox([], 12)
-	var lead := GameClock.duration_label(Game.data.settings["supplier"]["filament_lead_minutes"])
+	var lead := GameClock.duration_label(Game.supplier.lead_minutes("filament"))
 	rows.add_child(Ui.wrap(Ui.text("One goes out with every order, and each design is sent in the kind you pick on its listing. Kept at the packing station. Arrives in %s." % lead, 14, Ui.MUTED)))
 	for kind: String in Game.data.packaging:
 		var wrap: Dictionary = Game.data.packaging[kind]
@@ -178,7 +178,7 @@ func _packaging() -> Control:
 			scores,
 			Ui.width(Ui.pill("In stock: %d" % count, Ui.GREEN_DARK if count > 0 else Ui.MUTED, Ui.GREEN_SOFT if count > 0 else TILE) if Game.unlocked(wrap)
 				else Ui.pill("Needs more space", LOCK_TEXT, LOCK_BG), 130),
-			Ui.width(Ui.text(Money.format(int(wrap["price_pence"])), 17, Ui.INK, 800), 70),
+			Ui.width(Ui.text(Money.format(Game.supplier.packaging_price(kind)), 17, Ui.INK, 800), 70),
 			buy,
 		], 18), Ui.box(Ui.WHITE, 18, 18, 14, SHADOW, 3)))
 	return Ui.scroll(rows)
@@ -186,7 +186,7 @@ func _packaging() -> Control:
 
 func _parts() -> Control:
 	var shelf: StorageShelf = get_tree().get_first_node_in_group(&"print_storage")
-	var lead := GameClock.duration_label(Game.data.settings["supplier"]["parts_lead_minutes"])
+	var lead := GameClock.duration_label(Game.supplier.lead_minutes("parts"))
 	var rows := Ui.vbox([
 		Ui.wrap(Ui.text("Spares wait on your shelving until a printer needs one. Check a printer's Parts menu to see what is wearing. Arrives in %s." % lead, 14, Ui.MUTED)),
 	], 12)
@@ -208,7 +208,7 @@ func _parts() -> Control:
 			words,
 			Ui.width(_worn_note(StringName(part["slot"])) if Game.unlocked(part) else Ui.pill("Needs more space", LOCK_TEXT, LOCK_BG), 150),
 			Ui.pill("On the shelf: %d" % spare, Ui.GREEN_DARK if spare > 0 else Ui.MUTED, Ui.GREEN_SOFT if spare > 0 else TILE),
-			Ui.width(Ui.text(Money.format(int(part["price_pence"])), 17, Ui.INK, 800), 70),
+			Ui.width(Ui.text(Money.format(Game.supplier.part_price(part_id)), 17, Ui.INK, 800), 70),
 			buy,
 		], 18), Ui.box(Ui.WHITE, 18, 18, 14, SHADOW, 3)))
 	return Ui.scroll(rows)

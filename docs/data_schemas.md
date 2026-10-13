@@ -399,3 +399,27 @@ A courier has a `name`, `tagline`, `description` and `colour`. A service is one 
 Each marketplace sends by one service, picked in its app (`Game.service_choice`). The buyer pays the going rate for the speed promised and the seller pays the courier, so a cheaper service leaves a little over and a dearer one costs. What an order was packed in and sent by is recorded on it when it is packed (`Shipping.terms`).
 
 Imported from `docs/design_data/shipping.json` (`parcel_bands`, `couriers`, `services`). FreightFolk and GlobeHop are not in: nothing goes by the pallet and there are no buyers abroad. Collection fees, drop off walks and order cut off times are not modelled: one courier run a day takes everything.
+
+## research.json
+
+What the owner can study at the PC (`Research`, the Skillshed app).
+
+`branches`: the columns of the tree, in order.
+
+| Field | Meaning |
+|---|---|
+| `id`, `name` | Key and what the player reads |
+| `colour` | Hex colour that marks the branch in the app |
+| `about` | One line on what the branch is for |
+
+`courses`: in the order they are taught within a branch.
+
+| Field | Meaning |
+|---|---|
+| `id`, `name`, `description` | Key and what the player reads |
+| `branch` | Id of the branch it belongs to |
+| `unlock_tier` | Premises tier needed to take it |
+| `requires` | Id of the course that must be learned first, or "" |
+| `minutes` | Game minutes of study at the desk |
+| `fee_pence` | Paid once, on starting |
+| `effects` | Multipliers once learned, by key: `fail_chance`, `print_time`, `clear_time`, `wear`, `replace_time`, `worn_risk` (the failure risk worn parts add), `spool_price`, `parts_price`, `packaging_price`, `lead_time` (supplies, not printers). Every learned course's multiply together |

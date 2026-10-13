@@ -182,10 +182,10 @@ func _basket_card() -> Control:
 	var total := Game.supplier.price_of(order)
 	var problem := Game.supplier_problem(order)
 	var arrives := GameClock.new()
-	arrives.minutes = Game.clock.minutes + float(config["filament_lead_minutes"])
+	arrives.minutes = Game.clock.minutes + Game.supplier.lead_minutes("filament")
 	var minute := int(arrives.minute_of_day)
 	var delivery := Ui.panel(Ui.hbox([
-		Ui.text("Standard · %s" % GameClock.duration_label(config["filament_lead_minutes"]), 14), null, Ui.text("Free", 14),
+		Ui.text("Standard · %s" % GameClock.duration_label(Game.supplier.lead_minutes("filament")), 14), null, Ui.text("Free", 14),
 	]), Ui.box(Ui.SOFT, 12, 12, 10))
 
 	var column := Ui.vbox([

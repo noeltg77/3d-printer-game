@@ -31,6 +31,7 @@ var markets: Dictionary[StringName, Marketplace] = {}
 var market: Marketplace
 var trends: Trends
 var taste: ColourTaste
+var research: Research
 var supplier: Supplier
 var studio: DesignStudio
 ## The rules for reordering what runs low (the Stockroom app).
@@ -180,6 +181,7 @@ func new_game() -> void:
 	supplier = Supplier.new(data)
 	studio = DesignStudio.new(data.products, data.settings["design"])
 	stock = Stockroom.new(data)
+	research = Research.new(data.courses)
 	contracts = Contracts.new(data)
 	staff = Staff.new(data)
 	work_day = WorkDay.new(data.settings["work_day"])
@@ -255,6 +257,7 @@ func save() -> Dictionary:
 		"trends": trends.save(),
 		"studio": studio.save(),
 		"stock": stock.save(),
+		"research": research.save(),
 		"contracts": contracts.save(),
 		"staff": staff.save(),
 		"events": events.save(), "milestones": milestones.save(), "stats": stats,
@@ -281,6 +284,9 @@ func restore(state: Dictionary) -> void:
 		studio.restore(state["studio"])
 	if state.has("stock"):
 		stock.restore(state["stock"])
+	if state.has("research"):
+		research.restore(state["research"])
+	_share_research()
 	if state.has("contracts"):
 		contracts.restore(state["contracts"])
 	if state.has("staff"):
@@ -521,10 +527,11 @@ func print_grams(product: StringName, preset: StringName) -> float:
 func fail_chance(printer: Dictionary, preset: StringName, filament: StringName, product: StringName,
 		wear: PrinterWear = null, mods: PrinterMods = null, moisture := 0.0, swaps := 0) -> float:
 	var spec := mods.apply(printer) if mods != null else printer
-	var extra := Moisture.extra_fail_chance(moisture, data.settings["moisture"]) + (wear.extra_fail_chance() if wear != null else 0.0)
+	var extra := Moisture.extra_fail_chance(moisture, data.settings["moisture"]) + (
+		wear.extra_fail_chance() * research.effect("worn_risk") if wear != null else 0.0)
 	if mods != null:
 		extra += Multicolour.jam_chance(mods.unit(), swaps)
-	var chance := PrintRisk.fail_chance(spec, data.presets[preset], data.filaments[filament], data.products[product], extra)
+	var chance := PrintRisk.fail_chance(spec, data.presets[preset], data.filaments[filament], data.products[product], extra) * research.effect("fail_chance")
 	if mods == null:
 		return chance
 	var flags := _print_flags(spec, preset, product, wear, moisture, filament, mods, swaps)
@@ -683,6 +690,42 @@ func printer_specs() -> Array[Dictionary]:
 ## (or has no printer yet to judge by).
 func print_problem(product: StringName) -> String:
 	return FilamentRules.design_problem(printer_specs(), data.products[product], data.filaments)
+
+
+## Why a course can't be studied right now, or "" if it can.
+func study_problem(course: StringName) -> String:
+	return research.problem(course, tier, bank.cash)
+
+
+## Enrols on a course, paying its fee if that is still owed, and makes it the
+## one a sit at the desk carries on with. False if it can't be studied.
+func start_course(course: StringName) -> bool:
+	if study_problem(course) != "":
+		return false
+	var fee := research.fee_due(course)
+	if fee > 0 and not bank.spend(fee, "Course: %s" % data.courses[course]["name"], clock.minutes, Bank.TRAINING):
+		return false
+	research.start(course)
+	changed.emit()
+	return true
+
+
+## Adds game minutes of study to a course. True when that finishes it.
+func study(course: StringName, minutes: float) -> bool:
+	if not research.study(course, minutes):
+		return false
+	_share_research()
+	notify("Course finished: %s" % data.courses[course]["name"], &"good")
+	changed.emit()
+	return true
+
+
+## Tells the supplier what the owner has learned to get out of it.
+func _share_research() -> void:
+	supplier.terms = {
+		"spools": research.effect("spool_price"), "parts": research.effect("parts_price"),
+		"packaging": research.effect("packaging_price"), "lead": research.effect("lead_time"),
+	}
 
 
 ## Buys a design licence. False if it is already owned, is for a later tier than the
@@ -1141,7 +1184,7 @@ func unit_profit(product: StringName, price: int, shop: Marketplace = null) -> i
 func packaging_price(kind: StringName) -> float:
 	if not data.packaging.has(kind):
 		return 0.0
-	return float(data.packaging[kind]["price_pence"]) / float(data.packaging[kind]["pack_size"])
+	return float(supplier.packaging_price(kind)) / float(data.packaging[kind]["pack_size"])
 
 
 ## "small cardboard boxes", "poly mailer bags": a kind of packaging, in the plural.

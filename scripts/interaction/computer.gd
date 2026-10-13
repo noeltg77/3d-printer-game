@@ -17,17 +17,71 @@ func card_icon() -> String:
 
 func get_actions(agent: Agent) -> Array[Action]:
 	if agent.seated:
-		return [
+		var seated: Array[Action] = [
 			Action.new("Open the screen", func(_a: Agent) -> void: _screen().open()),
 			Action.new("Stand up", func(a: Agent) -> void: await a.stand_up()),
 		]
-	return [Action.new("Use computer", _use)]
+		if Game.research.current != &"":
+			seated.insert(1, study_action(Game.research.current))
+		return seated
+	var actions: Array[Action] = [Action.new("Use computer", _use)]
+	# A course part way through can be picked up again without opening the screen.
+	if Game.research.current != &"":
+		actions.append(study_action(Game.research.current))
+	return actions
 
 
 func _use(agent: Agent) -> void:
 	await agent.walk_to(get_stand_point())
 	await agent.sit(get_node(seat_path))
 	_screen().open()
+
+
+## The task of sitting at the PC to study a course: paying its fee if that is
+## still owed, then working through it until it is learned or the character
+## is given something else to do. What was studied is kept.
+func study_action(course: StringName) -> Action:
+	var row: Dictionary = Game.data.courses[course]
+	var problem := Game.study_problem(course)
+	var title := "%s %s" % ["Carry on studying" if Game.research.is_started(course) else "Study", row["name"]]
+	var action := Action.new(title if problem == "" else "%s: %s" % [title, problem.to_lower()], _study.bind(course), problem == "")
+	action.task_name = "Study %s" % row["name"]
+	return action
+
+
+func _study(agent: Agent, course: StringName) -> void:
+	if not Game.start_course(course):
+		agent.say("Can't study that right now")
+		return
+	if not agent.seated:
+		await agent.walk_to(get_stand_point())
+		await agent.sit(get_node(seat_path))
+	var title: String = Game.data.courses[course]["name"]
+	var at := Game.clock.minutes
+	# Until it is learned, another job is lined up, the screen is opened, the
+	# day is ended or a save is waiting on everyone finishing what they are at.
+	var saving := false
+	while not Game.research.is_learned(course) and not agent.has_queued() and not agent.held and not Game.sleeping:
+		saving = _world_save() != null and _world_save().wants_quiet()
+		if saving:
+			break
+		agent.relabel("Studying %s: %d%%" % [title, floori(Game.research.fraction(course) * 100.0)])
+		await agent.reach()
+		Game.study(course, Game.clock.minutes - at)
+		at = Game.clock.minutes
+	if saving:
+		_resume_after_save(agent, course)
+
+
+## Sits back down to a course once the save that interrupted it is done.
+func _resume_after_save(agent: Agent, course: StringName) -> void:
+	await get_tree().create_timer(0.5, true, false, true).timeout
+	if is_instance_valid(agent) and agent.seated and not agent.is_busy() and not agent.held and Game.research.current == course:
+		agent.enqueue(study_action(course))
+
+
+func _world_save() -> WorldSave:
+	return get_tree().get_first_node_in_group(&"world_save")
 
 
 ## The task of sitting at the PC to design the next version of an own design.

@@ -139,6 +139,15 @@ static func items(tree: SceneTree) -> Array[Dictionary]:
 	for kind in low_packaging():
 		_add(found, "%s are nearly out" % Game.packaging_plural(kind).capitalize(),
 			"Your designs go out in them, one to an order. Buy a pack at %s, under Packaging, or pick something else on the listing." % shops["hardware_shop"])
+	var owner := tree.get_first_node_in_group(&"player") as Agent
+	if Game.research.current != &"" and owner != null and not owner.current_label.begins_with("Studying"):
+		_add(found, "Carry on with %s" % Game.data.courses[Game.research.current]["name"],
+			"You are part way through the course. Click the computer and carry on studying: it only moves on while you are sat at the desk.")
+	elif Game.research.current == &"" and found.is_empty():
+		for course: String in Game.data.courses:
+			if Game.study_problem(StringName(course)) == "":
+				_add(found, "Learn something on Skillshed", "A quiet moment is a good time for a course. Each one makes the business a little better for good. Click the computer and open Skillshed.")
+				break
 	if shelf != null and not shelf.unfinished().is_empty() and tree.get_first_node_in_group(&"finishing_bench") != null and ready == 0:
 		_add(found, "Give a print a better finish", "Click the finishing bench and pick a print to finish. A pass with the blowtorch tidies a print up, so buyers rate it higher and send fewer back.")
 	return found

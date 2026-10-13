@@ -61,9 +61,9 @@ func refresh() -> void:
 		Ui.hbox([_heading("Finished prints", "On the shelving, ready to pack. Profit is what is left from selling each at its price, after costs and fees."), null,
 			worth if not designs.is_empty() else Ui.spacer()], 14),
 		_or_nothing(prints, "Nothing printed and waiting. What comes off the printers shows here until it is packed."),
-		_heading("Filament", "Counted in spools with a decent amount left, on the rack or in a printer. Arrives in %s." % GameClock.duration_label(config["filament_lead_minutes"])),
+		_heading("Filament", "Counted in spools with a decent amount left, on the rack or in a printer. Arrives in %s." % GameClock.duration_label(Game.supplier.lead_minutes("filament"))),
 		_or_nothing(spools, "No filament in stock or on its way."),
-		_heading("Spare parts", "Counted on the shelving. Arrives in %s." % GameClock.duration_label(config["parts_lead_minutes"])),
+		_heading("Spare parts", "Counted on the shelving. Arrives in %s." % GameClock.duration_label(Game.supplier.lead_minutes("parts"))),
 		_or_nothing(parts, "No spare parts in stock or on their way."),
 		_heading("Packaging", "Counted at the packing station. One goes out with every order."),
 		_or_nothing(packaging, "No packaging in stock or on its way."),
@@ -195,13 +195,13 @@ func _part_tile(part_id: String, level: Dictionary) -> Control:
 	var part: Dictionary = Game.data.parts[part_id]
 	var pack := int(part["pack_size"])
 	return _tile(Stockroom.part_key(part_id), ModelPicture.create(GameData.part_model(part), PICTURE), part["name"], level, "pack" if pack > 1 else "one", "packs" if pack > 1 else "",
-		"%s %s" % [Money.format(int(part["price_pence"])), "a pack of %d" % pack if pack > 1 else "each"], pack)
+		"%s %s" % [Money.format(Game.supplier.part_price(part_id)), "a pack of %d" % pack if pack > 1 else "each"], pack)
 
 
 func _packaging_tile(kind: String, level: Dictionary) -> Control:
 	var wrap: Dictionary = Game.data.packaging[kind]
 	return _tile(Stockroom.packaging_key(kind), ModelPicture.create(GameData.PACKAGING_MODEL % wrap["model"], PICTURE), wrap["name"], level, "pack", "packs",
-		"%s a pack of %d" % [Money.format(int(wrap["price_pence"])), int(wrap["pack_size"])], int(wrap["pack_size"]))
+		"%s a pack of %d" % [Money.format(Game.supplier.packaging_price(kind)), int(wrap["pack_size"])], int(wrap["pack_size"]))
 
 
 ## One stock: what there is, and its rule. `unit` and `units` name what is

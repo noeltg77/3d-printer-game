@@ -24,6 +24,8 @@ const TABLES := {
 	"bands": "res://data/couriers.json",
 	"couriers": "res://data/couriers.json",
 	"services": "res://data/couriers.json",
+	"branches": "res://data/research.json",
+	"courses": "res://data/research.json",
 }
 const FAILURE_HAPPENS: PackedStringArray = ["start", "mid", "end"]
 const FAILURE_OUTCOMES: PackedStringArray = ["scrap", "stop", "degraded"]
@@ -74,6 +76,9 @@ var fittings: Dictionary = {}
 var bands: Dictionary = {}
 var couriers: Dictionary = {}
 var services: Dictionary = {}
+## What the owner can study at the PC, by id, and the branches the courses fall into (data/research.json).
+var branches: Dictionary = {}
+var courses: Dictionary = {}
 ## Print toggles such as multicolour, by id (the `toggles` list in data/presets.json).
 var toggles: Dictionary = {}
 ## What each durability score (1 to 5) means, keyed by the score as text.
@@ -109,7 +114,20 @@ static func load_all() -> GameData:
 	else:
 		data.errors.append("%s: expected an object with a \"comments\" object" % REVIEWS)
 	data._check_references()
+	data._check_research()
 	return data
+
+
+func _check_research() -> void:
+	for row: Dictionary in courses.values():
+		if not branches.has(row.get("branch", "")):
+			errors.append("course %s: unknown branch \"%s\"" % [row["id"], row.get("branch", "")])
+		var before := String(row.get("requires", ""))
+		if before != "" and not courses.has(before):
+			errors.append("course %s: requires unknown course \"%s\"" % [row["id"], before])
+		for key: String in row.get("effects", {}):
+			if not Research.EFFECTS.has(key):
+				errors.append("course %s: unknown effect \"%s\"" % [row["id"], key])
 
 
 func _check_storage() -> void:
