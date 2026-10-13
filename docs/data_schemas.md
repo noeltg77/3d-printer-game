@@ -61,8 +61,9 @@ Display currencies, keyed by code. Not a table of rows with ids.
 | `family` | The plain filament this is a variety of, by its id. A design that allows a family allows every filament in it |
 | `process` | Optional. `resin` for a resin: only a printer of that `kind` takes it. Filament printing if absent |
 | `container` | Optional. `bottle` if it comes in a bottle, not on a spool. It needs a `bottle_<colour>.glb` for each of its colours |
-| `post_minutes` | Optional. Character time to finish each plate before it is shelved: washing and curing, for resin |
+| `post_minutes` | Optional. Time to finish each plate before it is shelved: washing and curing, for resin. A wash and cure station takes this times its `time_multiplier`; by hand it is the character's time, times the game's `resin_finishing.hand_multiplier` |
 | `price_pence_per_kg`, `spool_grams` | Spool cost is derived from these |
+| `bulk_grams`, `bulk_price_pence_per_kg` | Optional, together. The filament is also sold on a big reel of this many grams, at this price by the kilo. It needs a `reel_<colour>.glb` for each of its colours. A reel's spool key ends `:bulk` |
 | `nozzle_temp_c` | Minimum nozzle temperature needed |
 | `speed_multiplier` | Below 1.0 prints slower (TPU) |
 | `value_multiplier` | Sale price uplift for items in this material: the buyer pays the listed price times this |
@@ -240,6 +241,7 @@ Filament dryers. Imported from `docs/design_data/accessories.json` (`dryers`): o
 | `hours_to_dry` | Game hours to take a soaked spool of plain PLA to dry. A spool takes its share of that, times its filament's `drying_multiplier` |
 | `power_watts` | Charged as electricity for the time it spends drying |
 | `dries` | Filament families it gets hot enough for |
+| `takes_bulk` | Optional. True if a 5 kg reel fits in it |
 
 ## premises.json
 
@@ -331,6 +333,8 @@ Starting conditions and global rates. Not a table of rows.
 | `resale` | Selling a printer second hand: it fetches its price new times `worn_out` (every part spent) to `as_new` (every part fresh), by the average health of its parts. `pack_minutes` to box it, `scrap_minutes` to strip one for the bin, `box_minutes` to box one up to keep. A bought fitting (shelving, a rack, a bench) sells for `fitting_share` of its price, once it is empty |
 | `finishing` | The finishing bench: `minutes` of the character's time for one print, the `quality_gain` it gets and the `max_quality` it stops at. A print can be finished once |
 | `default_preset` | The preset the print dialog opens on |
+| `recycling` | `leftover_grams`: a spool with less than this left is a leftover, which the recycler offers to shred all at once. `extra_fail`: what printing with a recycled spool adds to the chance of failure |
+| `resin_finishing` | `hand_multiplier`: how much longer than a filament's `post_minutes` washing and curing a plate takes by hand |
 | `moisture` | `gain_per_day`: moisture (0 to 1) a filament with sensitivity 1.0 gains in a day in the open. `wet_at`: the level at which a spool is wet. Every `step` beyond that adds `extra_fail_per_step` to the chance of a print failing, and wet filament raises the `wet_filament` flag for failures |
 | `multicolour` | `main_colour_share`: the share of a multicolour print's filament its first colour takes. `contrast_purge`: how much more a colour change purges going from black to white. `many_swaps`: colour changes at which a print raises `many_colour_swaps`. `reference_jam_chance`: the `jam_chance_per_swap` of a unit that jams as often as the jam failure's `weight` says |
 | `moulding` | Rules for the injection moulding machine (`Moulding`). A mould for a design costs `mould_fee_multiple` times its `base_price_pence`, and at least `mould_fee_min_pence`, and takes `mould_days` to arrive. A run is `batch` items, each taking `minutes_per_item`, after `setup_minutes` of the character's time, and uses the design's `filament_grams` in pellets at `pellet_pence_per_kg`; `power_watts` is charged for the run. The output bin holds `output_capacity`. Moulded items come in the `colours` listed, at `quality` and `durability`, and on the shelf count as printed at `sold_as_preset` in `sold_as_filament` |
@@ -359,6 +363,20 @@ Storage that is bought and stood wherever the player likes.
 | `price_pence`, `unlock_tier` | As elsewhere |
 
 A `bench` row also has `printer_spots`: where on it each printer stands, as `[x, y, z]` from its origin, and may set `units_beside`: there is no room above a printer on it for a multicolour unit, which has to sit in a colour unit rack close by. A `units` row is such a rack: `unit_bays` is where in it each unit sits. It feeds printers within the `rack_link_metres` of the `multicolour` settings in game.json, and there is no limit on how many a place has.
+
+A machine is a fitting too, of `kind` `recycler` or `wash`. It is stood, moved and sold like any other but does its own work (`Recycler`, `WashStation`), and the scene's `Machinery` node hosts it. A place has room for one of each kind unless its premises row says otherwise (`recycler_units`, `wash_units`).
+
+| Field | Meaning |
+| --- | --- |
+| `recycles` | Recycler. Filament families it melts down. Each comes out as the plain filament of that id |
+| `loss` | Recycler. Share of what is shredded that is lost |
+| `spool_grams` | Recycler. Grams of one family a new spool takes |
+| `shred_minutes`, `setup_minutes` | Recycler. Character time to shred one spool, and to set a spool winding |
+| `extrude_minutes` | Recycler. Game minutes the machine takes to wind a spool, by itself |
+| `pigment_pence` | Recycler. Charged for each spool made, for its colour |
+| `plates` | Wash station. Plates of prints it takes at once. Its model needs a `wash_slot_<n>` and `cure_slot_<n>` marker for each |
+| `time_multiplier` | Wash station. Times a filament's `post_minutes` to give how long it takes over a plate |
+| `power_watts` | Either. Charged as electricity for the time it runs |
 
 How many shelving units and racks a place holds is on its row in premises.json: `shelf_units` and `rack_units`, each counting the one built in to the scene. Benches and printer racks are limited together, by the places for printers they add up to: the row's `max_printers`.
 

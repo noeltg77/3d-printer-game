@@ -134,8 +134,15 @@ func _check_research() -> void:
 
 func _check_storage() -> void:
 	for row: Dictionary in fittings.values():
-		if not ["shelf", "rack", "bench", "units"].has(row.get("kind", "")):
-			errors.append("fitting %s: kind must be \"shelf\", \"rack\", \"bench\" or \"units\"" % row["id"])
+		if not ["shelf", "rack", "bench", "units", "recycler", "wash"].has(row.get("kind", "")):
+			errors.append("fitting %s: kind must be \"shelf\", \"rack\", \"bench\", \"units\", \"recycler\" or \"wash\"" % row["id"])
+		for family: String in row.get("recycles", []):
+			if not filaments.has(family):
+				errors.append("fitting %s: recycles unknown filament \"%s\"" % [row["id"], family])
+			elif not ResourceLoader.exists("res://assets/models/filament/spool_%s.glb" % filaments[family]["colours"][0]):
+				errors.append("fitting %s: no spool model for recycled \"%s\"" % [row["id"], family])
+		if row.get("kind", "") == "wash" and int(row.get("plates", 0)) < 1:
+			errors.append("fitting %s: a wash and cure station needs plates" % row["id"])
 		if row.get("kind", "") == "units" and row.get("unit_bays", []).is_empty():
 			errors.append("fitting %s: a colour unit rack needs unit_bays" % row["id"])
 		if not ResourceLoader.exists("res://assets/models/furniture/%s.glb" % row.get("model", "")):
@@ -249,6 +256,12 @@ func _check_references() -> void:
 			errors.append("filament %s: no printer of kind \"%s\" to print it" % [filament["id"], filament.get("process", "fdm")])
 		if not filaments.has(filament.get("family", "")):
 			errors.append("filament %s: its family \"%s\" isn't the id of a filament" % [filament["id"], filament.get("family", "")])
+		if filament.has("bulk_grams"):
+			if not filament.has("bulk_price_pence_per_kg"):
+				errors.append("filament %s: a big reel needs bulk_price_pence_per_kg" % filament["id"])
+			for colour: String in filament["colours"]:
+				if not ResourceLoader.exists("res://assets/models/filament/reel_%s.glb" % colour):
+					errors.append("filament %s: no reel model for \"%s\"" % [filament["id"], colour])
 		if filament.get("container", "spool") == "bottle":
 			for colour: String in filament["colours"]:
 				if not ResourceLoader.exists("res://assets/models/filament/bottle_%s.glb" % colour):

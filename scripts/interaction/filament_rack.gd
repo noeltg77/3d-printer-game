@@ -31,7 +31,12 @@ func get_actions(_agent: Agent) -> Array[Action]:
 	for spool in spools():
 		var bin := Action.new("Bin it", _bin.bind(spool))
 		bin.task_name = "Bin the %s" % spool.title().to_lower()
-		actions.append(Action.submenu(spool.describe(), [bin]).tuck())
+		var choices: Array[Action] = [bin]
+		# With a recycler about, what is left on it need not be thrown away.
+		var recycler := Recycler.taking(get_tree(), spool.material)
+		if recycler != null:
+			choices.push_front(recycler.shred_action([spool], "Shred it for recycling"))
+		actions.append(Action.submenu(spool.describe(), choices).tuck())
 	return actions
 
 
@@ -73,10 +78,10 @@ func remove_unit(unit: FittingUnit) -> void:
 
 ## Where to go for a spool: the rack holding the fullest of a kind, or with
 ## no kind given, the first with an empty slot.
-func spot(material: StringName = &"", colour: StringName = &"") -> Interactable:
+func spot(material: StringName = &"", colour: StringName = &"", bulk := false) -> Interactable:
 	var slot: Node3D = null
 	if material != &"":
-		var spool := _fullest(material, colour)
+		var spool := _fullest(material, colour, bulk)
 		slot = spool.get_parent() if spool != null else null
 	else:
 		for candidate in _slots:
@@ -91,27 +96,25 @@ func spot_of(spool: Spool) -> Interactable:
 	return spool.get_parent().get_meta(&"unit", self)
 
 
-## Each kind of filament on the rack, in rack order, as { material, colour }.
+## Each kind of filament on the rack, in rack order, as { material, colour,
+## bulk }: a big reel of a filament is a kind apart from a spool of it.
 func kinds() -> Array[Dictionary]:
 	var found: Array[Dictionary] = []
 	for spool in spools():
-		var kind := {"material": spool.material, "colour": spool.colour}
+		var kind := {"material": spool.material, "colour": spool.colour, "bulk": spool.bulk}
 		if not found.has(kind):
 			found.append(kind)
 	return found
 
 
-func has(material: StringName, colour: StringName) -> bool:
-	return spools().any(func(spool: Spool) -> bool: return spool.material == material and spool.colour == colour)
+func has(material: StringName, colour: StringName, bulk := false) -> bool:
+	return _fullest(material, colour, bulk) != null
 
 
 ## Grams on the fullest spool of a kind, the one take() would hand over.
-func most_grams(material: StringName, colour: StringName) -> float:
-	var best := 0.0
-	for spool in spools():
-		if spool.material == material and spool.colour == colour:
-			best = maxf(best, spool.grams)
-	return best
+func most_grams(material: StringName, colour: StringName, bulk := false) -> float:
+	var best := _fullest(material, colour, bulk)
+	return best.grams if best != null else 0.0
 
 
 func free_slots() -> int:
@@ -119,17 +122,17 @@ func free_slots() -> int:
 
 
 ## Removes the fullest spool of a kind from the rack and returns it, or null if there is none.
-func take(material: StringName, colour: StringName) -> Spool:
-	var best := _fullest(material, colour)
+func take(material: StringName, colour: StringName, bulk := false) -> Spool:
+	var best := _fullest(material, colour, bulk)
 	if best != null:
 		best.get_parent().remove_child(best)
 	return best
 
 
-func _fullest(material: StringName, colour: StringName) -> Spool:
+func _fullest(material: StringName, colour: StringName, bulk := false) -> Spool:
 	var best: Spool = null
 	for spool in spools():
-		if spool.material == material and spool.colour == colour and (best == null or spool.grams > best.grams):
+		if spool.material == material and spool.colour == colour and spool.bulk == bulk and (best == null or spool.grams > best.grams):
 			best = spool
 	return best
 

@@ -38,7 +38,12 @@ static func items(tree: SceneTree) -> Array[Dictionary]:
 	var spools: Array[Spool] = rack.spools() if rack != null else ([] as Array[Spool])
 	for printer: PrinterStation in printers:
 		if printer.status == PrinterStation.Status.DONE:
-			_add(found, "Collect the finished print", "Click the printer to collect it. It can't start another until its plate is clear.")
+			if printer.post_minutes() <= 0.0:
+				_add(found, "Collect the finished print", "Click the printer to collect it. It can't start another until its plate is clear.")
+			elif tree.get_nodes_in_group(&"wash_station").is_empty():
+				_add(found, "Wash and cure the resin print", "A resin print comes off sticky, and has to be washed and hardened under a lamp. Click the printer to do it by hand, or buy a wash and cure station at %s, under Machines, to have it done for you." % shops["hardware_shop"])
+			else:
+				_add(found, "Take the resin print to be washed", "Click the printer to carry its print to the wash and cure station, which does the rest by itself.")
 		if printer.has_auto_eject() and printer.tray.size() >= printer.tray_capacity():
 			_add(found, "Empty the tray on the %s" % printer.display_name, "Its auto-eject plate has nowhere left to throw prints, so it has stopped. Click the printer and choose Empty the tray.")
 		if printer.status == PrinterStation.Status.FAILED:
@@ -68,6 +73,16 @@ static func items(tree: SceneTree) -> Array[Dictionary]:
 			_add(found, "Fit the conveyor", "It carries prints from every printer with an auto-eject plate to the shelving. Click the control cabinet by the shelving to fit it.")
 		if kit.has("multicolour"):
 			_add(found, "Fit the %s" % kit["name"], "It lets one print be several colours. Unload the printer it is made for, then click that printer and open Upgrades. After that, load a spool for each colour.")
+	for station: WashStation in tree.get_nodes_in_group(&"wash_station"):
+		if station.has_ready():
+			_add(found, "Collect from the wash and cure station", "The prints in it are washed and hardened. Click the station to put them on the shelving, ready to sell.")
+	for recycler: Recycler in tree.get_nodes_in_group(&"recycler"):
+		if recycler.has_output():
+			_add(found, "Rack the recycled spool", "The recycler has wound a new spool. Click it to put the spool on the rack; it can't start another until then.")
+		elif recycler.can_make():
+			_add(found, "Make a spool from your scrap", "The recycler's hopper holds enough for a whole spool. Click it, choose Make a spool and pick the colour you want.")
+		elif not recycler.leftovers().is_empty() and not recycler.recycling.in_use():
+			_add(found, "Shred the ends of your spools", "A spool with too little left for a print only takes up a slot. Click the recycler and choose Shred the leftovers: enough of them makes a new spool.")
 	var spools_coming := Game.supplier.pending.any(func(d: Supplier.Delivery) -> bool: return not d.spools.is_empty())
 	if spools.is_empty() and not spools_coming and not boxes_waiting:
 		_add(found, "Order filament from %s" % shops["filament_shop"],

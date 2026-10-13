@@ -21,6 +21,7 @@
 			"unlock_tier": 2,
 			"price_pence": 6899,
 			"capacity": 2,
+			"takes_bulk": true,
 			"hours_to_dry": 5,
 			"power_watts": 110,
 			"dries": ["pla", "petg", "tpu", "abs", "asa"]

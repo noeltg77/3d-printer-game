@@ -299,8 +299,9 @@ func _meter() -> Control:
 	for slot: int in plan["slots"]:
 		used.append(_printer.spools[slot])
 		moisture = maxf(moisture, _printer.spools[slot].moisture)
+	var recycled := used.any(func(spool: Spool) -> bool: return spool.recycled)
 	var chance := Game.fail_chance(_printer.spec, _preset, material, _product, _printer.wear, _printer.mods,
-		moisture, int(plan["swaps"]))
+		moisture, int(plan["swaps"]), recycled)
 	var band := PrintRisk.band(chance)
 	var colour: Color = BAND_COLOURS[band]
 	var durability := int(preset["durability"])
@@ -338,6 +339,9 @@ func _meter() -> Control:
 	if used.any(func(spool: Spool) -> bool: return spool.is_wet()):
 		rows.add_child(Ui.wrap(Ui.text("%s wet, which is adding to the risk and makes prints stringy. A spell in a filament dryer sorts it out." % (
 			"This spool is" if used.size() == 1 else "One of these spools is"), 13, Ui.RED_DARK, 800)))
+	if recycled:
+		rows.add_child(Ui.wrap(Ui.text("%s recycled. It cost next to nothing, but it is not quite as even as new filament, which adds a little to the risk." % (
+			"This spool is" if used.size() == 1 else "One of these spools is"), 13, Ui.MUTED)))
 	var unit := _printer.mods.unit()
 	if int(plan["swaps"]) > 0:
 		var shared := "" if _copies == 1 else " That is the same for one copy or %d, so only %d g each." % [_copies, roundi(float(plan["purged"]) / _copies)]

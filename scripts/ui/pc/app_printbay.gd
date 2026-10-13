@@ -13,13 +13,15 @@ const KIND_TEXT := Color("DDE6F7")
 const SHADOW := Color("DCE2EE")
 const LOCK_TEXT := Color("5A4A1C")
 const LOCK_BG := Color("F4EBCF")
-const TABS := {"printers": "Printers", "packaging": "Packaging", "upgrades": "Upgrades", "parts": "Spare parts", "dryers": "Dryers", "storage": "Storage"}
+const TABS := {"printers": "Printers", "packaging": "Packaging", "upgrades": "Upgrades", "parts": "Spare parts", "dryers": "Dryers", "machines": "Machines", "storage": "Storage"}
 const MOTIONS := {"bed_slinger": "Bed slinger", "core_xy": "Core XY", "resin_lift": "Resin"}
 ## Speed multiplier and build volume (litres) that fill a stat bar completely.
 const FULL_SPEED := 3.0
 const FULL_VOLUME := 40.0
 ## Size of the picture at the start of a row, in pixels.
 const ROW_PICTURE := 64
+## Kinds of fitting that are machines, sold under their own tab.
+const MACHINE_KINDS: Array[String] = [Recycler.KIND, WashStation.KIND]
 
 var screen: PcScreen
 
@@ -42,6 +44,8 @@ func refresh() -> void:
 			page = _upgrades()
 		"dryers":
 			page = _dryers()
+		"machines":
+			page = _machines()
 		"storage":
 			page = _storage()
 		_:
@@ -303,6 +307,8 @@ func _storage() -> Control:
 	for fitting_id: String in Game.data.fittings:
 		var fitting: Dictionary = Game.data.fittings[fitting_id]
 		var kind: String = fitting["kind"]
+		if MACHINE_KINDS.has(kind):
+			continue
 		var order := {"fittings": {fitting_id: 1}}
 		var places := Game.storage.places(StringName(fitting_id))
 		var free_standing := kind == "units"
@@ -332,6 +338,52 @@ func _storage() -> Control:
 			Ui.text("%s: holds %s" % [Game.product_name(StringName(design)), Game.storage.bin_summary(StringName(design))], 14, Ui.INK, 800),
 		], 12))
 	rows.add_child(Ui.panel(bins, Ui.box(Ui.WHITE, 18, 18, 14, SHADOW, 3)))
+	return Ui.scroll(rows)
+
+
+## A row per machine that stands on the floor: the recycler and the wash and cure stations.
+func _machines() -> Control:
+	var place := Game.premises_row()
+	var rows := Ui.vbox([
+		Ui.wrap(Ui.text("Machines that save work or waste. Each arrives boxed: click the box, choose where it stands, and it is set up there. You can stand it somewhere else later. If you move, it comes with you.", 14, Ui.MUTED)),
+	], 12)
+	for fitting_id: String in Game.data.fittings:
+		var machine: Dictionary = Game.data.fittings[fitting_id]
+		var kind: String = machine["kind"]
+		if not MACHINE_KINDS.has(kind):
+			continue
+		var order := {"fittings": {fitting_id: 1}}
+		var have := Game.fitting_count(kind)
+		var limit := Game.storage.limit(place, kind)
+		var problem := Game.supplier_problem(order) if Game.unlocked(machine) else "Unlocks when you move to a bigger space"
+		var facts := ""
+		if kind == Recycler.KIND:
+			var names: PackedStringArray = []
+			for family: String in machine["recycles"]:
+				names.append(Game.data.filaments[family]["name"])
+			facts = "Turns %s of scrap into a new spool in about %s · Loses %d%% in the shredder · For %s and their varieties" % [
+				FilamentRules.weight_label(float(machine["spool_grams"])), GameClock.duration_label(float(machine["extrude_minutes"])),
+				roundi(float(machine["loss"]) * 100.0), ", ".join(names)]
+		else:
+			var plates := int(machine["plates"])
+			var by_hand := float(Game.data.settings["resin_finishing"]["hand_multiplier"])
+			facts = "Takes %d plate%s of resin prints at once · Done in %d%% of the time it takes by hand, with nobody standing over it" % [
+				plates, "" if plates == 1 else "s", roundi(float(machine["time_multiplier"]) / by_hand * 100.0)]
+		var words := Ui.vbox([
+			Ui.text(machine["name"], 16, Ui.INK, 800),
+			Ui.wrap(Ui.text(machine["description"], 13, Ui.MUTED)),
+			Ui.wrap(Ui.text(facts, 13, NAVY, 800)),
+		], 2)
+		words.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var buy := _disabled_if(Ui.button("Buy", _buy.bind(order), BLUE, Ui.WHITE, 44, 14), problem != "")
+		buy.tooltip_text = problem
+		var cells: Array = [ModelPicture.tile(FittingUnit.MODEL_PATH % machine["model"], ROW_PICTURE, TILE), words]
+		if have >= limit:
+			cells.append(Ui.pill("You have one" if limit == 1 else "You have %d of %d" % [have, limit], Ui.GREEN_DARK, Ui.GREEN_SOFT))
+		elif problem != "" and problem != "Not enough cash":
+			cells.append(Ui.pill(problem, LOCK_TEXT, LOCK_BG))
+		cells.append_array([Ui.width(Ui.text(Money.format(int(machine["price_pence"])), 17, Ui.INK, 800), 70), buy])
+		rows.add_child(Ui.panel(Ui.hbox(cells, 18), Ui.box(Ui.WHITE, 18, 18, 14, SHADOW, 3)))
 	return Ui.scroll(rows)
 
 

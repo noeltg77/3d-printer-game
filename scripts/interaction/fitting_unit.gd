@@ -5,18 +5,29 @@ extends Interactable
 ## spaces to the premises' own StorageShelf, FilamentRack or Workbench (its `host`),
 ## which keeps track of what is on it: clicking it offers the host's actions,
 ## and the chance to stand it somewhere else.
+##
+## A machine (the recycler, a wash and cure station) is a fitting too, stood
+## and moved and sold the same way, but it does its own work: a subclass, made
+## here by the row's `kind`, with the scene's Machinery as its host.
 
 const MODEL_PATH := "res://assets/models/furniture/%s.glb"
 
 ## Id of the row in data/fittings.json.
 var fitting: StringName
-## The StorageShelf or FilamentRack it belongs to.
-var host: Interactable
+## The StorageShelf, FilamentRack, Workbench or Machinery it belongs to.
+var host: Node
 
 
-static func create(p_fitting: StringName, p_host: Interactable) -> FittingUnit:
+static func create(p_fitting: StringName, p_host: Node) -> FittingUnit:
 	var row: Dictionary = Game.data.fittings[p_fitting]
-	var unit := FittingUnit.new()
+	var unit: FittingUnit
+	match String(row["kind"]):
+		Recycler.KIND:
+			unit = Recycler.new()
+		WashStation.KIND:
+			unit = WashStation.new()
+		_:
+			unit = FittingUnit.new()
 	unit.fitting = p_fitting
 	unit.host = p_host
 	unit.name = "Fitting_%s" % p_fitting
@@ -38,7 +49,7 @@ func card_icon() -> String:
 
 
 func get_actions(agent: Agent) -> Array[Action]:
-	var actions := host.get_actions(agent)
+	var actions := _use_actions(agent)
 	var move := Action.new("Stand it somewhere else...", _choose_spot)
 	move.immediate = true
 	actions.append(move)
@@ -47,6 +58,17 @@ func get_actions(agent: Agent) -> Array[Action]:
 	else:
 		actions.append(Action.submenu("Sell or scrap it", [sell_action(), scrap_action()]).tuck())
 	return actions
+
+
+## What it is used for: its host's actions, since it is only more of the host.
+## A machine has its own.
+func _use_actions(agent: Agent) -> Array[Action]:
+	return (host as Interactable).get_actions(agent)
+
+
+## The row of data/fittings.json it is.
+func spec() -> Dictionary:
+	return Game.data.fittings[fitting]
 
 
 ## True while anything stands on it: it can't be sold or scrapped until it is empty.

@@ -2,13 +2,15 @@ class_name FilamentRules
 extends RefCounted
 ## What can be printed in what: whether a printer can run a filament, whether
 ## a design works in it, and the "material:colour" keys that orders and
-## deliveries name spools by. Works on rows from data/filaments.json,
+## deliveries name spools by ("material:colour:bulk" for a 5 kg reel). Works on rows from data/filaments.json,
 ## printers.json, products.json and parts.json.
 
 const DEFAULT_MATERIAL := "pla"
 ## How a printer makes things, and so what it can be fed: a printer's `kind`
 ## and a filament's `process`. Either is filament printing unless it says otherwise.
 const DEFAULT_PROCESS := "fdm"
+## The last part of the key of a big reel, where a spool's key has none.
+const BULK := "bulk"
 
 
 ## Why a printer can't print a filament, or "" if it can. `printer` is its row
@@ -67,9 +69,32 @@ static func wears_nozzle(filament: Dictionary, nozzle: Dictionary) -> bool:
 	return filament["abrasive"] and float(nozzle["abrasive_wear_multiplier"]) > 1.0
 
 
-## "pla_silk:pink". How a basket or a delivery names one spool.
-static func spool_key(material: String, colour: String) -> String:
-	return "%s:%s" % [material, colour]
+## "pla_silk:pink". How a basket or a delivery names one spool. A big reel
+## of it is "pla:pink:bulk".
+static func spool_key(material: String, colour: String, bulk := false) -> String:
+	return "%s:%s:%s" % [material, colour, BULK] if bulk else "%s:%s" % [material, colour]
+
+
+## True if a spool key names a big reel.
+static func is_bulk(key: String) -> bool:
+	return key.get_slice_count(":") > 2 and key.get_slice(":", 2) == BULK
+
+
+## True if a filament is sold on big reels as well as on spools.
+static func has_bulk(filament: Dictionary) -> bool:
+	return filament.has("bulk_grams")
+
+
+## Grams on a new spool of a filament, or on a new big reel of it.
+static func new_grams(filament: Dictionary, bulk := false) -> float:
+	return float(filament["bulk_grams"] if bulk else filament["spool_grams"])
+
+
+## "5 kg" or "750 g": a weight of filament as a shop would put it.
+static func weight_label(grams: float) -> String:
+	if grams >= 1000.0:
+		return "%s kg" % String.num(grams / 1000.0, 1).trim_suffix(".0")
+	return "%d g" % roundi(grams)
 
 
 ## Material id from a spool key. A key with no material is PLA.

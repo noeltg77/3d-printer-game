@@ -69,8 +69,9 @@ func resale_value(printer: Dictionary, health: float) -> int:
 
 
 ## How many units of a kind of fitting ("shelf" or "rack") the premises may
-## have in all, counting the one built in. Benches and printer racks are
-## limited another way: by the places for printers they add up to.
+## have in all, counting the one built in, or how many machines of a kind
+## ("recycler", "wash"): one unless the place says otherwise. Benches and printer
+## racks are limited another way: by the places for printers they add up to.
 func limit(premises: Dictionary, kind: String) -> int:
 	return int(premises.get("%s_units" % kind, 1))
 
@@ -90,6 +91,15 @@ static func max_printers(premises: Dictionary) -> int:
 ## not the far end of the room.
 func in_reach(metres: float) -> bool:
 	return metres <= float(data.settings["multicolour"]["rack_link_metres"])
+
+
+## What each saved machine (Machinery.save) holds, by fitting id, for it to be
+## handed to other premises and put back when the machine is stood up there.
+static func stow_machines(saved: Dictionary) -> Dictionary:
+	var held: Dictionary = saved.get("stowed", {}).duplicate()
+	for entry: Dictionary in saved.get("units", []):
+		held[String(entry["fitting"])] = entry.get("state", {})
+	return held
 
 
 ## Readies a saved shelf or rack (StorageShelf.save, FilamentRack.save) to be

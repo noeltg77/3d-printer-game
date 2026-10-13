@@ -66,6 +66,50 @@
 			"model": "workbench",
 			"printer_spots": [[-0.42, 0.9, 0.03], [0.42, 0.9, 0.03]],
 			"stand_offset": [0.0, 0.0, 0.75]
+		},
+		{
+			"id": "loopline_recycler",
+			"name": "Loopline Recycler",
+			"kind": "recycler",
+			"description": "Shreds the ends of spools and failed prints, melts them down and winds a fresh spool in the colour you ask for.",
+			"unlock_tier": 1,
+			"price_pence": 17999,
+			"model": "recycler",
+			"recycles": ["pla", "petg", "abs", "asa"],
+			"loss": 0.1,
+			"spool_grams": 1000,
+			"shred_minutes": 2,
+			"setup_minutes": 3,
+			"extrude_minutes": 180,
+			"pigment_pence": 149,
+			"power_watts": 350,
+			"stand_offset": [0.0, 0.0, 0.7]
+		},
+		{
+			"id": "rinseworks_wash_cure",
+			"name": "Rinseworks Wash and Cure",
+			"kind": "wash",
+			"description": "A tub that washes the sticky resin off a plate of prints and a lamp that hardens them, so nobody has to stand there with a brush.",
+			"unlock_tier": 4,
+			"price_pence": 12999,
+			"model": "wash_station",
+			"plates": 1,
+			"time_multiplier": 1.0,
+			"power_watts": 40,
+			"stand_offset": [0.0, 0.0, 0.7]
+		},
+		{
+			"id": "rinseworks_wash_cure_max",
+			"name": "Rinseworks Wash and Cure Max",
+			"kind": "wash",
+			"description": "Two tubs and two lamps, for two plates at once, and stronger ones that get through a plate sooner.",
+			"unlock_tier": 4,
+			"price_pence": 27999,
+			"model": "wash_station_max",
+			"plates": 2,
+			"time_multiplier": 0.7,
+			"power_watts": 90,
+			"stand_offset": [0.0, 0.0, 0.7]
 		}
 	]
 }

@@ -120,6 +120,8 @@ Each system below is designed to plug into the core loop. Numbers are placeholde
 
 - Filament absorbs moisture over time if stored badly, raising failure rate until dried.
 - Spools are physical items on shelves. Running out mid-print is a real risk.
+- The plain filaments also come on 5 kg reels: cheaper by the kilo and five times as long between changes, in one rack slot. A reel is too big for a multicolour unit or the small dryer, and sits in the open for longer.
+- A filament recycler shreds the ends of spools and failed prints. A kilo of one family of scrap, whatever its colours, becomes a new spool of the plain filament in the colour the player picks. Recycled filament is nearly free but prints a little less surely.
 
 ### 4.4 Multicolour units (AMS style)
 
@@ -307,6 +309,8 @@ Build small and prove each step before moving on: assets and garage first, then 
 - [ ] Resin, SLS and industrial machines. Resin is in (three printers, three resins, their parts and failures, the resin products), with a large format machine, a production machine and a belt printer. SLS still to do: the design data has machines for it but no powder and no products
 - [x] Large contracts, events, milestones
 - [x] Optional injection moulding endgame
+- [x] Wash and cure stations for resin: a plate is carried over and done by the machine, where by hand it is the character's time
+- [x] 5 kg reels and the filament recycler (both from the garage on)
 
 ### Phase 10: Release
 
