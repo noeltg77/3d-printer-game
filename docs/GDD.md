@@ -157,6 +157,7 @@ Each system below is designed to plug into the core loop. Numbers are placeholde
 - Bought designs: instant, but come with fees, royalties or personal use only restrictions.
 - Design quality improves with iterations (V1, V2, V3) and the character's design skill.
 - Optional test print before launch. Skipping it risks a dud listing.
+- A proven own design can be licensed to other makers from the Design Lab. They pay a royalty on each one they sell, paid daily; a better design finds more makers, but every maker selling it takes a little of the orders for the business's own listing.
 
 ### 4.9 The computer (business hub)
 

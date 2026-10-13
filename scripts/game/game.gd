@@ -166,6 +166,8 @@ func _process(delta: float) -> void:
 	if staff_capacity() > 0 and (clock.crossed(before, 0.0) or (staff.applicants.is_empty() and staff.team.size() < staff_capacity())):
 		staff.refresh_applicants(rng, tier)
 		changed.emit()
+	if clock.crossed(before, 0.0):
+		_pay_royalties()
 	var wages := staff.wages_per_day()
 	if wages > 0 and clock.crossed(before, 0.0):
 		bank.charge(wages, "Wages", clock.minutes, Bank.WAGES)
@@ -696,12 +698,50 @@ func finish_design_fix(product: StringName) -> void:
 	changed.emit()
 
 
-## Tells the marketplaces which designs are the business's own.
+## Offers an own design to other makers for a royalty, or sends them its
+## newest version. False if it can't be (see DesignStudio.licence_problem).
+func license_design(product: StringName) -> bool:
+	var already := studio.licensed(product)
+	if not studio.license(product):
+		return false
+	notify("Makers now have V%d of your %s design" % [studio.version(product), product_name(product)] if already
+		else "Your %s design is up for other makers to license" % product_name(product), &"good")
+	changed.emit()
+	return true
+
+
+## Takes an own design back from the makers selling it.
+func withdraw_licence(product: StringName) -> void:
+	if not studio.licensed(product):
+		return
+	studio.withdraw(product)
+	_share_own_designs()
+	notify("Your %s design is no longer licensed to other makers" % product_name(product))
+	changed.emit()
+
+
+## The day's royalties from the makers selling the business's designs.
+func _pay_royalties() -> void:
+	var paid := studio.royalty_day(rng)
+	var total := 0
+	for product in paid:
+		var makers := studio.makers(product)
+		bank.earn(paid[product], "Royalties: %s (%d maker%s)" % [product_name(product), makers, "" if makers == 1 else "s"], clock.minutes, Bank.DESIGNS)
+		total += paid[product]
+	# More makers selling a design leave fewer buyers for the business's own.
+	_share_own_designs()
+	if total > 0:
+		notify("Royalties from your designs: %s" % Money.format(total), &"good")
+		changed.emit()
+
+
+## Tells the marketplaces which designs are the business's own, and how well
+## each sells beside the makers licensed to sell it too.
 func _share_own_designs() -> void:
 	for shop: Marketplace in markets.values():
 		shop.own_appeal.clear()
 		for product in studio.designs:
-			shop.own_appeal[product] = studio.appeal(product)
+			shop.own_appeal[product] = studio.appeal(product) * studio.own_share(product)
 
 
 ## Tells the marketplaces what is in and out of fashion.

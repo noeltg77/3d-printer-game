@@ -12,7 +12,7 @@ const PERIODS: Array[int] = [7, 14, 30]
 ## What each kind of movement is called, coming in and going out.
 const INCOME_NAMES := {
 	Bank.SALES: "Sales", Bank.CONTRACTS: "Contracts", Bank.RESALE: "Second-hand sales", Bank.POSTAGE: "Postage paid by buyers",
-	Bank.FEES: "Fees and royalties returned", Bank.REFUNDS: "Insurance payouts", Bank.OTHER: "Other",
+	Bank.DESIGNS: "Royalties from your designs", Bank.FEES: "Fees and royalties returned", Bank.REFUNDS: "Insurance payouts", Bank.OTHER: "Other",
 }
 const EXPENSE_NAMES := {
 	Bank.SUPPLIES: "Filament, parts and packaging", Bank.EQUIPMENT: "Printers and fittings", Bank.DESIGNS: "Design licences",
