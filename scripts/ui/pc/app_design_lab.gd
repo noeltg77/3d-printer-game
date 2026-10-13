@@ -286,7 +286,7 @@ func _own_design(product: StringName) -> Control:
 			return rows
 		rows.add_child(Ui.wrap(Ui.text("Or make your own: no fee and no royalty, but %s at the PC. It would come out at quality %d of %d." % [
 			GameClock.duration_label(studio.minutes_for(product)), studio.next_quality(product), int(Game.data.settings["design"]["max_quality"])], 13, Ui.MUTED)))
-		rows.add_child(_task_button("Design your own", computer.design_action(product)))
+		rows.add_child(_task_button(_carry_on(product, false, "Design your own"), computer.design_action(product)))
 		return rows
 	var record := studio.designs[product]
 	var selling := roundi((studio.appeal(product) - 1.0) * 100.0)
@@ -297,13 +297,21 @@ func _own_design(product: StringName) -> Control:
 	], 10))
 	if studio.needs_fix(product):
 		rows.add_child(Ui.text("The test print found a fault. Prints come out flawed until it is fixed.", 13, Ui.RED_DARK, 800))
-		rows.add_child(_task_button("Fix it (%s)" % GameClock.duration_label(studio.fix_minutes()), computer.fix_action(product)))
+		rows.add_child(_task_button(_carry_on(product, true, "Fix it (%s)" % GameClock.duration_label(studio.fix_minutes())), computer.fix_action(product)))
 	elif not record["tested"]:
 		rows.add_child(Ui.text("Not tested yet. Print one before you rely on it.", 13, Ui.AMBER_DARK, 800))
 	if studio.can_improve(product) and not studio.needs_fix(product):
-		rows.add_child(_task_button("Improve to V%d (%s)" % [record["version"] + 1, GameClock.duration_label(studio.minutes_for(product))],
+		rows.add_child(_task_button(_carry_on(product, false, "Improve to V%d (%s)" % [record["version"] + 1, GameClock.duration_label(studio.minutes_for(product))]),
 			computer.design_action(product)))
 	return rows
+
+
+## What a button for a piece of design work says: `fresh` to start it, or how
+## far along it is when it has been left part way through.
+func _carry_on(product: StringName, fix: bool, fresh: String) -> String:
+	if not Game.studio.in_progress(product, fix):
+		return fresh
+	return "Carry on (%d%% done)" % floori(Game.studio.fraction(product, fix) * 100.0)
 
 
 ## A button that queues a job at the desk and leaves the PC so it can start.

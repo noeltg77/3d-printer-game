@@ -23,11 +23,15 @@ func get_actions(agent: Agent) -> Array[Action]:
 		]
 		if Game.research.current != &"":
 			seated.insert(1, study_action(Game.research.current))
+		if _design_in_hand() != null:
+			seated.insert(1, _design_in_hand())
 		return seated
 	var actions: Array[Action] = [Action.new("Use computer", _use)]
-	# A course part way through can be picked up again without opening the screen.
+	# A course or a design part way through can be picked up again without opening the screen.
 	if Game.research.current != &"":
 		actions.append(study_action(Game.research.current))
+	if _design_in_hand() != null:
+		actions.append(_design_in_hand())
 	return actions
 
 
@@ -85,41 +89,68 @@ func _world_save() -> WorldSave:
 
 
 ## The task of sitting at the PC to design the next version of an own design.
-## Disabled, with the reason in its label, if it can't be done.
+## Disabled, with the reason in its label, if it can't be done. Like a course,
+## it stops when the character is given something else to do, and what was
+## done is kept.
 func design_action(product: StringName) -> Action:
 	var problem := Game.design_problem(product)
 	var title := "Design your own %s" % Game.product_name(product) if not Game.studio.has(product) else "Improve your %s to V%d" % [
 		Game.product_name(product), Game.studio.version(product) + 1]
-	return Action.new(title if problem == "" else "%s: %s" % [title, problem], _design.bind(product), problem == "")
+	if Game.studio.in_progress(product):
+		title = "Carry on designing your %s" % Game.product_name(product)
+	var action := Action.new(title if problem == "" else "%s: %s" % [title, problem], _design.bind(product, false), problem == "")
+	action.task_name = "Design your %s" % Game.product_name(product)
+	return action
 
 
 ## The task of sitting at the PC to fix a fault a test print found in a design.
 func fix_action(product: StringName) -> Action:
-	return Action.new("Fix your %s design" % Game.product_name(product), _fix.bind(product), Game.studio.needs_fix(product))
+	var title := "%s your %s design" % ["Carry on fixing" if Game.studio.in_progress(product, true) else "Fix", Game.product_name(product)]
+	var action := Action.new(title, _design.bind(product, true), Game.studio.needs_fix(product))
+	action.task_name = "Fix your %s design" % Game.product_name(product)
+	return action
 
 
-func _design(agent: Agent, product: StringName) -> void:
-	if Game.design_problem(product) != "":
-		agent.say("Can't work on that design right now")
+## The design work that would be carried on with next, as a task, or null.
+func _design_in_hand() -> Action:
+	var studio := Game.studio
+	if studio.current == &"":
+		return null
+	var action := fix_action(studio.current) if studio.current_is_fix else design_action(studio.current)
+	return action if action.enabled else null
+
+
+func _design(agent: Agent, product: StringName, fix: bool) -> void:
+	if (not Game.studio.needs_fix(product)) if fix else Game.design_problem(product) != "":
+		agent.say("That design doesn't need fixing" if fix else "Can't work on that design right now")
 		return
-	await _work_at_desk(agent, Game.studio.minutes_for(product))
-	Game.finish_design(product)
-
-
-func _fix(agent: Agent, product: StringName) -> void:
-	if not Game.studio.needs_fix(product):
-		agent.say("That design doesn't need fixing")
-		return
-	await _work_at_desk(agent, Game.studio.fix_minutes())
-	Game.finish_design_fix(product)
-
-
-## Sits the character at the PC, if not there already, to work for a while.
-func _work_at_desk(agent: Agent, game_minutes: float) -> void:
+	Game.studio.start(product, fix)
+	Game.changed.emit()
 	if not agent.seated:
 		await agent.walk_to(get_stand_point())
 		await agent.sit(get_node(seat_path))
-	await agent.work(game_minutes)
+	var title := "%s your %s" % ["Fixing" if fix else "Designing", Game.product_name(product)]
+	var at := Game.clock.minutes
+	# Until it is done, another job is lined up, the screen is opened, the day
+	# is ended or a save is waiting on everyone finishing what they are at.
+	var saving := false
+	while Game.studio.in_progress(product, fix) and not agent.has_queued() and not agent.held and not Game.sleeping:
+		saving = _world_save() != null and _world_save().wants_quiet()
+		if saving:
+			break
+		agent.relabel("%s: %d%%" % [title, floori(Game.studio.fraction(product, fix) * 100.0)])
+		await agent.reach()
+		Game.design_work(product, fix, Game.clock.minutes - at)
+		at = Game.clock.minutes
+	if saving:
+		_resume_design_after_save(agent, product, fix)
+
+
+## Sits back down to a design once the save that interrupted it is done.
+func _resume_design_after_save(agent: Agent, product: StringName, fix: bool) -> void:
+	await get_tree().create_timer(0.5, true, false, true).timeout
+	if is_instance_valid(agent) and agent.seated and not agent.is_busy() and not agent.held and Game.studio.in_progress(product, fix):
+		agent.enqueue(fix_action(product) if fix else design_action(product))
 
 
 func _screen() -> PcScreen:
