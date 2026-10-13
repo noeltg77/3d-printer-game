@@ -20,6 +20,8 @@ var _card := ActionCard.new()
 
 func _ready() -> void:
 	_card.chosen.connect(_run)
+	# The mouse is on the card by then, not the object, so its highlight goes too.
+	_card.closed.connect(_set_hovered.bind(null))
 	add_child(_card)
 	Game.changed.connect(_show_hover)
 

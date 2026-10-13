@@ -27,8 +27,10 @@ var count := 0
 ## What a printer sold second hand fetches, in pence, and what it was. 0 for anything else.
 var resale := 0
 var resale_title := ""
-## How tall it stands, in metres.
+## How tall it stands, in metres, and how much floor it covers (across, deep).
+## A footprint of nothing is measured from the model once it is stood somewhere.
 var height := 0.14
+var footprint := Vector2.ZERO
 
 var _flaps: Array[Node3D] = []
 
@@ -48,6 +50,8 @@ static func create_crate(p_contract: int, p_count: int) -> Parcel:
 	parcel.count = p_count
 	parcel.name = "Crate_%d" % p_contract
 	parcel._build("medium_cardboard_box").scale = Vector3.ONE * CRATE_SCALE
+	parcel.height *= CRATE_SCALE
+	parcel.footprint *= CRATE_SCALE
 	return parcel
 
 
@@ -69,6 +73,7 @@ func _build(kind: String) -> Node3D:
 	add_child(model)
 	if not row.is_empty():
 		height = float(row["look"]["size"][2])
+		footprint = Vector2(float(row["look"]["size"][0]), float(row["look"]["size"][1]))
 	for flap: Node3D in model.find_children("flap_*", "Node3D", true, false):
 		_flaps.append(flap)
 	return model
