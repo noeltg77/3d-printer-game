@@ -121,6 +121,13 @@ static func problem_at(tree: SceneTree, thing: Node3D, stand_offset: Vector3, ig
 		var other := Bounds.of(obstacle)
 		if footprint.grow(-GAP).intersects(Rect2(other.position.x, other.position.z, other.size.x, other.size.z)):
 			return "Something is in the way"
+	# Floor that has to stay free though nothing stands on it yet: where
+	# deliveries are left, the outbox, the dryer's place.
+	for kept: Node in tree.get_nodes_in_group(&"keep_clear"):
+		if kept == ignore or kept == thing:
+			continue
+		if footprint.grow(-GAP).intersects(kept.call(&"clear_area")):
+			return kept.call(&"clear_reason")
 	var stand := thing.global_transform * stand_offset
 	if not grid.area.has_point(Vector2(stand.x, stand.z)):
 		return "There would be nowhere to stand to use it"
@@ -131,6 +138,29 @@ static func problem_at(tree: SceneTree, thing: Node3D, stand_offset: Vector3, ig
 		if Rect2(other.position.x, other.position.z, other.size.x, other.size.z).grow(grid.agent_radius * 0.5).has_point(Vector2(stand.x, stand.z)):
 			return "There would be nowhere to stand to use it"
 	return ""
+
+
+## Why a fitting can't stand at `at`, or "" if it can: the same check as while
+## choosing, for a task to make again when it starts, since the room may have
+## changed while it was queued. `ignore` is the unit itself, on a move.
+static func problem_for(tree: SceneTree, fitting: StringName, at: Transform3D, ignore: Node3D = null) -> String:
+	var row: Dictionary = Game.data.fittings[fitting]
+	var trial: Node3D = (load(FittingUnit.MODEL_PATH % row["model"]) as PackedScene).instantiate()
+	trial.visible = false
+	tree.current_scene.add_child(trial)
+	trial.global_transform = at
+	var stand: Array = row["stand_offset"]
+	var why := problem_at(tree, trial, Vector3(stand[0], stand[1], stand[2]), ignore)
+	trial.free()
+	return why
+
+
+## The floor a box of `size` (width and depth) covers when centred on `at`,
+## whichever way `at` is turned. For a `keep_clear` node's `clear_area()`.
+static func floor_rect(at: Transform3D, centre: Vector3, size: Vector2) -> Rect2:
+	var one := at * (centre - Vector3(size.x, 0.0, size.y) / 2.0)
+	var other := at * (centre + Vector3(size.x, 0.0, size.y) / 2.0)
+	return Rect2(Vector2(one.x, one.z), Vector2.ZERO).expand(Vector2(other.x, other.z))
 
 
 func _update() -> void:

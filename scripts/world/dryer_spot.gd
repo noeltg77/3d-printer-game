@@ -3,11 +3,24 @@ extends Node3D
 ## Where the premises' filament dryer stands. Empty until one is bought and
 ## unpacked; a better one unpacked later takes the old one's place.
 
+## How much floor a dryer takes up, in metres.
+const FOOTPRINT := Vector2(0.6, 0.6)
+
 var dryer: FilamentDryer = null
 
 
 func _ready() -> void:
 	add_to_group(&"dryer_spot")
+	add_to_group(&"keep_clear")
+
+
+## The floor a dryer stands on, which furniture must leave free even while there is none.
+func clear_area() -> Rect2:
+	return Placer.floor_rect(global_transform, Vector3.ZERO, FOOTPRINT)
+
+
+func clear_reason() -> String:
+	return "That is where the filament dryer goes"
 
 
 ## Id of the dryer here, or empty.

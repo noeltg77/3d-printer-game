@@ -4,11 +4,24 @@ extends Node3D
 
 const SPACING := 0.5
 const SPOTS := 3
+## How much floor a waiting box takes up, in metres.
+const BOX := 0.6
 
 
 func _ready() -> void:
 	add_to_group(&"delivery_zone")
+	add_to_group(&"keep_clear")
 	Game.delivery_arrived.connect(_on_delivery_arrived)
+
+
+## The floor the row of boxes needs, which furniture must leave free.
+func clear_area() -> Rect2:
+	var reach := (SPOTS - 1) * SPACING
+	return Placer.floor_rect(global_transform, Vector3(0.0, 0.0, reach / 2.0), Vector2(BOX, reach + BOX))
+
+
+func clear_reason() -> String:
+	return "That is where deliveries are left"
 
 
 ## Sets a box down on the next free spot: a delivery, or a printer boxed up off the bench.

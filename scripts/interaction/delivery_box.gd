@@ -65,6 +65,11 @@ func place_at(at: Transform3D) -> void:
 func _put_up(agent: Agent, at: Transform3D) -> void:
 	var row: Dictionary = Game.data.fittings[delivery.fitting]
 	var host := Game.fitting_host(row["kind"])
+	# The spot was free when it was chosen, which may be a while ago.
+	if Placer.problem_for(get_tree(), delivery.fitting, at) != "":
+		_spot_chosen = false
+		agent.say("Something is in the way there now. Choose another spot.")
+		return
 	await agent.go_to(self)
 	await agent.reach(_pick_up.bind(agent))
 	var stand: Array = row["stand_offset"]

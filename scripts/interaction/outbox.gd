@@ -16,7 +16,18 @@ var _parcels: Array[Parcel] = []
 func _ready() -> void:
 	super()
 	add_to_group(&"outbox")
+	add_to_group(&"keep_clear")
 	Game.courier_arrived.connect(_on_courier_arrived)
+
+
+## The floor the parcels wait on, which furniture must leave free.
+func clear_area() -> Rect2:
+	var box := Bounds.of(self)
+	return Rect2(box.position.x, box.position.z, box.size.x, box.size.z)
+
+
+func clear_reason() -> String:
+	return "That is where parcels wait for the courier"
 
 
 func card_icon() -> String:

@@ -55,6 +55,11 @@ func set_highlighted(on: bool) -> void:
 		mesh.material_overlay = HIGHLIGHT
 
 
+## True while the mouse is on this.
+func is_highlighted() -> bool:
+	return not _highlit.is_empty()
+
+
 ## Stops this being clickable, e.g. while it is being carried.
 func remove_collider() -> void:
 	if _body != null:
