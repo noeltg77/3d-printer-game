@@ -19,6 +19,9 @@ static var _claims: Dictionary[int, Worker] = {}
 var member_id := 0
 ## Set when their shift ends or they are let go: finish up and walk out.
 var leaving := false
+## Duties to look for whoever this is, most pressing first. Empty for a member
+## of staff, whose role says. The menu's showcase sets the owner pottering with it.
+var own_duties: Array[String] = []
 
 var _wait := 0.0
 var _exit := Vector3.ZERO
@@ -55,11 +58,14 @@ func _process(delta: float) -> void:
 
 ## The first task going that is one of this worker's duties, or null.
 func _find_job() -> Action:
-	var member := Game.staff.member(member_id)
-	if member.is_empty():
-		return null
+	var duties: Array = own_duties
+	if duties.is_empty():
+		var member := Game.staff.member(member_id)
+		if member.is_empty():
+			return null
+		duties = Game.staff.duties(member)
 	var things := get_tree().get_nodes_in_group(&"interactable")
-	for duty: String in Game.staff.duties(member):
+	for duty: String in duties:
 		for thing: Interactable in things:
 			if _claims.has(thing.get_instance_id()):
 				continue

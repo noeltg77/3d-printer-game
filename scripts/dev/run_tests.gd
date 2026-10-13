@@ -34,6 +34,7 @@ func _init() -> void:
 	_test_storage()
 	_test_supplier()
 	_test_saving()
+	_test_save_slots()
 	print("Tests passed" if _failures == 0 else "%d test(s) FAILED" % _failures)
 	quit(1 if _failures > 0 else 0)
 
@@ -1579,3 +1580,51 @@ func _test_supplier() -> void:
 	_check(supplier.price_of({"parts": {"auto_bed_levelling_kit": 1}}) == 3899, "upgrade kits are bought the same way as parts")
 	_check(supplier.place({"parts": {"auto_bed_levelling_kit": 2}}, 5000.0)[0].parts[&"auto_bed_levelling_kit"] == 2, "and come one to a pack")
 	_check(supplier.collect_due(120.0).size() == 1, "spare parts arrive after the parts lead time")
+
+
+func _test_save_slots() -> void:
+	var dir := "user://test_saves_%d" % Time.get_ticks_usec()
+	_check(SaveSlots.list(dir).is_empty() and SaveSlots.latest(dir).is_empty(), "no folder means no saved games")
+	var business := {"clock": {"minutes": 1440.0 * 11 + 600.0}, "bank": {"cash": 123456, "entries": []}, "premises": "workshop", "tier": 3}
+
+	var first := SaveSlots.fresh_path(dir)
+	_check(first == dir.path_join("slot_1.json"), "the first save goes in slot 1")
+	var file := FileAccess.open(first, FileAccess.WRITE)
+	file.store_string(JSON.stringify({"version": 1, "meta": SaveSlots.meta(business, "Layer Cake", 1000), "business": business, "world": {}}))
+	file.close()
+	var second := SaveSlots.fresh_path(dir)
+	_check(second == dir.path_join("slot_2.json"), "a new save never takes a slot in use")
+	# One from before saves had a header is described from the business in it.
+	file = FileAccess.open(second, FileAccess.WRITE)
+	file.store_string(JSON.stringify({"version": 1, "business": business, "world": {}}))
+	file.close()
+	file = FileAccess.open(dir.path_join("notes.json"), FileAccess.WRITE)
+	file.store_string("not a save")
+	file.close()
+
+	var named := SaveSlots.describe(first)
+	_check(named["name"] == "Layer Cake" and named["premises"] == "workshop" and int(named["tier"]) == 3, "a save says whose it is and where")
+	_check(typeof(named["cash_pence"]) == TYPE_INT and named["cash_pence"] == 123456, "a save's cash is still whole pence")
+	_check(SaveSlots.day_label(named["minutes"]) == "Day 12", "a save says what day it has reached")
+	var old := SaveSlots.describe(second, "Old Faithful")
+	_check(old["name"] == "Old Faithful" and old["cash_pence"] == 123456 and old["saved_unix"] > 1000, "an old save is read without its header")
+	var slots := SaveSlots.list(dir)
+	_check(slots.size() == 2, "only real saves are listed")
+	_check(slots[0]["path"] == second and SaveSlots.latest(dir)["path"] == second, "the save played last comes first")
+
+	var copy := SaveSlots.copy(first, dir)
+	_check(copy == dir.path_join("slot_3.json") and SaveSlots.describe(copy)["name"] == "Layer Cake", "a copy is a save of its own")
+	SaveSlots.remove(first)
+	_check(SaveSlots.list(dir).size() == 2 and SaveSlots.describe(first).is_empty(), "a deleted save is gone and the rest stay")
+	_check(SaveSlots.fresh_path(dir) == first, "a deleted save's slot can be used again")
+
+	var legacy := dir.path_join("save.json")
+	DirAccess.rename_absolute(second, legacy)
+	var adopted := SaveSlots.adopt_legacy(dir, legacy)
+	_check(adopted == first and not FileAccess.file_exists(legacy) and SaveSlots.describe(adopted)["cash_pence"] == 123456,
+		"the save from before there were slots becomes one")
+	_check(SaveSlots.adopt_legacy(dir, legacy) == "", "there is nothing to adopt a second time")
+
+	for left in DirAccess.get_files_at(dir):
+		DirAccess.remove_absolute(dir.path_join(left))
+	DirAccess.remove_absolute(dir)

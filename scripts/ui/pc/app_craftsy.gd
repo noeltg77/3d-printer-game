@@ -34,7 +34,7 @@ func refresh() -> void:
 		return
 	var header := Ui.hbox([
 		Ui.title(String(market.config["name"]).to_lower(), 32, _colour(), 700),
-		Ui.title("%s · Seller dashboard" % Game.data.settings["business_name"], 22),
+		Ui.title("%s · Seller dashboard" % Game.business_name, 22),
 		null,
 		Ui.button("+ More designs", func() -> void: screen.show_app("design_lab"), _colour(), Ui.WHITE, 46, 14, _dark(), 15),
 	], 16)

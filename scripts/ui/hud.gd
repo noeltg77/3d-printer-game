@@ -4,7 +4,7 @@ extends CanvasLayer
 ## queued, the to-do note beneath it, the speed, cash and clock chips, the name of the object under the
 ## mouse, and short messages. Styled to match the PlateOS taskbar.
 
-const CONTROLS := "Left click: choose a task, or walk   ·   Mouse wheel: zoom   ·   Right drag: pan   ·   Space: pause"
+const CONTROLS := "Left click: choose a task, or walk   ·   Mouse wheel: zoom   ·   Right drag: pan   ·   Space: pause   ·   Esc: menu"
 const TOAST_SECONDS := 4.0
 const MAX_TOASTS := 4
 ## Toasts wider than this wrap onto more lines.

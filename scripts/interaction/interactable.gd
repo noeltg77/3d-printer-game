@@ -4,6 +4,9 @@ extends Node3D
 ## offer tasks. Builds its own click collider from the meshes it finds.
 
 const HIGHLIGHT := preload("res://assets/materials/highlight.tres")
+const RAY_LENGTH := 200.0
+## How many overlapping objects to look through under the cursor.
+const MAX_STACKED := 6
 
 @export var display_name := ""
 ## Where the character stands to use this, relative to this node. Height is ignored.
@@ -53,6 +56,28 @@ func set_highlighted(on: bool) -> void:
 		_highlit.append(_visual())
 	for mesh in _highlit:
 		mesh.material_overlay = HIGHLIGHT
+
+
+## The thing under a point on the screen as `camera` sees it, or null.
+static func under(camera: Camera3D, screen_position: Vector2) -> Interactable:
+	var from := camera.project_ray_origin(screen_position)
+	var to := from + camera.project_ray_normal(screen_position) * RAY_LENGTH
+	var space := camera.get_world_3d().direct_space_state
+	var query := PhysicsRayQueryParameters3D.create(from, to)
+	# Of everything under the cursor, pick the smallest: a printer on a bench
+	# sits inside the bench's box and would otherwise never be clickable.
+	var best: Interactable = null
+	var excluded: Array[RID] = []
+	for attempt in MAX_STACKED:
+		query.exclude = excluded
+		var hit := space.intersect_ray(query)
+		if hit.is_empty():
+			break
+		excluded.append(hit["rid"])
+		var found: Interactable = hit["collider"].get_meta(&"interactable", null)
+		if found != null and (best == null or found.click_volume < best.click_volume):
+			best = found
+	return best
 
 
 ## Stops this being clickable, e.g. while it is being carried.
