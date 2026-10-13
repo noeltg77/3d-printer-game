@@ -1,0 +1,82 @@
+{
+	"schema_version": 1,
+	"branches": [
+		{ "id": "print_craft", "name": "Print craft", "colour": "3A6FD8", "about": "Fewer failed prints, and faster ones." },
+		{ "id": "upkeep", "name": "Upkeep", "colour": "B5582E", "about": "Parts that last, and less time with a spanner." },
+		{ "id": "buying", "name": "Buying", "colour": "2F8F6B", "about": "Pay less for what you use up, and get it sooner." }
+	],
+	"courses": [
+		{
+			"id": "bed_levelling", "name": "Bed levelling", "branch": "print_craft", "unlock_tier": 1, "requires": "",
+			"minutes": 90, "fee_pence": 1500,
+			"description": "Most failures start with the first layer. Learn to get it right.",
+			"effects": { "fail_chance": 0.85 }
+		},
+		{
+			"id": "slicer_tuning", "name": "Slicer tuning", "branch": "print_craft", "unlock_tier": 1, "requires": "bed_levelling",
+			"minutes": 180, "fee_pence": 3500,
+			"description": "Smarter travel moves and speeds that suit each printer.",
+			"effects": { "print_time": 0.92 }
+		},
+		{
+			"id": "failure_spotting", "name": "Failure spotting", "branch": "print_craft", "unlock_tier": 2, "requires": "slicer_tuning",
+			"minutes": 300, "fee_pence": 9000,
+			"description": "Know the signs of a print going wrong, and how to clear up after one quickly.",
+			"effects": { "fail_chance": 0.85, "clear_time": 0.6 }
+		},
+		{
+			"id": "production_profiles", "name": "Production profiles", "branch": "print_craft", "unlock_tier": 3, "requires": "failure_spotting",
+			"minutes": 540, "fee_pence": 24000,
+			"description": "Settings tuned for running the same job all day, every day.",
+			"effects": { "print_time": 0.92, "fail_chance": 0.9 }
+		},
+		{
+			"id": "clean_and_oil", "name": "Clean and oil", "branch": "upkeep", "unlock_tier": 1, "requires": "",
+			"minutes": 90, "fee_pence": 1500,
+			"description": "Ten minutes of care a week adds months to a printer.",
+			"effects": { "wear": 0.85 }
+		},
+		{
+			"id": "quick_swaps", "name": "Quick swaps", "branch": "upkeep", "unlock_tier": 1, "requires": "clean_and_oil",
+			"minutes": 150, "fee_pence": 3000,
+			"description": "Change a nozzle or a belt without taking half the printer apart.",
+			"effects": { "replace_time": 0.6 }
+		},
+		{
+			"id": "worn_part_tricks", "name": "Worn part tricks", "branch": "upkeep", "unlock_tier": 2, "requires": "quick_swaps",
+			"minutes": 300, "fee_pence": 8000,
+			"description": "Coax good prints out of parts that are past their best.",
+			"effects": { "worn_risk": 0.5 }
+		},
+		{
+			"id": "service_schedule", "name": "Service schedule", "branch": "upkeep", "unlock_tier": 3, "requires": "worn_part_tricks",
+			"minutes": 480, "fee_pence": 20000,
+			"description": "A proper routine for a whole room of printers.",
+			"effects": { "wear": 0.8 }
+		},
+		{
+			"id": "loyalty_card", "name": "Loyalty card", "branch": "buying", "unlock_tier": 1, "requires": "",
+			"minutes": 60, "fee_pence": 1000,
+			"description": "Work out the filament shop's points scheme. It is worth having.",
+			"effects": { "spool_price": 0.95 }
+		},
+		{
+			"id": "trade_account", "name": "Trade account", "branch": "buying", "unlock_tier": 1, "requires": "loyalty_card",
+			"minutes": 150, "fee_pence": 3000,
+			"description": "Buy spares and packaging at the price the trade pays.",
+			"effects": { "parts_price": 0.9, "packaging_price": 0.9 }
+		},
+		{
+			"id": "priority_delivery", "name": "Priority delivery", "branch": "buying", "unlock_tier": 2, "requires": "trade_account",
+			"minutes": 240, "fee_pence": 7000,
+			"description": "Learn which orders ship first, and place yours with them.",
+			"effects": { "lead_time": 0.6 }
+		},
+		{
+			"id": "bulk_buying", "name": "Bulk buying", "branch": "buying", "unlock_tier": 3, "requires": "priority_delivery",
+			"minutes": 480, "fee_pence": 18000,
+			"description": "Negotiate like a business that gets through a pallet a month.",
+			"effects": { "spool_price": 0.9, "packaging_price": 0.9 }
+		}
+	]
+}

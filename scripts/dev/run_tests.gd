@@ -18,6 +18,7 @@ func _init() -> void:
 	_test_design_studio()
 	_test_markets_and_trends()
 	_test_colour_taste()
+	_test_research()
 	_test_premises()
 	_test_stockroom()
 	_test_contracts()
@@ -77,6 +78,46 @@ func _test_colour_taste() -> void:
 	copy.taste = taste
 	copy.restore(JSON.parse_string(JSON.stringify(market.save())))
 	_check(is_equal_approx(copy.colour_multiplier(&"desk_organiser"), market.colour_multiplier(&"desk_organiser")), "what has been sent survives a save")
+
+
+func _test_research() -> void:
+	var data := GameData.load_all()
+	var research := Research.new(data.courses)
+	_check(data.errors.is_empty(), "the course table is valid")
+	_check(is_equal_approx(research.effect("fail_chance"), 1.0), "nothing learned changes nothing")
+	_check(research.problem(&"slicer_tuning", 1, 100000) != "", "a course needs the one before it")
+	_check(research.problem(&"bed_levelling", 1, 0) == "Not enough cash", "a course needs its fee")
+	_check(research.problem(&"bed_levelling", 1, 100000) == "", "the first course of a branch can be taken in the garage")
+	_check(research.fee_due(&"bed_levelling") == int(data.courses["bed_levelling"]["fee_pence"]), "the fee is owed before starting")
+	research.start(&"bed_levelling")
+	_check(research.fee_due(&"bed_levelling") == 0 and research.problem(&"bed_levelling", 1, 0) == "", "once started, a course is paid for")
+	var minutes := float(data.courses["bed_levelling"]["minutes"])
+	_check(not research.study(&"bed_levelling", minutes / 2.0) and is_equal_approx(research.fraction(&"bed_levelling"), 0.5), "study part way is kept")
+	_check(is_equal_approx(research.minutes_left(&"bed_levelling"), minutes / 2.0), "and the rest is still to do")
+	var copy := Research.new(data.courses)
+	copy.restore(JSON.parse_string(JSON.stringify(research.save())))
+	_check(is_equal_approx(copy.fraction(&"bed_levelling"), 0.5) and copy.current == &"bed_levelling", "a course part way through survives a save")
+	_check(research.study(&"bed_levelling", minutes) and research.is_learned(&"bed_levelling") and research.current == &"", "the rest of the study finishes it")
+	_check(is_equal_approx(research.effect("fail_chance"), float(data.courses["bed_levelling"]["effects"]["fail_chance"])), "a learned course has its effect")
+	_check(research.problem(&"slicer_tuning", 1, 100000) == "" and research.problem(&"failure_spotting", 1, 100000) != "", "which opens the next, but not one for bigger premises")
+	for id: String in data.courses:
+		research.learned.append(StringName(id))
+	_check(research.effect("fail_chance") < 0.7 and research.effect("fail_chance") > 0.5, "the whole tree cuts failures by a third or so, not to nothing")
+
+	var supplier := Supplier.new(data)
+	var full := supplier.price_of({"spools": {"red": 2}, "packaging": {"letterbox_box": 1}, "parts": {"brass_nozzle_0_4mm": 1}})
+	var before := supplier.lead_minutes("filament")
+	supplier.terms = {"spools": research.effect("spool_price"), "parts": research.effect("parts_price"),
+		"packaging": research.effect("packaging_price"), "lead": research.effect("lead_time")}
+	_check(supplier.price_of({"spools": {"red": 2}, "packaging": {"letterbox_box": 1}, "parts": {"brass_nozzle_0_4mm": 1}}) < full, "what was learned about buying makes a basket cheaper")
+	_check(supplier.lead_minutes("filament") < before and is_equal_approx(supplier.lead_minutes("printer"), float(data.settings["supplier"]["printer_lead_minutes"])),
+		"supplies come sooner, printers as before")
+
+	var wear := PrinterWear.new(data.parts, data.printers.values()[0], 1.0)
+	var slot: StringName = wear.slots()[0]
+	var usual := wear.wear_per_hour(slot, data.presets[&"standard"], data.filaments["pla"])
+	wear.care_multiplier = research.effect("wear")
+	_check(wear.wear_per_hour(slot, data.presets[&"standard"], data.filaments["pla"]) < usual, "care slows wear")
 
 
 func _check(condition: bool, what: String) -> void:

@@ -17,7 +17,7 @@ const INCOME_NAMES := {
 const EXPENSE_NAMES := {
 	Bank.SUPPLIES: "Filament, parts and packaging", Bank.EQUIPMENT: "Printers and fittings", Bank.DESIGNS: "Design licences",
 	Bank.FEES: "Marketplace fees and royalties", Bank.POSTAGE: "Postage", Bank.REFUNDS: "Refunds", Bank.RENT: "Rent",
-	Bank.WAGES: "Wages", Bank.ELECTRICITY: "Electricity", Bank.PREMISES: "Moving premises", Bank.MOULDING: "Moulds and pellets",
+	Bank.WAGES: "Wages", Bank.ELECTRICITY: "Electricity", Bank.PREMISES: "Moving premises", Bank.MOULDING: "Moulds and pellets", Bank.TRAINING: "Courses",
 	Bank.OTHER: "Other",
 }
 

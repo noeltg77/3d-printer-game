@@ -232,7 +232,7 @@ func _status_actions() -> Array[Action]:
 			return [Action.info("Collect print (shelving is full)" if copies() == 1 else "Collect prints (the shelving needs %d free spaces)" % copies())]
 		Status.FAILED:
 			var failure := scrap.failure
-			var fix := Action.new("%s (%s)" % [failure["fix"], GameClock.duration_label(failure["clear_minutes"])], _clear).for_duty(&"clear")
+			var fix := Action.new("%s (%s)" % [failure["fix"], GameClock.duration_label(float(failure["clear_minutes"]) * Game.research.effect("clear_time"))], _clear).for_duty(&"clear")
 			fix.task_name = "Sort out the %s" % display_name
 			return [Action.info("%s: %s" % [failure["name"], Game.product_name(scrap.product)]), fix]
 	var actions: Array[Action] = []
@@ -488,7 +488,7 @@ func _parts_menu() -> Action:
 			offered += 1
 			var same := box.part == wear.fitted[slot]
 			var action := Action.new("%s. Fit %s (%s)" % [state, "a new one" if same else "the %s" % String(spare["name"]).to_lower(),
-				GameClock.duration_label(spare["replace_minutes"])], _replace.bind(slot, box.part))
+				GameClock.duration_label(float(spare["replace_minutes"]) * Game.research.effect("replace_time"))], _replace.bind(slot, box.part))
 			action.task_name = "Fit a new %s to the %s" % [String(part["slot_name"]).to_lower(), display_name]
 			lines.append(action)
 		if offered == 0:
@@ -644,7 +644,7 @@ func print_minutes(product: StringName, p_preset: StringName, slots: Array[int] 
 
 func _base_minutes(product: StringName, p_preset: StringName, filament_speed: float) -> float:
 	return (float(Game.data.products[product]["print_minutes"]) * float(Game.data.presets[p_preset]["time_multiplier"])
-		* mods.time_multiplier() / float(spec["speed_multiplier"]) / filament_speed)
+		* mods.time_multiplier() * Game.research.effect("print_time") / float(spec["speed_multiplier"]) / filament_speed)
 
 
 ## Puts a spool in a slot: the first free one unless told which.
@@ -691,6 +691,7 @@ func start_print(product: StringName, p_preset: StringName, slots: Array[int] = 
 	if not fate.is_empty():
 		job.fail(fate["failure"], fate["at"])
 	# A part that runs out before anything else goes wrong stops the print there.
+	wear.care_multiplier = Game.research.effect("wear")
 	var breakdown := wear.breaks_during(_minutes / 60.0, Game.data.presets[preset], Game.data.filaments[material])
 	if not breakdown.is_empty() and breakdown["at"] < job.stop_at:
 		job.fail(_breakdown(breakdown["slot"]), breakdown["at"])
@@ -774,6 +775,7 @@ func _end_print() -> void:
 	var title := _batch_title(Game.product_name(item.product))
 	var minutes_run := _minutes * job.progress
 	Game.charge_electricity(spec["power_watts"], minutes_run, title)
+	wear.care_multiplier = Game.research.effect("wear")
 	wear.apply(minutes_run / 60.0, Game.data.presets[preset], Game.data.filaments[item.material])
 	for slot: String in job.failure.get("damages", {}):
 		wear.damage(StringName(slot), float(job.failure["damages"][slot]))
@@ -1028,7 +1030,7 @@ func _clear(agent: Agent) -> void:
 		agent.say("Nothing to sort out on the %s" % display_name)
 		return
 	await agent.go_to(self)
-	await agent.work(float(scrap.failure["clear_minutes"]))
+	await agent.work(float(scrap.failure["clear_minutes"]) * Game.research.effect("clear_time"))
 	await agent.reach(func() -> void: agent.carry(take_scrap()))
 	await agent.walk_to(get_tree().get_first_node_in_group(&"bin").global_position)
 	await agent.reach(func() -> void: agent.release().queue_free())
@@ -1046,7 +1048,7 @@ func _replace(agent: Agent, slot: StringName, part: StringName) -> void:
 	if agent.carried == null:
 		return
 	await agent.go_to(self)
-	await agent.work(float(Game.data.parts[part]["replace_minutes"]))
+	await agent.work(float(Game.data.parts[part]["replace_minutes"]) * Game.research.effect("replace_time"))
 	await agent.reach(func() -> void:
 		agent.release().queue_free()
 		wear.replace(slot, part)

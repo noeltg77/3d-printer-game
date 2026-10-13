@@ -14,7 +14,8 @@ extends Node
 ##       screenshot at that point and `quit` exits. `zoom>Plodder Mini>1.6`
 ##       centres the camera on an object and sets how many metres tall the
 ##       view is, for a close look in the next shot. A step starts once the
-##       character has finished the one before.
+##       character has finished the one before, unless it begins with `!`
+##       (to interrupt a long job: `!Roller door>Open door`).
 ##   --time-scale=8   run the whole game faster
 
 
@@ -35,7 +36,9 @@ func _play(steps: PackedStringArray) -> void:
 			agent = get_tree().get_first_node_in_group(&"player")
 		# A character held at the PC has jobs queued but won't start them, so
 		# there is nothing to wait for.
-		if agent.is_busy() and not agent.held:
+		var at_once := step.begins_with("!")
+		step = step.trim_prefix("!")
+		if agent.is_busy() and not agent.held and not at_once:
 			await agent.became_idle
 		var parts := step.split(">")
 		if parts[0] == "wait":

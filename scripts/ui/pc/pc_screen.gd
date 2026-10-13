@@ -23,6 +23,8 @@ const APPS: Array[Dictionary] = [
 		"market": "biddle", "script": preload("res://scripts/ui/pc/app_craftsy.gd")},
 	{"id": "design_lab", "name": "Design Lab", "colour": "7A5BC4", "dark": "573F92", "url": "designlab.app/catalogue",
 		"script": preload("res://scripts/ui/pc/app_design_lab.gd")},
+	{"id": "skillshed", "name": "Skillshed", "colour": "5B5FC7", "dark": "3F428F", "url": "skillshed.com/my-courses",
+		"script": preload("res://scripts/ui/pc/app_skillshed.gd")},
 	{"id": "pennybank", "name": "PennyBank", "colour": "2F8F6B", "dark": "1F6A4E", "url": "pennybank.com/account",
 		"script": preload("res://scripts/ui/pc/app_pennybank.gd")},
 	{"id": "roomier", "name": "Roomier", "colour": "2B8C8C", "dark": "1D6464", "url": "roomier.co.uk/units-to-let",

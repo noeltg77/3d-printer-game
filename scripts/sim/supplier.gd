@@ -83,6 +83,9 @@ class Delivery:
 var data: GameData
 ## Filament id -> what a shortage is doing to its price, as a multiplier. See Events.
 var price_multipliers: Dictionary[String, float] = {}
+## What the owner has learned to get from suppliers, as multipliers: the price
+## of "spools", "parts" and "packaging", and the "lead" time of supplies. See Research.
+var terms: Dictionary[String, float] = {}
 ## Not yet arrived, soonest first.
 var pending: Array[Delivery] = []
 
@@ -98,9 +101,9 @@ func price_of(basket: Dictionary) -> int:
 	for key: String in basket.get("spools", {}):
 		total += spool_price(FilamentRules.material_of(key)) * int(basket["spools"][key])
 	for kind: String in basket.get("packaging", {}):
-		total += int(data.packaging[kind]["price_pence"]) * int(basket["packaging"][kind])
+		total += packaging_price(kind) * int(basket["packaging"][kind])
 	for part_id: String in basket.get("parts", {}):
-		total += int(data.kit(part_id)["price_pence"]) * int(basket["parts"][part_id])
+		total += part_price(part_id) * int(basket["parts"][part_id])
 	for dryer_id: String in basket.get("dryers", {}):
 		total += int(data.dryers[dryer_id]["price_pence"]) * int(basket["dryers"][dryer_id])
 	for fitting_id: String in basket.get("fittings", {}):
@@ -111,7 +114,26 @@ func price_of(basket: Dictionary) -> int:
 ## Price of one spool of a filament.
 func spool_price(material := FilamentRules.DEFAULT_MATERIAL) -> int:
 	var filament: Dictionary = data.filaments[material]
-	return roundi(filament["price_pence_per_kg"] * filament["spool_grams"] / 1000.0 * float(price_multipliers.get(material, 1.0)))
+	return roundi(filament["price_pence_per_kg"] * filament["spool_grams"] / 1000.0 * float(price_multipliers.get(material, 1.0))
+		* float(terms.get("spools", 1.0)))
+
+
+## Price of one pack of a kind of packaging.
+func packaging_price(kind: String) -> int:
+	return roundi(float(data.packaging[kind]["price_pence"]) * float(terms.get("packaging", 1.0)))
+
+
+## Price of one pack of a spare part, or of an upgrade kit. Only spares come cheaper to the trade.
+func part_price(part_id: String) -> int:
+	var price := float(data.kit(part_id)["price_pence"])
+	return roundi(price * float(terms.get("parts", 1.0)) if data.parts.has(part_id) else price)
+
+
+## Game minutes an order takes to come: "filament" (and packaging), "parts" or
+## "printer" (anything in a box of its own, which nothing hurries).
+func lead_minutes(kind: String) -> float:
+	var minutes := float(_config()["%s_lead_minutes" % kind])
+	return minutes if kind == "printer" else minutes * float(terms.get("lead", 1.0))
 
 
 static func count_spools(basket: Dictionary) -> int:
@@ -133,7 +155,7 @@ func place(basket: Dictionary, minute: float, shop := "") -> Array[Delivery]:
 	var placed: Array[Delivery] = []
 	var supplies := Delivery.new()
 	supplies.shop = shop
-	supplies.arrive_at = minute + float(_config()["filament_lead_minutes"])
+	supplies.arrive_at = minute + lead_minutes("filament")
 	for colour: String in basket.get("spools", {}):
 		for i in int(basket["spools"][colour]):
 			supplies.spools.append(StringName(colour))
@@ -142,7 +164,7 @@ func place(basket: Dictionary, minute: float, shop := "") -> Array[Delivery]:
 	for part_id: String in basket.get("parts", {}):
 		supplies.parts[StringName(part_id)] = int(basket["parts"][part_id]) * int(data.kit(part_id).get("pack_size", 1))
 	if supplies.spools.is_empty() and supplies.packaging.is_empty():
-		supplies.arrive_at = minute + float(_config()["parts_lead_minutes"])
+		supplies.arrive_at = minute + lead_minutes("parts")
 	if not supplies.spools.is_empty() or not supplies.packaging.is_empty() or not supplies.parts.is_empty():
 		placed.append(supplies)
 	for printer_id: String in basket.get("printers", {}):

@@ -86,6 +86,18 @@ func restore(data: Dictionary) -> void:
 	rotation.y = float(data["facing"])
 
 
+## True if another task is waiting behind the one under way.
+func has_queued() -> bool:
+	return not _queue.is_empty()
+
+
+## Renames the task under way, for one that reports how far along it is.
+func relabel(text: String) -> void:
+	if _busy and current_label != text:
+		current_label = text
+		status_changed.emit()
+
+
 func get_queued_labels() -> PackedStringArray:
 	var labels: PackedStringArray = []
 	for action in _queue:
