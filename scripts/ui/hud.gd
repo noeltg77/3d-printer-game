@@ -4,7 +4,7 @@ extends CanvasLayer
 ## queued, the to-do note beneath it, the speed, cash and clock chips, the name of the object under the
 ## mouse, and short messages. Styled to match the PlateOS taskbar.
 
-const CONTROLS := "Left click: choose a task, or walk   ·   Mouse wheel: zoom   ·   Right drag: pan"
+const CONTROLS := "Left click: choose a task, or walk   ·   Mouse wheel: zoom   ·   Right drag: pan   ·   Space: pause"
 const TOAST_SECONDS := 4.0
 const MAX_TOASTS := 4
 ## Toasts wider than this wrap onto more lines.
@@ -23,6 +23,7 @@ var _task_panel: PanelContainer
 var _todo: TodoNote
 var _hover: PanelContainer
 var _orders: Label
+var _packed: Label
 var _toasts: VBoxContainer
 
 @onready var _agent: Agent = get_node(agent_path)
@@ -39,7 +40,11 @@ func _ready() -> void:
 
 	_orders = Ui.text("", 14, Ui.CHIP_TEXT, 800)
 	_orders.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	var status := Ui.panel(Ui.hbox([_orders, StatusBar.new()], 14), Ui.box(Ui.TASKBAR, 18, 12, 10))
+	_packed = Ui.text("", 14, Ui.CASH, 800)
+	_packed.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	_packed.tooltip_text = "Packed and waiting by the door. You are paid when the courier collects."
+	_packed.mouse_filter = Control.MOUSE_FILTER_PASS
+	var status := Ui.panel(Ui.hbox([_orders, _packed, StatusBar.new()], 14), Ui.box(Ui.TASKBAR, 18, 12, 10))
 	status.mouse_filter = Control.MOUSE_FILTER_STOP
 	_place(status, Control.PRESET_TOP_RIGHT, Vector2(-16, 16))
 
@@ -113,6 +118,12 @@ func _refresh() -> void:
 	_task_panel.reset_size()
 	var open := Game.open_orders().size()
 	_orders.text = "%d order%s to pack" % [open, "" if open == 1 else "s"]
+	var packed := Game.packed_orders()
+	var value := 0
+	for order in packed:
+		value += order.price
+	_packed.text = "%d ready to ship" % packed.size() + ("" if packed.is_empty() else " · %s" % Money.format(value))
+	_packed.add_theme_color_override(&"font_color", Ui.CHIP_MUTED if packed.is_empty() else Ui.CASH)
 
 
 ## Shows a message for a few seconds. `tone` tints it: &"good", &"bad" or plain.

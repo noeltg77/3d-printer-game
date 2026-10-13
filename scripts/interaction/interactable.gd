@@ -17,7 +17,7 @@ var click_volume := 0.0
 var _body: StaticBody3D = null
 ## The meshes lit up by the highlight, so each is put back even if it has
 ## since been carried off somewhere else.
-var _lit: Array[MeshInstance3D] = []
+var _highlit: Array[MeshInstance3D] = []
 
 
 func _ready() -> void:
@@ -42,16 +42,16 @@ func get_stand_point() -> Vector3:
 
 
 func set_highlighted(on: bool) -> void:
-	for mesh in _lit:
+	for mesh in _highlit:
 		if is_instance_valid(mesh):
 			mesh.material_overlay = null
-	_lit.clear()
+	_highlit.clear()
 	if not on:
 		return
-	_lit.assign(_visual().find_children("*", "MeshInstance3D", true, false))
+	_highlit.assign(_visual().find_children("*", "MeshInstance3D", true, false))
 	if _visual() is MeshInstance3D:
-		_lit.append(_visual())
-	for mesh in _lit:
+		_highlit.append(_visual())
+	for mesh in _highlit:
 		mesh.material_overlay = HIGHLIGHT
 
 

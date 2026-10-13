@@ -75,6 +75,8 @@ var speed := 1
 var work_day: WorkDay
 ## True while the night is being skipped: the game runs fast and the character rests.
 var sleeping := false
+## The speed to go back to when a pause from the keyboard ends.
+var _resume_speed := 1
 var _wake_at := 0.0
 ## Whether the character was already being held (at the PC) when the night began.
 var _held_before := false
@@ -339,8 +341,24 @@ func _load_settings() -> void:
 
 
 ## 0 pauses. Everything in the scene follows, because it scales engine time.
+func _unhandled_key_input(event: InputEvent) -> void:
+	# Space pauses and carries on. A text box being typed in takes the key first.
+	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_SPACE:
+		toggle_pause()
+		get_viewport().set_input_as_handled()
+
+
+## Pauses the game, or sets it going again at the speed it was paused from.
+func toggle_pause() -> void:
+	if sleeping:
+		return
+	set_speed(_resume_speed if speed == 0 else 0)
+
+
 func set_speed(new_speed: float) -> void:
 	speed = int(new_speed)
+	if speed > 0:
+		_resume_speed = speed
 	if not sleeping:
 		Engine.time_scale = new_speed
 	changed.emit()
@@ -612,6 +630,14 @@ func open_markets() -> Array[Marketplace]:
 	for shop: Marketplace in markets.values():
 		if unlocked(shop.config):
 			found.append(shop)
+	return found
+
+
+## Orders packed and waiting for the courier, across every marketplace.
+func packed_orders() -> Array[Marketplace.Order]:
+	var found: Array[Marketplace.Order] = []
+	for shop: Marketplace in markets.values():
+		found.append_array(shop.orders.filter(func(order: Marketplace.Order) -> bool: return order.status == Marketplace.Status.PACKED))
 	return found
 
 
