@@ -38,7 +38,8 @@ func _play(steps: PackedStringArray) -> void:
 		# there is nothing to wait for.
 		var at_once := step.begins_with("!")
 		step = step.trim_prefix("!")
-		if agent.is_busy() and not agent.held and not at_once:
+		# There may be no character at all yet (the main menu, before its room is in).
+		if is_instance_valid(agent) and agent.is_busy() and not agent.held and not at_once:
 			await agent.became_idle
 		var parts := step.split(">")
 		if parts[0] == "wait":
@@ -87,7 +88,7 @@ func _play(steps: PackedStringArray) -> void:
 			action.run.call(agent)
 		else:
 			agent.enqueue(action)
-	if agent.is_busy():
+	if is_instance_valid(agent) and agent.is_busy():
 		await agent.became_idle
 	print("Autoplay: finished")
 

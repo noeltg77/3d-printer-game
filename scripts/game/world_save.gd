@@ -14,6 +14,8 @@ extends Node
 
 ## Real seconds between saves when one isn't asked for.
 const AUTOSAVE_GAP := 20.0
+## Pixels of the picture kept with each save.
+const PICTURE_SIZE := Vector2i(480, 270)
 ## Save key -> group of the node that holds that part of the world. Restored in
 ## this order: printers first, then what they and the shelves hold.
 const PARTS := {
@@ -28,9 +30,14 @@ const PARTS := {
 	"character": &"player",
 }
 
+## The game has just been written to its file.
+signal saved_now
+
 var _last_save_msec := 0
 ## A save was asked for mid-task and is owed as soon as the task ends.
 var _owed := false
+## Set as the scene is left for another: nothing more is saved from here.
+var _retired := false
 
 
 func _ready() -> void:
@@ -46,13 +53,20 @@ func _ready() -> void:
 
 
 func _notification(what: int) -> void:
-	if what == NOTIFICATION_WM_CLOSE_REQUEST and _agent() != null and _everyone_between_tasks():
+	if what == NOTIFICATION_WM_CLOSE_REQUEST and not _retired and _agent() != null and _everyone_between_tasks():
 		Game.save_game(capture())
 
 
 func _process(_delta: float) -> void:
 	if _owed and _everyone_between_tasks():
 		save_now()
+
+
+## Stops this scene saving, as it is about to be swapped for another. By then
+## the Game may already belong to the next one.
+func retire() -> void:
+	_retired = true
+	_owed = false
 
 
 ## True while a save is waiting for everybody to finish what they are doing.
@@ -85,12 +99,30 @@ func capture() -> Dictionary:
 ## Saves now if the character is between tasks, or as soon as they are.
 ## Returns true if it was saved straight away.
 func save_now() -> bool:
+	if _retired:
+		return false
 	if not _everyone_between_tasks():
 		_owed = true
 		return false
 	_owed = false
 	_last_save_msec = Time.get_ticks_msec()
-	return Game.save_game(capture())
+	var saved := Game.save_game(capture())
+	if saved:
+		_take_picture()
+		saved_now.emit()
+	return saved
+
+
+## Keeps a small picture of the room beside the save, for the list of saved games.
+func _take_picture() -> void:
+	# Not with a menu or the loading screen over the room: the last picture stands.
+	if DisplayServer.get_name() == "headless" or Screens.covering():
+		return
+	var image := get_viewport().get_texture().get_image()
+	if image == null or image.is_empty():
+		return
+	image.resize(PICTURE_SIZE.x, PICTURE_SIZE.y, Image.INTERPOLATE_LANCZOS)
+	image.save_png(SaveSlots.thumbnail_path(Game.save_path))
 
 
 ## Moves the business to other premises, taking everything along: printers,
@@ -116,7 +148,8 @@ func move(place: StringName) -> bool:
 			world["deliveries"] = {"boxes": []}
 		world["deliveries"]["boxes"].append({"spot": 0, "delivery": box.save()})
 	Game.hand_over(world)
-	get_tree().change_scene_to_file(Game.premises_row()["scene"])
+	retire()
+	Screens.go(Game.premises_row()["scene"], "Moving to the %s" % String(Game.premises_row()["name"]).to_lower())
 	return true
 
 

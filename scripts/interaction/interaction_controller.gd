@@ -4,10 +4,6 @@ extends Node
 ## queues it. An object with only one thing to do just does it, with no card.
 ## A left click on bare floor walks there instead.
 
-const RAY_LENGTH := 200.0
-## How many overlapping objects to look through under the cursor.
-const MAX_STACKED := 6
-
 @export var agent_path: NodePath
 @export var hud_path: NodePath
 
@@ -45,25 +41,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _pick(screen_position: Vector2) -> Interactable:
-	var camera := get_viewport().get_camera_3d()
-	var from := camera.project_ray_origin(screen_position)
-	var to := from + camera.project_ray_normal(screen_position) * RAY_LENGTH
-	var space := camera.get_world_3d().direct_space_state
-	var query := PhysicsRayQueryParameters3D.create(from, to)
-	# Of everything under the cursor, pick the smallest: a printer on a bench
-	# sits inside the bench's box and would otherwise never be clickable.
-	var best: Interactable = null
-	var excluded: Array[RID] = []
-	for attempt in MAX_STACKED:
-		query.exclude = excluded
-		var hit := space.intersect_ray(query)
-		if hit.is_empty():
-			break
-		excluded.append(hit["rid"])
-		var found: Interactable = hit["collider"].get_meta(&"interactable", null)
-		if found != null and (best == null or found.click_volume < best.click_volume):
-			best = found
-	return best
+	return Interactable.under(get_viewport().get_camera_3d(), screen_position)
 
 
 func _set_hovered(target: Interactable) -> void:

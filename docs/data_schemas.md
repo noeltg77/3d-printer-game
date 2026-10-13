@@ -340,7 +340,8 @@ Starting conditions and global rates. Not a table of rows.
 | `trends` | One product category is in demand and one has gone quiet, for a random `days` range (`[shortest, longest]`), scaling its orders by `hot_multiplier` or `cool_multiplier`. Only categories with at least `min_designs` designs take part, and never those listed in `seasonal`, which wait for a calendar (`Trends`) |
 | `colour_taste` | The colours buyers like a design best in (`ColourTaste`). Each design has up to `favourites` of them, out of the colours its `allowed_filaments` come in: first those listed for its category in `categories`, then whichever suit the design itself. A listing's orders scale with the last `window` sent: by `liked_demand` if all were in a favourite colour, `other_demand` if none were, and in between otherwise. A product row may name its own with `popular_colours` |
 | `wear_rate` | Multiplies all part wear. Above 1 because the design's lifespans are in real printer hours, which would take many sessions to matter. A balancing knob |
-| `bank_name`, `business_name` | Names shown on the PC |
+| `bank_name`, `business_name` | Names shown on the PC. `business_name` is only what a new business is called if the player doesn't name it |
+| `tips` | Lines for the loading screen, one shown each time. Each a sentence or two a non printer owner could follow |
 | `supplier` | The filament and hardware shop names, lead times in game minutes (filament, printers, spare parts) |
 
 One game day is 1440 game minutes and lasts 10 real minutes at 1x (`GameClock.MINUTES_PER_SECOND`).

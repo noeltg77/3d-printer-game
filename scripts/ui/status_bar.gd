@@ -38,6 +38,10 @@ func _ready() -> void:
 	_end_day.visible = false
 	add_child(_end_day)
 
+	var menu := Ui.button("Menu", Screens.open_pause_menu, Ui.CHIP, Ui.CHIP_TEXT, 44, 14, Ui.CLEAR, 14)
+	menu.tooltip_text = "Save, load or leave (Esc)"
+	add_child(menu)
+
 	Game.changed.connect(_refresh)
 	_refresh()
 

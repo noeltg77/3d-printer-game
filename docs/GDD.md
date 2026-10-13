@@ -269,6 +269,8 @@ Build small and prove each step before moving on: assets and garage first, then 
 ### Phase 5: Vertical slice polish
 
 - [x] Save and load
+- [x] Opening, main menu over a live workshop, loading screen and pause menu (first draft, for review)
+- [x] Several saved games: slots with a picture each, load, delete and keep a copy
 - [ ] UI polish, sound effects, music, lighting pass
 - [x] Light onboarding hints for non printer owners
 - [x] Balance pass on the garage tier

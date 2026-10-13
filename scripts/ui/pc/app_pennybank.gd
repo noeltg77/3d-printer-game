@@ -35,7 +35,7 @@ func refresh() -> void:
 	var bank := Game.bank
 	var banner := Ui.panel(Ui.hbox([
 		Ui.title(String(Game.data.settings["bank_name"]).to_lower(), 32, Ui.PAPER, 700),
-		Ui.text("%s · Business account" % Game.data.settings["business_name"], 15, Ui.PAPER),
+		Ui.text("%s · Business account" % Game.business_name, 15, Ui.PAPER),
 	], 24), Ui.box(Ui.GREEN, 0, 32, 0))
 	banner.custom_minimum_size.y = 84
 	add_child(banner)

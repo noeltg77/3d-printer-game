@@ -86,7 +86,15 @@ var rng := RandomNumberGenerator.new()
 var force_failure := ""
 ## Where the game is saved. Empty turns saving and loading off, as it is for
 ## dev runs driven from the command line unless they pass --save=<path>.
-var save_path := "user://save.json"
+var save_path := ""
+## What the player called the business, shown in its apps and on its save.
+var business_name := ""
+## True while the game is only the moving picture behind the main menu: it
+## runs as ever, but nothing is saved and the keyboard doesn't pause it.
+var showcase := false
+## A dev run from the command line, which neither loads nor writes a save
+## unless it names one with --save.
+var _saving_off := false
 ## Game minute of the last save this session, or -1 if there hasn't been one.
 var saved_at := -1.0
 ## Stock key -> why its last reorder couldn't be placed, so the player is told once.
@@ -97,14 +105,27 @@ func _ready() -> void:
 	_load_settings()
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--autoplay=") or arg.begins_with("--shot"):
-			save_path = ""
+			_saving_off = true
+	var named_save := ""
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--save="):
-			save_path = arg.trim_prefix("--save=")
+			named_save = arg.trim_prefix("--save=")
+		elif arg.begins_with("--saves="):
+			# A folder of saves for this run alone, which also turns saving back on.
+			SaveSlots.root = arg.trim_prefix("--saves=")
+			_saving_off = false
 		elif arg.begins_with("--tier="):
 			start_tier = arg.trim_prefix("--tier=").to_int()
 		elif arg.begins_with("--premises="):
 			start_premises = arg.trim_prefix("--premises=")
+	if named_save != "":
+		_saving_off = false
+		save_path = named_save
+	elif not _saving_off:
+		# A scene started on its own, without the menu, carries on the game played last.
+		SaveSlots.adopt_legacy()
+		var latest := SaveSlots.latest()
+		save_path = latest["path"] if not latest.is_empty() else SaveSlots.fresh_path()
 	new_game()
 
 
@@ -201,9 +222,58 @@ func new_game() -> void:
 		packaging[StringName(kind)] = int(start["packaging"][kind])
 	premises = StringName(start_premises if data.premises.has(start_premises) else start["premises"])
 	tier = maxi(int(premises_row()["tier"]), start_tier)
+	business_name = data.settings["business_name"]
 	rng.randomize()
 	saved_at = -1.0
 	set_speed(1)
+
+
+## Starts playing the save at `path`: a new business if there is no such file
+## yet, called `p_name`. The scene that is loaded next reads the save itself.
+func begin(path: String, p_name := "") -> void:
+	showcase = false
+	save_path = "" if _saving_off else path
+	new_game()
+	if p_name.strip_edges() != "":
+		business_name = p_name.strip_edges()
+
+
+## Sets up a business that is only for show, in the given premises with cash
+## to burn. Nothing it does is saved.
+func begin_showcase(place: StringName, cash_pence: int) -> void:
+	save_path = ""
+	new_game()
+	showcase = true
+	premises = place
+	tier = int(premises_row()["tier"])
+	bank = Bank.new(cash_pence)
+
+
+## Sets up the business in a saved game only for show, as begin_showcase does:
+## it runs on from where it was left, and none of it is saved. Returns the
+## saved state of the world for the scene to rebuild, or {} if the file can't
+## be read (and nothing is changed). The file is never touched.
+func begin_showcase_of(path: String) -> Dictionary:
+	var json := JSON.new()
+	if not FileAccess.file_exists(path) or json.parse(FileAccess.get_file_as_string(path)) != OK:
+		return {}
+	var parsed: Variant = json.data
+	if not parsed is Dictionary or int(parsed.get("version", 0)) != SAVE_VERSION \
+			or not parsed.get("business") is Dictionary or not parsed.get("world") is Dictionary:
+		return {}
+	save_path = ""
+	new_game()
+	showcase = true
+	restore(parsed["business"])
+	if parsed.get("meta") is Dictionary and String(parsed["meta"].get("name", "")) != "":
+		business_name = parsed["meta"]["name"]
+	return parsed["world"]
+
+
+## The scene a save belongs in, so it can be loaded without a detour.
+func scene_of(slot: Dictionary) -> String:
+	var place := StringName(slot.get("premises", ""))
+	return data.premises[place if data.premises.has(place) else premises]["scene"]
 
 
 func has_save() -> bool:
@@ -215,7 +285,9 @@ func has_save() -> bool:
 func save_game(world: Dictionary) -> bool:
 	if save_path == "":
 		return false
-	var content := JSON.stringify({"version": SAVE_VERSION, "business": save(), "world": world}, "\t")
+	var business := save()
+	var header := SaveSlots.meta(business, business_name, int(Time.get_unix_time_from_system()))
+	var content := JSON.stringify({"version": SAVE_VERSION, "meta": header, "business": business, "world": world}, "\t")
 	# Written beside the save and swapped in, so a crash can't leave half a file.
 	var file := FileAccess.open(save_path + ".tmp", FileAccess.WRITE)
 	if file == null:
@@ -237,6 +309,8 @@ func load_game() -> Dictionary:
 	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(save_path))
 	if parsed is Dictionary and int(parsed.get("version", 0)) == SAVE_VERSION and parsed.get("business") is Dictionary:
 		restore(parsed["business"])
+		if parsed.get("meta") is Dictionary and String(parsed["meta"].get("name", "")) != "":
+			business_name = parsed["meta"]["name"]
 		saved_at = clock.minutes
 		return parsed.get("world", {})
 	DirAccess.rename_absolute(save_path, save_path + ".unreadable")
@@ -246,7 +320,7 @@ func load_game() -> Dictionary:
 
 func delete_save() -> void:
 	if has_save():
-		DirAccess.remove_absolute(save_path)
+		SaveSlots.remove(save_path)
 	saved_at = -1.0
 
 
@@ -349,7 +423,7 @@ func _load_settings() -> void:
 ## 0 pauses. Everything in the scene follows, because it scales engine time.
 func _unhandled_key_input(event: InputEvent) -> void:
 	# Space pauses and carries on. A text box being typed in takes the key first.
-	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_SPACE:
+	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_SPACE and not showcase:
 		toggle_pause()
 		get_viewport().set_input_as_handled()
 
