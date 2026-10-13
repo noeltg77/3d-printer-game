@@ -5,7 +5,7 @@
 			"id": "operator",
 			"name": "Print operator",
 			"description": "Collects finished prints, clears up failed ones, and sets the same job going again on any printer you have told to keep printing.",
-			"unlock_tier": 3,
+			"unlock_tier": 2,
 			"wage_pence_per_day": 4499,
 			"duties": ["clear", "collect", "reprint"]
 		},
@@ -13,7 +13,7 @@
 			"id": "packer",
 			"name": "Packer",
 			"description": "Packs each order as soon as the print for it is on the shelf, and crates up contract work for the courier.",
-			"unlock_tier": 3,
+			"unlock_tier": 2,
 			"wage_pence_per_day": 3999,
 			"duties": ["pack", "send"]
 		},
@@ -21,7 +21,7 @@
 			"id": "finisher",
 			"name": "Finisher",
 			"description": "Goes over every print on the shelf with the blowtorch, so what you sell has a better finish.",
-			"unlock_tier": 3,
+			"unlock_tier": 2,
 			"wage_pence_per_day": 3999,
 			"duties": ["finish"]
 		}

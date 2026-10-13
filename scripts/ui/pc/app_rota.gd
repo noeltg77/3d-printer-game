@@ -31,7 +31,7 @@ func refresh() -> void:
 		Ui.text("%d of %d places filled · %s a day in wages" % [staff.team.size(), room, Money.format(staff.wages_per_day())] if room > 0 else "", 13, Ui.MUTED)])], 12)
 	var applicants := Ui.vbox([Ui.title("Looking for work today", 20)], 12)
 	if room == 0:
-		team.add_child(Ui.panel(Ui.wrap(Ui.text("There is only room for you here. A workshop has space for staff, and by then there is more than one pair of hands can do.", 14, LOCK_TEXT, 800)), Ui.box(LOCK_BG, 14, 16, 12)))
+		team.add_child(Ui.panel(Ui.wrap(Ui.text("There is only room for you here. A small unit has space to take one person on, and by then there is more than one pair of hands can do.", 14, LOCK_TEXT, 800)), Ui.box(LOCK_BG, 14, 16, 12)))
 	elif staff.team.is_empty():
 		team.add_child(_empty("Nobody yet. Staff come in for their shift, find their own jobs on the floor and are paid at midnight for every day they are on the books."))
 	for member in staff.team:

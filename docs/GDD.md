@@ -85,8 +85,8 @@ The whole game hangs off one loop. Every later system adds depth to a step in it
 | Tier | Space | Kit | New systems unlocked |
 | --- | --- | --- | --- |
 | 1. Garage | Single garage | 1 cheap printer, PLA only | Buying designs, one marketplace, filament ordering, failures, basic maintenance |
-| 2. Spare room / small unit | Room for 3 to 5 printers | Upgrades: hardened nozzles, enclosure, filament dryer, multicolour unit | Own designs, more filaments, more marketplaces, reviews matter |
-| 3. Workshop | Rented unit | Small print farm, linked multicolour units | First hire, stock management, first B2B enquiries |
+| 2. Spare room / small unit | Room for 3 to 5 printers | Upgrades: hardened nozzles, enclosure, filament dryer, multicolour unit | Own designs, more filaments, more marketplaces, reviews matter, first hire (room for one) |
+| 3. Workshop | Rented unit | Small print farm, linked multicolour units | A second member of staff, stock management, first B2B enquiries |
 | 4. Factory | Industrial unit | Dozens of printers, later resin / SLS / industrial machines | Staff teams, bulk contracts, automation, supplier deals, optional injection moulding endgame |
 
 Your character shifts from **maker** (does everything by hand in the garage) to **manager** (hires staff and buys automation) as the business grows.

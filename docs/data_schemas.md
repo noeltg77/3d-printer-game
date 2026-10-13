@@ -251,7 +251,7 @@ The places the business can run from, smallest first.
 | `scene` | The scene for the place. It needs the same parts as the garage scene (see `WorldSave.PARTS`), each with at least as many slots as the place before, so everything fits when the business moves |
 | `move_cost_pence` | Paid once to move in |
 | `rent_pence_per_day` | Charged at midnight every game day |
-| `staff` | How many staff the place has room for. Staff also need a `StaffRoom` node in the scene, where they come in |
+| `staff` | How many staff the place has room for: none in the garage, one in the small unit, then more. Staff also need a `StaffRoom` node in the scene, where they come in |
 | `max_printers` | The most places for printers the premises can have, on its own benches and on bought benches and racks together. More than `printer_spots`, so that taking benches out for racks is worth it |
 | `shelf_units`, `rack_units` | How many bays of shelving and how many filament racks the place has room for, counting the one in the scene. The rest are bought (fittings.json) |
 | `printer_spots`, `shelf_slots`, `rack_slots` | Shown on the place's card. They describe the scene; they don't set it. A scene with several benches still has one `Workbench`, whose `printer_spots` reach onto the others |
@@ -306,6 +306,7 @@ Written for the game; the design data has no staff. Every number is a placeholde
 | Field | Meaning |
 | --- | --- |
 | `name`, `description` | Shown in the Rota app |
+| `unlock_tier` | The tier from which people apply for the job. All three open at tier 2, where the small unit has room for one of them, so which to take on is the player's choice |
 | `wage_pence_per_day` | Charged at midnight for every day the person is on the team, shift worked or not |
 | `duties` | The kinds of task they look for, most pressing first. Each matches the `duty` of an `Action` in the code: `clear` (a failed print), `collect` (a finished one), `reprint` (start a printer's last job again, if the printer is set to keep going), `pack` (an order), `send` (a contract crate) |
 
