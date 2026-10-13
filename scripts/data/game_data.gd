@@ -125,6 +125,8 @@ func _check_research() -> void:
 		var before := String(row.get("requires", ""))
 		if before != "" and not courses.has(before):
 			errors.append("course %s: requires unknown course \"%s\"" % [row["id"], before])
+		if not ResourceLoader.exists("res://assets/ui/icons/%s.svg" % row.get("icon", "")):
+			errors.append("course %s: no icon \"%s\" in assets/ui/icons" % [row["id"], row.get("icon", "")])
 		for key: String in row.get("effects", {}):
 			if not Research.EFFECTS.has(key):
 				errors.append("course %s: unknown effect \"%s\"" % [row["id"], key])

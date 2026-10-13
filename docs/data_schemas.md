@@ -404,7 +404,7 @@ Imported from `docs/design_data/shipping.json` (`parcel_bands`, `couriers`, `ser
 
 What the owner can study at the PC (`Research`, the Skillshed app).
 
-`branches`: the columns of the tree, in order.
+`branches`: the boughs of the skill tree, top to bottom.
 
 | Field | Meaning |
 |---|---|
@@ -412,11 +412,12 @@ What the owner can study at the PC (`Research`, the Skillshed app).
 | `colour` | Hex colour that marks the branch in the app |
 | `about` | One line on what the branch is for |
 
-`courses`: in the order they are taught within a branch.
+`courses`: in the order they are taught within a branch. The tree places each one a step along from the course it `requires`.
 
 | Field | Meaning |
 |---|---|
 | `id`, `name`, `description` | Key and what the player reads |
+| `icon` | Line icon on its badge in the tree, a file name in `assets/ui/icons/` without `.svg` |
 | `branch` | Id of the branch it belongs to |
 | `unlock_tier` | Premises tier needed to take it |
 | `requires` | Id of the course that must be learned first, or "" |
