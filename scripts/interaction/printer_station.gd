@@ -214,11 +214,22 @@ func _status_actions() -> Array[Action]:
 			var left := GameClock.duration_label((job.duration - job.elapsed) * GameClock.MINUTES_PER_SECOND)
 			return [Action.info("Printing %s: %d%%, %s left" % [_batch_title(Game.product_name(item.product)), roundi(job.progress * 100.0), left]).with_progress(job.progress)]
 		Status.DONE:
-			if _shelf().room_for(item.product) >= copies():
-				var wash := post_minutes()
+			var wash := post_minutes()
+			var roomy := _shelf().room_for(item.product) >= copies()
+			# A resin print goes to the wash and cure station if there is one free,
+			# which leaves whoever carried it there to get on with something else.
+			if wash > 0.0 and WashStation.with_room(get_tree()) != null:
+				var send := Action.new("Take %s to the wash and cure station" % _batch_title(item.describe()), _to_station).for_duty(&"collect")
+				send.task_name = "Take %s to be washed and cured" % _batch_title(item.describe())
+				if not roomy:
+					return [send]
+				var by_hand := Action.new("Wash and cure it by hand instead (%s)" % GameClock.duration_label(wash), _collect)
+				by_hand.task_name = "Wash, cure and collect %s" % _batch_title(item.describe())
+				return [send, by_hand.tuck()]
+			if roomy:
 				var label := "Collect %s" % _batch_title(item.describe())
 				if wash > 0.0:
-					label = "Wash, cure and collect %s (%s)" % [_batch_title(item.describe()), GameClock.duration_label(wash)]
+					label = "Wash and cure %s by hand, then collect (%s)" % [_batch_title(item.describe()), GameClock.duration_label(wash)]
 				var collect := Action.new(label, _collect).for_duty(&"collect")
 				collect.task_name = "Collect %s" % _batch_title(item.describe())
 				if not Game.storage.is_bin(item.product):
@@ -282,10 +293,12 @@ func tray_capacity() -> int:
 	return int(mods.block("auto_eject").get("tray", spec.get("auto_eject_tray", 0)))
 
 
-## Game minutes of finishing the print on the plate needs before it is fit to
-## shelve: washing and curing, for resin. Nothing for filament.
+## Game minutes of the character's time the print on the plate needs before it
+## is fit to shelve, done by hand: washing and curing, for resin. Nothing for filament.
 func post_minutes() -> float:
-	return float(Game.data.filaments[item.material].get("post_minutes", 0)) if item != null else 0.0
+	if item == null:
+		return 0.0
+	return ResinFinish.hand_minutes(Game.data.filaments[item.material], Game.data.settings["resin_finishing"])
 
 
 func has_unit() -> bool:
@@ -315,16 +328,26 @@ func _load_menu() -> Action:
 	var kinds: Array[Action] = []
 	for kind in rack.kinds():
 		var filament: Dictionary = Game.data.filaments[kind["material"]]
+		var bulk: bool = kind["bulk"]
 		var title := "%s %s" % [Palette.display_name(kind["colour"]), filament["name"]]
-		var problem := FilamentRules.problem(mods.apply(spec), filament)
-		var label := "%s (%d g)" % [title, roundi(rack.most_grams(kind["material"], kind["colour"]))]
+		if bulk:
+			title += ", %s reel" % FilamentRules.weight_label(float(filament["bulk_grams"]))
+		var problem := load_problem(filament, bulk)
+		var label := "%s (%d g)" % [title, roundi(rack.most_grams(kind["material"], kind["colour"], bulk))]
 		var action := Action.new(label if problem == "" else "%s: %s" % [title, problem.to_lower()],
-			_load.bind(kind["material"], kind["colour"]), problem == "")
+			_load.bind(kind["material"], kind["colour"], bulk), problem == "")
 		action.task_name = "Load %s" % title.to_lower()
 		kinds.append(action)
 	if kinds.is_empty():
 		return Action.info("Load filament (the rack is empty: order some at the PC)")
 	return Action.submenu("Load filament", kinds)
+
+
+## Why a filament can't be loaded, on a spool or on a big reel, or "" if it can.
+func load_problem(filament: Dictionary, bulk := false) -> String:
+	if bulk and has_unit():
+		return "A big reel won't go in a multicolour unit"
+	return FilamentRules.problem(mods.apply(spec), filament)
 
 
 ## Starting the last job again, and, with a print operator on the staff, the
@@ -675,11 +698,13 @@ func start_print(product: StringName, p_preset: StringName, slots: Array[int] = 
 	_minutes = plan["minutes"]
 	var colours: Array[StringName] = []
 	var moisture := 0.0
+	var recycled := false
 	for index in _slots_used.size():
 		var loaded := spools[_slots_used[index]]
 		loaded.grams -= _grams_used[index]
 		colours.append(loaded.colour)
 		moisture = maxf(moisture, loaded.moisture)
+		recycled = recycled or loaded.recycled
 	var material: StringName = plan["material"]
 	item = PrintedItem.create(product, colours, preset, material)
 	extras.clear()
@@ -688,7 +713,7 @@ func start_print(product: StringName, p_preset: StringName, slots: Array[int] = 
 	_lay_out()
 	_grow(0.0)
 	job = PrintJob.new(GameClock.to_seconds(_minutes))
-	var fate := Game.roll_print(spec, preset, material, product, wear, mods, moisture, int(plan["swaps"]))
+	var fate := Game.roll_print(spec, preset, material, product, wear, mods, moisture, int(plan["swaps"]), recycled)
 	if not fate.is_empty():
 		job.fail(fate["failure"], fate["at"])
 	# A part that runs out before anything else goes wrong stops the print there.
@@ -750,6 +775,14 @@ func _grow(progress: float) -> void:
 func power_cut() -> void:
 	if status == Status.PRINTING and not job.is_finished():
 		job.fail(Game.data.failures["power_cut"], job.progress)
+
+
+## Grams of filament in the ruined print on the plate: what had been laid down when it failed.
+func scrap_grams() -> float:
+	var total := 0.0
+	for grams in _grams_used:
+		total += grams
+	return total * (job.progress if job != null else 0.0)
 
 
 ## Hands over the ruined print, leaving the printer ready to use again.
@@ -862,13 +895,13 @@ func _arrange_tray() -> void:
 # Tasks. Each checks it still makes sense when its turn comes, because the
 # world may have changed while it sat in the queue.
 
-func _load(agent: Agent, material: StringName, colour: StringName) -> void:
+func _load(agent: Agent, material: StringName, colour: StringName, bulk := false) -> void:
 	var rack := _rack()
-	if free_slot() < 0 or not rack.has(material, colour) or FilamentRules.problem(mods.apply(spec), Game.data.filaments[material]) != "":
+	if free_slot() < 0 or not rack.has(material, colour, bulk) or load_problem(Game.data.filaments[material], bulk) != "":
 		agent.say("Can't load that filament right now")
 		return
-	await agent.go_to(rack.spot(material, colour))
-	await agent.reach(func() -> void: agent.carry(rack.take(material, colour)))
+	await agent.go_to(rack.spot(material, colour, bulk))
+	await agent.reach(func() -> void: agent.carry(rack.take(material, colour, bulk)))
 	if agent.carried == null:
 		return
 	await agent.go_to(self)
@@ -970,8 +1003,22 @@ func _collect(agent: Agent, as_storage := false) -> void:
 	await agent.go_to(self)
 	if post_minutes() > 0.0:
 		await agent.work(post_minutes())
-	await agent.reach(func() -> void: _pick_up(agent, take_items()))
-	await _shelve(agent, shelf, as_storage)
+	await agent.reach(func() -> void: carry_prints(agent, take_items()))
+	await shelve_prints(agent, shelf, as_storage)
+
+
+## Carries a plate of resin prints to the wash and cure station and leaves them in it.
+func _to_station(agent: Agent) -> void:
+	var station := WashStation.with_room(get_tree())
+	if status != Status.DONE or station == null:
+		agent.say("Nothing to take" if status != Status.DONE else "The wash and cure station is full")
+		return
+	# Its place is kept while the plate is on its way over.
+	station.expect()
+	await agent.go_to(self)
+	await agent.reach(func() -> void: carry_prints(agent, take_items()))
+	await agent.go_to(station)
+	await agent.reach(func() -> void: station.put_in(agent.release() as PrintedItem))
 
 
 func _empty_tray(agent: Agent) -> void:
@@ -989,14 +1036,14 @@ func _empty_tray(agent: Agent) -> void:
 			copy.scale = Vector3.ONE
 			copy.visible = true
 		_arrange_tray()
-		_pick_up(agent, taken)
+		carry_prints(agent, taken)
 		Game.changed.emit())
-	await _shelve(agent, shelf)
+	await shelve_prints(agent, shelf)
 
 
 ## Gives the character several prints to carry as one: the first in hand and
 ## the rest riding along out of sight, inside it.
-func _pick_up(agent: Agent, items: Array[PrintedItem]) -> void:
+static func carry_prints(agent: Agent, items: Array[PrintedItem]) -> void:
 	if items.is_empty():
 		return
 	agent.carry(items[0])
@@ -1005,8 +1052,8 @@ func _pick_up(agent: Agent, items: Array[PrintedItem]) -> void:
 		copy.visible = false
 
 
-## Takes what _pick_up handed over to the shelving and puts each print away.
-func _shelve(agent: Agent, shelf: StorageShelf, as_storage := false) -> void:
+## Takes what carry_prints handed over to the shelving and puts each print away.
+static func shelve_prints(agent: Agent, shelf: StorageShelf, as_storage := false) -> void:
 	if agent.carried == null:
 		return
 	await agent.go_to(shelf.spot(null if as_storage else agent.carried))
@@ -1032,7 +1079,18 @@ func _clear(agent: Agent) -> void:
 		return
 	await agent.go_to(self)
 	await agent.work(float(scrap.failure["clear_minutes"]) * Game.research.effect("clear_time"))
+	var material := scrap.item.material
+	var grams := scrap_grams()
 	await agent.reach(func() -> void: agent.carry(take_scrap()))
+	# What a recycler can melt down goes in its hopper, not the bin.
+	var recycler := Recycler.taking(get_tree(), material)
+	if recycler != null:
+		await agent.go_to(recycler)
+		await agent.reach(func() -> void:
+			agent.release().queue_free()
+			recycler.feed(material, grams))
+		agent.say("Shredded the failed print")
+		return
 	await agent.walk_to(get_tree().get_first_node_in_group(&"bin").global_position)
 	await agent.reach(func() -> void: agent.release().queue_free())
 	agent.say("Binned the failed print")

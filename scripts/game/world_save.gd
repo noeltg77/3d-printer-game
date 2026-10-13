@@ -22,6 +22,7 @@ const PARTS := {
 	"bench": &"workbench",
 	"rack": &"filament_rack",
 	"dryer": &"dryer_spot",
+	"machines": &"machinery",
 	"shelf": &"print_storage",
 	"conveyor": &"conveyor",
 	"moulder": &"moulder",
@@ -141,6 +142,10 @@ func move(place: StringName) -> bool:
 		flat_packs.append_array(StorageRules.pack_for_move(world["rack"]))
 	if world.has("bench"):
 		flat_packs.append_array(StorageRules.pack_for_move(world["bench"]))
+	if world.has("machines"):
+		# A machine goes with what is in it, to be found again when it is stood up.
+		world["machines"]["stowed"] = StorageRules.stow_machines(world["machines"])
+		flat_packs.append_array(StorageRules.pack_for_move(world["machines"]))
 	for fitting in flat_packs:
 		var box := Supplier.Delivery.new()
 		box.fitting = fitting

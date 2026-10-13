@@ -14,6 +14,7 @@ func _init() -> void:
 	_test_resin()
 	_test_filaments()
 	_test_moisture()
+	_test_reels_and_recycling()
 	_test_printable_designs()
 	_test_design_studio()
 	_test_markets_and_trends()
@@ -625,6 +626,63 @@ func _test_moisture() -> void:
 	var boxes := supplier.place({"dryers": {"dryhive_mini_dryer_s1": 1}, "spools": {"red": 1}}, 0.0)
 	_check(boxes.size() == 2 and boxes[1].dryer == &"dryhive_mini_dryer_s1" and boxes[1].describe() == "Filament dryer", "a dryer comes in a box of its own")
 	_check(Supplier.Delivery.restored(_through_file(boxes[1].save())).dryer == &"dryhive_mini_dryer_s1", "and survives a save while on its way")
+
+
+func _test_reels_and_recycling() -> void:
+	var data := GameData.load_all()
+	var pla: Dictionary = data.filaments["pla"]
+	var supplier := Supplier.new(data)
+	_check(FilamentRules.spool_key("pla", "red") == "pla:red" and FilamentRules.spool_key("pla", "red", true) == "pla:red:bulk", "a big reel's key says so on the end")
+	_check(FilamentRules.is_bulk("pla:red:bulk") and not FilamentRules.is_bulk("pla:red") and not FilamentRules.is_bulk("red"), "and only a big reel's does")
+	_check(FilamentRules.material_of("pla:red:bulk") == "pla" and FilamentRules.colour_of("pla:red:bulk") == "red", "its material and colour read as a spool's do")
+	_check(FilamentRules.has_bulk(pla) and not FilamentRules.has_bulk(data.filaments["pla_silk"]) and not FilamentRules.has_bulk(data.filaments["resin"]), "the plain filaments come on big reels; the fancy ones and resin don't")
+	_check(is_equal_approx(FilamentRules.new_grams(pla, true), 5000.0) and is_equal_approx(FilamentRules.new_grams(pla), 1000.0), "a big reel holds five spools' worth")
+	_check(FilamentRules.weight_label(5000.0) == "5 kg" and FilamentRules.weight_label(750.0) == "750 g" and FilamentRules.weight_label(2500.0) == "2.5 kg", "weights read as a shop would put them")
+	var reel := supplier.spool_price("pla", true)
+	_check(reel == roundi(float(pla["bulk_price_pence_per_kg"]) * 5.0) and reel < supplier.spool_price("pla") * 5, "a big reel costs less than five spools")
+	_check(supplier.price_of({"spools": {"pla:red:bulk": 1, "pla:red": 2}}) == reel + supplier.spool_price("pla") * 2, "a basket prices each by its size")
+	var box := supplier.place({"spools": {"pla:red:bulk": 1}}, 0.0)[0]
+	_check(Supplier.Delivery.restored(_through_file(box.save())).spools == ([&"pla:red:bulk"] as Array[StringName]), "and a reel on its way survives a save")
+	for filament: Dictionary in data.filaments.values():
+		if FilamentRules.has_bulk(filament):
+			_check(float(filament["bulk_price_pence_per_kg"]) < float(filament["price_pence_per_kg"]), "a big reel is cheaper by the kilo (%s)" % filament["id"])
+
+	var machine: Dictionary = data.fittings["loopline_recycler"]
+	var rules: Dictionary = data.settings["recycling"]
+	_check(Recycling.family_of(machine, pla) == "pla" and Recycling.family_of(machine, data.filaments["pla_silk"]) == "pla", "a fancy PLA is recycled as plain PLA")
+	_check(Recycling.family_of(machine, data.filaments["resin"]) == "" and Recycling.family_of(machine, data.filaments["tpu"]) == "", "resin and rubbery filament can't be recycled")
+	_check(Recycling.is_leftover(120.0, rules) and not Recycling.is_leftover(800.0, rules), "a spool with little left is a leftover")
+	_check(Recycling.extra_fail_chance(true, rules) > 0.0 and is_zero_approx(Recycling.extra_fail_chance(false, rules)), "recycled filament adds a little risk")
+	var recycler := Recycling.new(machine)
+	_check(not recycler.in_use() and recycler.problem("pla") != "", "an empty recycler can make nothing")
+	_check(is_equal_approx(recycler.feed(pla, 200.0), 180.0) and is_equal_approx(recycler.grams_of("pla"), 180.0), "the shredder loses a tenth of what goes in")
+	_check(is_zero_approx(recycler.feed(data.filaments["resin"], 500.0)) and recycler.hopper.size() == 1, "and takes nothing it can't melt")
+	recycler.feed(data.filaments["pla_silk"], 700.0)
+	recycler.feed(data.filaments["petg"], 400.0)
+	_check(is_equal_approx(recycler.grams_of("pla"), 810.0) and is_equal_approx(recycler.grams_of("petg"), 360.0), "each family is kept apart in the hopper")
+	_check(recycler.problem("pla") == "it needs 190 g more" and not recycler.start("pla", &"red"), "a spool needs a full kilo of one family")
+	recycler.feed(pla, 300.0)
+	_check(recycler.problem("pla") == "" and recycler.start("pla", &"red"), "with enough in, a spool is set winding in the colour asked for")
+	_check(is_equal_approx(recycler.grams_of("pla"), 80.0) and recycler.problem("petg") != "", "it uses a kilo, and winds one spool at a time")
+	_check(not recycler.advance(60.0) and is_equal_approx(recycler.progress(), 60.0 / float(machine["extrude_minutes"])), "winding takes its time")
+	var saved := Recycling.new(machine)
+	saved.restore(_through_file(recycler.save()), data.filaments)
+	_check(saved.job["colour"] == "red" and is_equal_approx(saved.grams_of("petg"), 360.0) and is_equal_approx(saved.progress(), recycler.progress()), "a recycler part way through survives a save")
+	_check(recycler.advance(float(machine["extrude_minutes"])) and recycler.job.is_empty() and recycler.ready == {"material": "pla", "colour": "red"}, "and ends with a spool ready")
+	_check(recycler.problem("petg") != "" and recycler.take() == {"material": "pla", "colour": "red"} and recycler.ready.is_empty(), "which has to be taken off before the next")
+	_check(supplier.price_of({"fittings": {"loopline_recycler": 1}}) == int(machine["price_pence"]), "a recycler has its shop price")
+
+	var station: Dictionary = data.fittings["rinseworks_wash_cure"]
+	var big: Dictionary = data.fittings["rinseworks_wash_cure_max"]
+	var resin: Dictionary = data.filaments["resin"]
+	var finishing: Dictionary = data.settings["resin_finishing"]
+	_check(ResinFinish.needed(resin) and not ResinFinish.needed(pla), "resin has to be washed and cured; filament doesn't")
+	_check(is_zero_approx(ResinFinish.hand_minutes(pla, finishing)) and ResinFinish.hand_minutes(resin, finishing) > ResinFinish.machine_minutes(resin, station), "a station is quicker than doing it by hand")
+	_check(ResinFinish.machine_minutes(resin, big) < ResinFinish.machine_minutes(resin, station) and int(big["plates"]) > int(station["plates"]), "and the big one quicker still, with room for more")
+	_check(ResinFinish.stage(10.0, 12.0) == ResinFinish.WASHING and ResinFinish.stage(5.0, 12.0) == ResinFinish.CURING and ResinFinish.stage(0.0, 12.0) == ResinFinish.READY, "a plate is washed, then cured, then ready")
+	var rules_of_storage := StorageRules.new(data)
+	_check(rules_of_storage.limit(data.premises["garage"], "recycler") == 1 and rules_of_storage.limit(data.premises["factory"], "wash") == 1, "a place has room for one of each machine")
+	_check(StorageRules.stow_machines({"units": [{"fitting": "loopline_recycler", "state": {"hopper": {"pla": 500.0}}}]})["loopline_recycler"]["hopper"]["pla"] == 500.0, "what is in a machine goes with it on a move")
 
 
 func _test_design_studio() -> void:

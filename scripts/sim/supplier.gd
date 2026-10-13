@@ -4,8 +4,8 @@ extends RefCounted
 ## after a lead time. A basket is
 ##   { printers: { printer_id: qty }, spools: { spool key: qty }, packaging: { packaging id: packs },
 ##     parts: { part or upgrade id: packs }, dryers: { dryer_id: qty }, fittings: { fitting_id: qty } }
-## A spool key is "material:colour" (FilamentRules.spool_key); a bare colour
-## means PLA. Each printer, each dryer and each fitting (shelving, a rack) ships in its own box; spools, packaging and spare parts share one.
+## A spool key is "material:colour" (FilamentRules.spool_key), with ":bulk" on
+## the end for a 5 kg reel; a bare colour means PLA. Each printer, each dryer and each fitting (shelving, a rack) ships in its own box; spools, packaging and spare parts share one.
 
 
 ## What the mailer boxes of an old save are now.
@@ -99,7 +99,7 @@ func price_of(basket: Dictionary) -> int:
 	for printer_id: String in basket.get("printers", {}):
 		total += int(data.printers[printer_id]["price_pence"]) * int(basket["printers"][printer_id])
 	for key: String in basket.get("spools", {}):
-		total += spool_price(FilamentRules.material_of(key)) * int(basket["spools"][key])
+		total += spool_price(FilamentRules.material_of(key), FilamentRules.is_bulk(key)) * int(basket["spools"][key])
 	for kind: String in basket.get("packaging", {}):
 		total += packaging_price(kind) * int(basket["packaging"][kind])
 	for part_id: String in basket.get("parts", {}):
@@ -111,10 +111,12 @@ func price_of(basket: Dictionary) -> int:
 	return total
 
 
-## Price of one spool of a filament.
-func spool_price(material := FilamentRules.DEFAULT_MATERIAL) -> int:
+## Price of one spool of a filament, or with `bulk` of one big reel of it,
+## which costs less by the kilo.
+func spool_price(material := FilamentRules.DEFAULT_MATERIAL, bulk := false) -> int:
 	var filament: Dictionary = data.filaments[material]
-	return roundi(filament["price_pence_per_kg"] * filament["spool_grams"] / 1000.0 * float(price_multipliers.get(material, 1.0))
+	var per_kg := float(filament["bulk_price_pence_per_kg"] if bulk else filament["price_pence_per_kg"])
+	return roundi(per_kg * FilamentRules.new_grams(filament, bulk) / 1000.0 * float(price_multipliers.get(material, 1.0))
 		* float(terms.get("spools", 1.0)))
 
 

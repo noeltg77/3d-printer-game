@@ -12,7 +12,7 @@ const BASKET_LINES := 4
 
 var screen: PcScreen
 
-## Spool key ("material:colour") -> number of spools wanted.
+## Spool key ("material:colour", or "material:colour:bulk" for a big reel) -> number wanted.
 var _basket: Dictionary = {}
 ## Filament id whose colours are on show.
 var _material := FilamentRules.DEFAULT_MATERIAL
@@ -97,7 +97,7 @@ func _sidebar() -> Control:
 	var rack := _rack()
 	var low := ""
 	for spool in rack.spools():
-		shelf.add_child(Ui.text("%s · %d g" % [spool.title(), roundi(spool.grams)], 13, Ui.MUTED))
+		shelf.add_child(Ui.text("%s · %d g%s" % [spool.title(), roundi(spool.grams), " · %s" % spool.size_label() if spool.bulk else ""], 13, Ui.MUTED))
 		if spool.grams < Advice.LOW_SPOOL_GRAMS:
 			low = "%s is running low" % spool.title()
 	if rack.spools().is_empty():
@@ -124,7 +124,7 @@ func _catalogue() -> Control:
 		Ui.icon("box", 28, Ui.ORANGE_DARK),
 		Ui.vbox([
 			Ui.text("Room for %d more spool%s on your rack" % [room, "" if room == 1 else "s"], 15, Ui.INK, 800),
-			Ui.text("%d of %d slots used, %d on the way. Every spool is 1 kg." % [
+			Ui.text("%d of %d slots used, %d on the way. A spool is 1 kg; a big reel takes one slot too." % [
 				rack.spools().size(), rack.spools().size() + rack.free_slots(), coming], 13, WARM_TEXT),
 		], 0),
 	], 16), Ui.outlined(WARM, WARM_LINE, 18, 18, 14))
@@ -143,6 +143,10 @@ func _catalogue() -> Control:
 		about.add_child(Ui.text("Prints in it sell for %d%% more." % premium, 13, Ui.GREEN_DARK, 800))
 	if not needs.is_empty():
 		about.add_child(Ui.wrap(Ui.text("Before you buy: it %s." % ", and ".join(needs), 13, Ui.RED_DARK, 800)))
+	if FilamentRules.has_bulk(filament):
+		var saving := roundi((1.0 - float(filament["bulk_price_pence_per_kg"]) / float(filament["price_pence_per_kg"])) * 100.0)
+		about.add_child(Ui.wrap(Ui.text("Also on %s reels: %d%% less by the kilo and far fewer changes of spool. Too big for a multicolour unit or a small dryer, and it sits out soaking up damp for longer." % [
+			FilamentRules.weight_label(float(filament["bulk_grams"])), saving], 13, WARM_TEXT, 800)))
 
 	var grid := GridContainer.new()
 	grid.columns = 4
@@ -170,15 +174,21 @@ func _spool_card(colour: StringName) -> Control:
 	var filament: Dictionary = Game.data.filaments[_material]
 	var picture := Ui.panel(ModelPicture.of_spool(colour, 104), Ui.box(Ui.SOFT, 14, 0, 0))
 	picture.custom_minimum_size.y = 120
-	var card := Ui.card(Ui.vbox([
+	var lines := Ui.vbox([
 		picture,
 		Ui.hbox([Ui.pill(filament["name"], Ui.PAPER, Ui.INK), null, Ui.text(BRAND, 12, Ui.MUTED)]),
 		Ui.title(Palette.display_name(colour), 17),
 		Ui.hbox([
-			Ui.text(Money.format(Game.supplier.spool_price(_material)), 16, Ui.INK, 800), null,
+			Ui.text("%s · %s" % [FilamentRules.weight_label(FilamentRules.new_grams(filament)), Money.format(Game.supplier.spool_price(_material))], 15, Ui.INK, 800), null,
 			Ui.button("Add", _add.bind(FilamentRules.spool_key(_material, colour), 1)),
 		]),
-	], 8), 20, 14)
+	], 8)
+	if FilamentRules.has_bulk(filament):
+		lines.add_child(Ui.hbox([
+			Ui.text("%s · %s" % [FilamentRules.weight_label(FilamentRules.new_grams(filament, true)), Money.format(Game.supplier.spool_price(_material, true))], 15, Ui.INK, 800), null,
+			Ui.button("Add", _add.bind(FilamentRules.spool_key(_material, colour, true), 1)),
+		]))
+	var card := Ui.card(lines, 20, 14)
 	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	return card
 
@@ -190,16 +200,17 @@ func _basket_card() -> Control:
 		var quantity: int = _basket[key]
 		var colour := FilamentRules.colour_of(key)
 		var material := FilamentRules.material_of(key)
+		var bulk := FilamentRules.is_bulk(key)
 		var name_and_count := Ui.vbox([
 			Ui.text("%s %s" % [Palette.display_name(colour), Game.data.filaments[material]["name"]], 14, Ui.INK, 800),
-			Ui.text("Qty %d" % quantity, 12, Ui.MUTED),
+			Ui.text("%s · Qty %d" % [FilamentRules.weight_label(FilamentRules.new_grams(Game.data.filaments[material], bulk)), quantity], 12, Ui.MUTED),
 		], 0)
 		name_and_count.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		var remove := Ui.button("-", _add.bind(key, -1), Ui.INSET, Ui.INK, 30, 10)
 		remove.tooltip_text = "Take one out"
 		lines.add_child(Ui.hbox([
-			ModelPicture.of_spool(colour, 40), name_and_count, remove,
-			Ui.text(Money.format(Game.supplier.spool_price(material) * quantity), 14, Ui.INK, 800),
+			ModelPicture.of_spool(colour, 40, bulk), name_and_count, remove,
+			Ui.text(Money.format(Game.supplier.spool_price(material, bulk) * quantity), 14, Ui.INK, 800),
 		], 12))
 	if _basket.is_empty():
 		lines.add_child(Ui.text("Nothing in it yet.", 14, Ui.MUTED))

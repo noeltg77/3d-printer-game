@@ -1,4 +1,4 @@
-[gd_scene load_steps=40 format=3]
+[gd_scene load_steps=41 format=3]
 
 [ext_resource type="PackedScene" path="res://assets/models/garage/factory.glb" id="1_garage"]
 [ext_resource type="PackedScene" path="res://assets/models/furniture/workbench_long.glb" id="2_workbench"]
@@ -35,6 +35,7 @@
 [ext_resource type="Script" path="res://scripts/game/world_save.gd" id="36_world_save"]
 [ext_resource type="Script" path="res://scripts/world/day_night.gd" id="37_day_night"]
 [ext_resource type="Script" path="res://scripts/world/dryer_spot.gd" id="38_dryer_spot"]
+[ext_resource type="Script" path="res://scripts/world/machinery.gd" id="90_machinery"]
 [ext_resource type="Script" path="res://scripts/world/staff_room.gd" id="39_staff_room"]
 [ext_resource type="PackedScene" path="res://assets/models/surroundings/estate_factory.glb" id="40_surroundings"]
 [ext_resource type="Script" path="res://scripts/world/surroundings.gd" id="41_surroundings"]
@@ -200,6 +201,9 @@ display_name = "Bin"
 [node name="DryerSpot" type="Node3D" parent="."]
 transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 8.3, 0, 5.8)
 script = ExtResource("38_dryer_spot")
+
+[node name="Machinery" type="Node3D" parent="."]
+script = ExtResource("90_machinery")
 
 [node name="DeliveryZone" type="Node3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.45, 0, -1.2)

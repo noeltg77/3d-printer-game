@@ -122,6 +122,13 @@
 		"step": 0.2,
 		"extra_fail_per_step": 0.03
 	},
+	"recycling": {
+		"leftover_grams": 300,
+		"extra_fail": 0.02
+	},
+	"resin_finishing": {
+		"hand_multiplier": 1.5
+	},
 	"moulding": {
 		"mould_fee_multiple": 200,
 		"mould_fee_min_pence": 79999,

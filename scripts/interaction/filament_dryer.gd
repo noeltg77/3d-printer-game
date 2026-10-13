@@ -76,6 +76,8 @@ func has_room() -> bool:
 func problem(spool: Spool) -> String:
 	if not has_room():
 		return "the dryer is full"
+	if spool.bulk and not spec.get("takes_bulk", false):
+		return "a %s is too big for this dryer" % spool.size_label()
 	if not Moisture.can_dry(spec, Game.data.filaments[spool.material]):
 		return "this dryer doesn't get hot enough for it"
 	return ""

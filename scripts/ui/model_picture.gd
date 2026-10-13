@@ -48,8 +48,8 @@ static func of_printer(spec: Dictionary, pixels: int) -> ModelPicture:
 	return create(PrinterStation.MODEL_PATH % spec["model"]["asset"], pixels)
 
 
-static func of_spool(colour: StringName, pixels: int) -> ModelPicture:
-	return create(Spool.MODEL_PATH % colour, pixels)
+static func of_spool(colour: StringName, pixels: int, bulk := false) -> ModelPicture:
+	return create((Spool.REEL_PATH if bulk else Spool.MODEL_PATH) % colour, pixels)
 
 
 ## The picture on a cream tile, for the start of a row in a shop's list.

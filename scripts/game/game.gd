@@ -20,7 +20,8 @@ const SAVE_VERSION := 1
 ## What the mailer boxes of an old save are now.
 const LEGACY_PACKAGING := Supplier.LEGACY_PACKAGING
 ## Kind of fitting (data/fittings.json) -> group of the node it adds to.
-const FITTING_HOSTS := {"shelf": &"print_storage", "rack": &"filament_rack", "bench": &"workbench", "units": &"workbench"}
+const FITTING_HOSTS := {"shelf": &"print_storage", "rack": &"filament_rack", "bench": &"workbench", "units": &"workbench",
+	"recycler": &"machinery", "wash": &"machinery"}
 
 var data: GameData
 var clock: GameClock
@@ -599,12 +600,14 @@ func print_grams(product: StringName, preset: StringName) -> float:
 
 ## Chance (0 to 1) that printing a design this way goes wrong. `wear` and
 ## `mods` are the state of the printer's parts and its upgrades, if it has any.
-## `swaps` is how many times its multicolour unit changes colour in the print.
+## `swaps` is how many times its multicolour unit changes colour in the print,
+## and `recycled` says a spool it draws on was made in the recycler.
 func fail_chance(printer: Dictionary, preset: StringName, filament: StringName, product: StringName,
-		wear: PrinterWear = null, mods: PrinterMods = null, moisture := 0.0, swaps := 0) -> float:
+		wear: PrinterWear = null, mods: PrinterMods = null, moisture := 0.0, swaps := 0, recycled := false) -> float:
 	var spec := mods.apply(printer) if mods != null else printer
 	var extra := Moisture.extra_fail_chance(moisture, data.settings["moisture"]) + (
 		wear.extra_fail_chance() * research.effect("worn_risk") if wear != null else 0.0)
+	extra += Recycling.extra_fail_chance(recycled, data.settings["recycling"])
 	if mods != null:
 		extra += Multicolour.jam_chance(mods.unit(), swaps)
 	var chance := PrintRisk.fail_chance(spec, data.presets[preset], data.filaments[filament], data.products[product], extra) * research.effect("fail_chance")
@@ -617,13 +620,13 @@ func fail_chance(printer: Dictionary, preset: StringName, filament: StringName, 
 ## Decides the fate of a print as it starts. Returns {} if it will go well, or
 ## { failure, at } with the failure's row and the progress at which it strikes.
 func roll_print(printer: Dictionary, preset: StringName, filament: StringName, product: StringName,
-		wear: PrinterWear = null, mods: PrinterMods = null, moisture := 0.0, swaps := 0) -> Dictionary:
+		wear: PrinterWear = null, mods: PrinterMods = null, moisture := 0.0, swaps := 0, recycled := false) -> Dictionary:
 	if data.failures.has(force_failure):
 		var forced: Dictionary = data.failures[force_failure]
 		force_failure = ""
 		return {"failure": forced, "at": PrintRisk.strike_point(forced, rng)}
 	var spec := mods.apply(printer) if mods != null else printer
-	return PrintRisk.roll(fail_chance(printer, preset, filament, product, wear, mods, moisture, swaps), data.failures,
+	return PrintRisk.roll(fail_chance(printer, preset, filament, product, wear, mods, moisture, swaps, recycled), data.failures,
 		_print_flags(spec, preset, product, wear, moisture, filament, mods, swaps), data.filaments[filament], rng,
 		_failure_multipliers(mods))
 
@@ -907,13 +910,13 @@ func supplier_problem(basket: Dictionary) -> String:
 		return "Nowhere to stand another printer"
 	if more_places > 0 and printer_places() + more_places > StorageRules.max_printers(premises_row()):
 		return "This place only has room for %d printers. Take a bench out to make room for a rack." % StorageRules.max_printers(premises_row())
-	for kind: String in ["shelf", "rack"]:
+	for kind: String in ["shelf", "rack", Recycler.KIND, WashStation.KIND]:
 		var wanted := 0
 		for fitting_id: String in basket.get("fittings", {}):
 			if data.fittings[fitting_id]["kind"] == kind:
 				wanted += int(basket["fittings"][fitting_id])
 		if wanted > 0 and fitting_count(kind) + wanted > storage.limit(premises_row(), kind):
-			return "No room here for more %s" % {"shelf": "shelving", "rack": "filament racks"}[kind]
+			return "No room here for more %s" % {"shelf": "shelving", "rack": "filament racks", Recycler.KIND: "recyclers", WashStation.KIND: "wash and cure stations"}[kind]
 	return ""
 
 
@@ -942,8 +945,8 @@ func printer_places() -> int:
 
 
 ## The node that takes on bought fittings of a kind: the shelving, the
-## filament rack or the workbench.
-func fitting_host(kind: String) -> Interactable:
+## filament rack, the workbench or, for a machine, the Machinery.
+func fitting_host(kind: String) -> Node:
 	return get_tree().get_first_node_in_group(FITTING_HOSTS[kind])
 
 
@@ -954,11 +957,14 @@ func complete_resale(title: String, pence: int) -> void:
 	changed.emit()
 
 
-## How many units of a kind of fitting ("shelf", "rack" or "bench") the
+## How many units of a kind of fitting ("shelf", "rack", "bench" or a machine's) the
 ## business has: standing in the room, waiting to be put up, or on their way.
 func fitting_count(kind: String) -> int:
 	var host := fitting_host(kind)
-	var count: int = host.call(&"unit_count") if host != null else 1
+	var count := 1
+	if host != null:
+		# The Machinery holds machines of more than one kind, and none to begin with.
+		count = host.call(&"count_of", kind) if host.has_method(&"count_of") else host.call(&"unit_count")
 	var boxed: Array[Supplier.Delivery] = supplier.pending.duplicate()
 	for box: DeliveryBox in get_tree().get_nodes_in_group(&"delivery_box"):
 		boxed.append(box.delivery)

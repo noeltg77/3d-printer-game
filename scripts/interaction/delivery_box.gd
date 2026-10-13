@@ -118,8 +118,9 @@ func _unpack(agent: Agent) -> void:
 		await agent.reach(func() -> void:
 			for key in delivery.spools:
 				var material := FilamentRules.material_of(key)
+				var bulk := FilamentRules.is_bulk(key)
 				rack.store(Spool.create(StringName(FilamentRules.colour_of(key)),
-					float(Game.data.filaments[material]["spool_grams"]), StringName(material)))
+					FilamentRules.new_grams(Game.data.filaments[material], bulk), StringName(material), bulk))
 			Game.changed.emit())
 	if not delivery.packaging.is_empty():
 		# Boxes and bags are kept at the packing station.
