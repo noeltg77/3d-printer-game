@@ -257,6 +257,69 @@ class MeshBuilder:
         bmesh.ops.transform(self.bm, matrix=matrix, verts=verts)
         return self._paint_new(before, colour)
 
+    def lump(self, size, centre, colour, power=1.0, rings=7, sides=10, keep=None, rim=None, rotation=(0.0, 0.0, 0.0)):
+        """Faceted rounded lump filling a box of `size`: for heads, hair and soft shapes.
+
+        `power` 1 is an ellipsoid; lower pushes it out towards the box's corners.
+        `keep(x, y, z)`, given the middle of a face with the lump as a unit ball,
+        leaves the face out when false: a cap of hair is the top of a lump. `rim`
+        then closes the open edge with a skirt drawn in to that share of the size,
+        so the cap meets whatever it sits on instead of floating over it.
+        """
+        def bulge(value):
+            return math.copysign(abs(value) ** power, value)
+
+        def unit(ring, side):
+            lat = -math.pi / 2 + math.pi * ring / rings
+            lon = 2 * math.pi * (side + 0.5) / sides
+            across = bulge(math.cos(lat))
+            return Vector((across * bulge(math.cos(lon)), across * bulge(math.sin(lon)), bulge(math.sin(lat))))
+
+        matrix = _transform(centre, rotation) @ Matrix.Diagonal((size[0] / 2, size[1] / 2, size[2] / 2, 1.0))
+        middle = matrix @ Vector((0.0, 0.0, 0.0))
+        points = {}
+
+        def vert(ring, side):
+            key = (ring, 0 if ring in (0, rings) else side % sides)
+            if key not in points:
+                at = unit(*key)
+                points[key] = (at, self.bm.verts.new(matrix @ at))
+            return points[key]
+
+        faces = []
+        edge_uses = {}
+        for ring in range(rings):
+            for side in range(sides):
+                corners = [vert(ring, side), vert(ring, side + 1), vert(ring + 1, side + 1), vert(ring + 1, side)]
+                corners = [corner for index, corner in enumerate(corners) if corner[1] not in [other[1] for other in corners[:index]]]
+                mid = sum((corner[0] for corner in corners), Vector()) / len(corners)
+                if keep is not None and not keep(mid.x, mid.y, mid.z):
+                    continue
+                face = self.bm.faces.new([corner[1] for corner in corners])
+                face.normal_update()
+                if face.normal.dot(face.calc_center_median() - middle) < 0:
+                    face.normal_flip()
+                faces.append(face)
+                for first, second in zip(corners, corners[1:] + corners[:1]):
+                    edge_uses.setdefault(frozenset((first[1], second[1])), []).append((first, second, face))
+        if rim is not None:
+            inner = {}
+            for uses in edge_uses.values():
+                if len(uses) != 1:
+                    continue
+                first, second, owner = uses[0]
+                for at, outer in (first, second):
+                    if outer not in inner:
+                        inner[outer] = self.bm.verts.new(matrix @ (at * rim))
+                face = self.bm.faces.new((first[1], second[1], inner[second[1]], inner[first[1]]))
+                face.normal_update()
+                # The skirt faces away from the cap it hangs off.
+                if face.normal.dot(owner.calc_center_median() - face.calc_center_median()) > 0:
+                    face.normal_flip()
+                faces.append(face)
+        self.paint(faces, colour)
+        return faces
+
     def enlarge(self, factor):
         """Scales everything built so far about the origin. For small parts that are
         easier to lay out at real proportions and then bring up to a readable size."""

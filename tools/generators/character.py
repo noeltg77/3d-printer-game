@@ -1,8 +1,9 @@
 """Segmented character generator. No skinning: every part is a rigid object on a pivot.
 
-Chunky and rounded to match the props: a head about a third of the height,
-short capsule limbs, mitten hands, a torso that widens to the shoulders, and
-hair built from a few clumps. Every part is bevelled.
+Chunky and rounded to match the props: a round head about a third of the
+height, short capsule limbs, mitten hands, a torso that widens to the
+shoulders, and hair that is a cap with a few clumps. Every part is bevelled
+or faceted.
 
 Hierarchy (origin at the feet, facing -Y, left is +X):
   body (pivot: hips)
@@ -30,7 +31,7 @@ HIP = 0.47
 ELBOW = 0.72
 SHOULDER = 0.94
 NECK = 1.0
-HEAD = 1.27
+HEAD = 1.26
 SIDES = 8
 HAIR_STYLES = ("short", "bun", "long", "quiff")
 
@@ -66,38 +67,45 @@ def build(args, rng):
 
 
 def _head(args, rng, body_obj):
+    """A round head: a ball of a skull under a cap of hair, with ears and a simple face."""
     head = MeshBuilder()
-    head.box((0.46, 0.42, 0.48), (0, 0, HEAD), args.skin, bevel=0.1, bevel_segments=3)
-    front = -0.212
+    skull = (0.46, 0.44, 0.46)
+    head.lump(skull, (0, 0, HEAD), args.skin, power=0.85)
     for side in (-1, 1):
-        head.cylinder(0.03, 0.014, (side * 0.095, front, 1.25), "ink", segments=SIDES, axis="Y")
-        head.box((0.08, 0.014, 0.022), (side * 0.095, front, 1.34), args.hair)
+        head.ball(0.035, (side * 0.092, -0.198, 1.25), "ink", scale=(0.9, 0.4, 1.1))
+        head.box((0.085, 0.02, 0.022), (side * 0.092, -0.2, 1.338), args.hair, rotation=(0.12, 0, -side * 0.42), bevel=0.006)
+        head.ball(0.05, (side * 0.228, 0.0, 1.235), args.skin, subdivisions=1, scale=(0.5, 0.75, 1.0))
 
-    def clump(size, centre, rotation=(0.0, 0.0, 0.0)):
-        """One chunk of hair, nudged a little by the seed so no two heads match."""
-        size = tuple(dimension * rng.uniform(0.95, 1.05) for dimension in size)
-        rotation = tuple(angle + rng.uniform(-0.06, 0.06) for angle in rotation)
-        head.box(size, centre, args.hair, rotation=rotation, bevel=min(size) * 0.3, bevel_segments=2)
+    def jitter(size, rotation=(0.0, 0.0, 0.0)):
+        """A size and a turn nudged a little by the seed, so no two heads match."""
+        return (tuple(dimension * rng.uniform(0.95, 1.05) for dimension in size),
+            tuple(angle + rng.uniform(-0.06, 0.06) for angle in rotation))
+
+    def clump(size, centre, rotation=(0.0, 0.0, 0.0), power=0.7):
+        size, rotation = jitter(size, rotation)
+        head.lump(size, centre, args.hair, power=power, rings=5, sides=8, rotation=rotation)
 
     style = args.hair_style
-    clump((0.5, 0.46, 0.16), (0, 0.01, 1.5))
-    if style == "long":
-        clump((0.5, 0.14, 0.62), (0, 0.2, 1.22))
-        for side in (-1, 1):
-            clump((0.1, 0.24, 0.5), (side * 0.245, 0.08, 1.27))
-        clump((0.34, 0.12, 0.11), (0.05, -0.19, 1.5), (0, 0, -0.15))
-    else:
-        clump((0.48, 0.14, 0.34), (0, 0.2, 1.37))
-    if style in ("short", "bun"):
-        for side in (-1, 1):
-            clump((0.1, 0.26, 0.2), (side * 0.24, 0.08, 1.42))
+    # The cap: the top of a slightly bigger ball, lower at the back than the
+    # brow, with its edge drawn in to meet the skull all the way round.
+    back = -0.95 if style == "long" else -0.45
+    hair = tuple(dimension * 1.085 for dimension in skull)
+    head.lump(hair, (0, 0.004, HEAD + 0.012), args.hair, power=0.85, rim=0.86,
+        keep=lambda x, y, z: z > 0.32 - (0.32 - back) * max(min(y, 1.0), -0.4) if y < 0 else z > 0.32 - (0.32 - back) * min(y * 1.6, 1.0))
     if style == "short":
-        clump((0.36, 0.14, 0.14), (-0.06, -0.19, 1.49), (0, 0.12, 0.18))
+        clump((0.3, 0.14, 0.1), (-0.05, -0.17, 1.455), (-0.25, 0.12, 0.2))
     elif style == "bun":
-        clump((0.21, 0.21, 0.19), (0, 0.1, 1.66))
+        clump((0.3, 0.14, 0.09), (0, -0.17, 1.45), (-0.25, 0, 0))
+        clump((0.2, 0.2, 0.18), (0, 0.11, 1.56), power=0.9)
+    elif style == "long":
+        # Down past the shoulders at the back, with a lock in front of each ear.
+        clump((0.44, 0.16, 0.5), (0, 0.17, 1.14), power=0.6)
+        for side in (-1, 1):
+            clump((0.09, 0.2, 0.34), (side * 0.215, 0.05, 1.2), power=0.6)
+        clump((0.3, 0.12, 0.09), (0.05, -0.17, 1.45), (-0.25, 0, -0.15))
     elif style == "quiff":
-        clump((0.32, 0.2, 0.16), (0, -0.14, 1.58), (0.4, 0, 0))
-        clump((0.22, 0.18, 0.12), (0.04, 0.0, 1.62), (0.2, 0, 0))
+        clump((0.3, 0.2, 0.14), (0, -0.13, 1.5), (0.4, 0, 0))
+        clump((0.22, 0.18, 0.11), (0.03, 0.0, 1.535), (0.2, 0, 0))
     head.finish("head", pivot=(0, 0, NECK), parent=body_obj)
 
 
