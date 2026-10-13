@@ -141,6 +141,10 @@ func _queue_move(to: Transform3D) -> void:
 
 ## The task of walking over and shifting it to `to`.
 func move_to(agent: Agent, to: Transform3D) -> void:
+	# The spot was free when it was chosen, which may be a while ago.
+	if Placer.problem_for(get_tree(), fitting, to, self) != "":
+		agent.say("Something is in the way there now. Choose another spot.")
+		return
 	await agent.go_to(self)
 	await agent.reach()
 	global_transform = to
