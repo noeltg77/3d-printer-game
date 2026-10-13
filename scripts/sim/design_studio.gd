@@ -7,6 +7,10 @@ extends RefCounted
 ## designs builds skill. A new or changed design may hide a fault that only a
 ## test print shows up. Rules come from the `design` settings in data/game.json.
 ##
+## A proven design can be licensed to other makers, who each pay a royalty on
+## what they sell of it, day by day. They are after the same buyers, so the
+## business's own listing of it gets fewer orders for every maker selling it.
+##
 ## Designing takes time at the PC, and can be left and come back to: the
 ## minutes put in so far are kept (`progress`) until the piece of work is done.
 
@@ -14,7 +18,10 @@ extends RefCounted
 var products: Dictionary
 ## The `design` block of data/game.json.
 var rules: Dictionary
-## Product id -> { version, quality, faulty, fault_known, tested }.
+## Product id -> { version, quality, faulty, fault_known, tested,
+## licensed_quality, makers, royalties }. `licensed_quality` is the quality of
+## the version other makers have, 0 while it isn't licensed; `makers` is how
+## many of them sell it and `royalties` the pence it has ever brought in.
 var designs: Dictionary[StringName, Dictionary] = {}
 ## Designs and iterations finished so far. Builds skill.
 var completed := 0
@@ -117,12 +124,17 @@ func fault_chance() -> float:
 
 ## Finishes the next version of a design: V1 if it is new. Returns its record.
 func complete(product: StringName, rng: RandomNumberGenerator) -> Dictionary:
+	# Makers with a licence keep selling the version they have.
+	var old: Dictionary = designs.get(product, {})
 	var record := {
 		"version": version(product) + 1,
 		"quality": next_quality(product),
 		"faulty": rng.randf() < fault_chance(),
 		"fault_known": false,
 		"tested": false,
+		"licensed_quality": int(old.get("licensed_quality", 0)),
+		"makers": int(old.get("makers", 0)),
+		"royalties": int(old.get("royalties", 0)),
 	}
 	designs[product] = record
 	completed += 1
@@ -171,6 +183,94 @@ func fix(product: StringName) -> void:
 		designs[product]["tested"] = true
 
 
+## True if other makers have a licence to print and sell a design.
+func licensed(product: StringName) -> bool:
+	return has(product) and int(designs[product]["licensed_quality"]) > 0
+
+
+## Why a design can't be licensed as it stands, or its newest version sent to
+## the makers who already have it. "" if it can.
+func licence_problem(product: StringName) -> String:
+	if not has(product):
+		return "Only your own designs can be licensed"
+	var record := designs[product]
+	if needs_fix(product):
+		return "Fix its fault first"
+	if not record["tested"]:
+		return "Print one first, to prove it"
+	if int(record["licensed_quality"]) >= int(record["quality"]):
+		return "Makers already have this version"
+	return ""
+
+
+## Offers a design to other makers, or sends them its newest version. False
+## if it can't be (see licence_problem).
+func license(product: StringName) -> bool:
+	if licence_problem(product) != "":
+		return false
+	designs[product]["licensed_quality"] = int(designs[product]["quality"])
+	return true
+
+
+## Takes a design back: the makers selling it stop, and stop paying.
+func withdraw(product: StringName) -> void:
+	if has(product):
+		designs[product]["licensed_quality"] = 0
+		designs[product]["makers"] = 0
+
+
+## Makers selling a licensed design.
+func makers(product: StringName) -> int:
+	return int(designs[product]["makers"]) if has(product) else 0
+
+
+## The most makers a design licensed at `quality` will find: a better one draws more.
+func max_makers(quality: int) -> int:
+	return quality * int(rules["licence"]["makers_per_quality"])
+
+
+## The share of each sale a maker pays, 0 to 1.
+func royalty_rate() -> float:
+	return float(rules["licence"]["royalty_pct"])
+
+
+## Pence a day a design licensed at `quality` brings in on an ordinary day,
+## once every maker it will find has taken it up.
+func royalty_estimate(product: StringName, quality: int) -> int:
+	return roundi(_royalty_per_maker(product) * max_makers(quality))
+
+
+## How the business's own listing of a design does beside the makers selling
+## it: a multiplier on demand, 1.0 with none.
+func own_share(product: StringName) -> float:
+	return clampf(1.0 - makers(product) * float(rules["licence"]["competition_per_maker"]), 0.0, 1.0)
+
+
+## A day of licensing ends: another maker may take up each licensed design,
+## and every maker pays on what they sold. Returns product id -> pence earned.
+func royalty_day(rng: RandomNumberGenerator) -> Dictionary[StringName, int]:
+	var licence: Dictionary = rules["licence"]
+	var spread: Array = licence["sales_spread"]
+	var paid: Dictionary[StringName, int] = {}
+	for product in designs:
+		if not licensed(product):
+			continue
+		var record := designs[product]
+		if int(record["makers"]) < max_makers(int(record["licensed_quality"])) and rng.randf() < float(licence["uptake_chance"]):
+			record["makers"] = int(record["makers"]) + 1
+		var pence := roundi(_royalty_per_maker(product) * int(record["makers"]) * rng.randf_range(spread[0], spread[1]))
+		if pence > 0:
+			record["royalties"] = int(record["royalties"]) + pence
+			paid[product] = pence
+	return paid
+
+
+## Pence one maker pays on an ordinary day: the royalty on what they sell.
+func _royalty_per_maker(product: StringName) -> float:
+	var row: Dictionary = products[product]
+	return float(row["base_price_pence"]) * royalty_rate() * float(row["demand_per_day"]) * float(rules["licence"]["sales_share"])
+
+
 func save() -> Dictionary:
 	return {"designs": designs, "completed": completed, "progress": progress, "fix_progress": fix_progress,
 		"current": current, "current_is_fix": current_is_fix}
@@ -185,6 +285,9 @@ func restore(data: Dictionary) -> void:
 			designs[StringName(product)] = {
 				"version": int(saved["version"]), "quality": int(saved["quality"]), "faulty": bool(saved["faulty"]),
 				"fault_known": bool(saved["fault_known"]), "tested": bool(saved["tested"]),
+				# Saves from before designs could be licensed have none of these.
+				"licensed_quality": int(saved.get("licensed_quality", 0)), "makers": int(saved.get("makers", 0)),
+				"royalties": int(saved.get("royalties", 0)),
 			}
 	completed = int(data["completed"])
 	progress.clear()

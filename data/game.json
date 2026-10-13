@@ -106,7 +106,15 @@
 		"fault_chance": 0.3,
 		"fault_chance_per_skill": 0.1,
 		"appeal_base": 0.7,
-		"appeal_per_quality": 0.1
+		"appeal_per_quality": 0.1,
+		"licence": {
+			"royalty_pct": 0.1,
+			"makers_per_quality": 2,
+			"uptake_chance": 0.6,
+			"sales_share": 0.5,
+			"sales_spread": [0.6, 1.4],
+			"competition_per_maker": 0.04
+		}
 	},
 	"moisture": {
 		"gain_per_day": 0.2,

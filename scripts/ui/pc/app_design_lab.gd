@@ -303,7 +303,52 @@ func _own_design(product: StringName) -> Control:
 	if studio.can_improve(product) and not studio.needs_fix(product):
 		rows.add_child(_task_button(_carry_on(product, false, "Improve to V%d (%s)" % [record["version"] + 1, GameClock.duration_label(studio.minutes_for(product))]),
 			computer.design_action(product)))
+	rows.add_child(_licence(product))
 	return rows
+
+
+## The part of an own design's card about licensing it to other makers: what
+## it brings in and what it costs in orders, or the offer to start.
+func _licence(product: StringName) -> Control:
+	var studio := Game.studio
+	var record := studio.designs[product]
+	var rate := roundi(studio.royalty_rate() * 100.0)
+	var per_maker := roundi(float(Game.data.settings["design"]["licence"]["competition_per_maker"]) * 100.0)
+	var rows := Ui.vbox([], 8)
+	if not studio.licensed(product):
+		var most := studio.max_makers(int(record["quality"]))
+		rows.add_child(Ui.wrap(Ui.text("License it: other makers pay you %d%% of each one they sell. Up to %d would take it, for about %s a day, but each costs you %d%% of your own orders for it." % [
+			rate, most, Money.format(studio.royalty_estimate(product, int(record["quality"]))), per_maker], 13, Ui.MUTED)))
+		rows.add_child(_licence_button("License to other makers", product))
+		return rows
+	var makers := studio.makers(product)
+	var lost := roundi((1.0 - studio.own_share(product)) * 100.0)
+	rows.add_child(Ui.hbox([
+		Ui.pill("Licensed", Ui.GREEN_DARK, Ui.GREEN_SOFT, 13),
+		Ui.text("%d of %d makers · %s earned" % [makers, studio.max_makers(int(record["licensed_quality"])), Money.format(int(record["royalties"]))], 13, Ui.MUTED, 800),
+	], 10))
+	rows.add_child(Ui.wrap(Ui.text("No makers have taken it up yet. Royalties are paid at the end of each day." if makers == 0
+		else "They pay you %d%% of each sale at the end of the day, and take %d%% of your own orders for it." % [rate, lost], 13, Ui.MUTED)))
+	var buttons := Ui.hbox([], 8)
+	# A better version draws more makers, once it is proven and sent to them.
+	if int(record["quality"]) > int(record["licensed_quality"]):
+		buttons.add_child(_licence_button("Send makers V%d" % record["version"], product))
+	var stop := Ui.button("Stop licensing", func() -> void: Game.withdraw_licence(product), Ui.WHITE, Ui.RED_DARK, 38, 12, SHADOW, 14)
+	stop.tooltip_text = "The makers stop selling it and stop paying. Licensing it again starts from none."
+	buttons.add_child(stop)
+	rows.add_child(buttons)
+	return rows
+
+
+## A button that licenses a design, or sends its newest version to the makers
+## who have it. Says why not when it can't.
+func _licence_button(label: String, product: StringName) -> Button:
+	var button := Ui.button(label, func() -> void: Game.license_design(product), Ui.WHITE, PURPLE_DARK, 38, 12, SHADOW, 14)
+	var problem := Game.studio.licence_problem(product)
+	button.disabled = problem != ""
+	button.tooltip_text = problem
+	button.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	return button
 
 
 ## What a button for a piece of design work says: `fresh` to start it, or how

@@ -690,6 +690,41 @@ func _test_design_studio() -> void:
 	_check(not desk.work(dragon, true, desk.fix_minutes() * 0.5) and is_equal_approx(desk.fraction(dragon, true), 0.5), "and it too can be done in parts")
 	_check(desk.work(dragon, true, desk.fix_minutes() * 0.5) and not desk.in_progress(dragon, true), "until it is done")
 
+	# Licensing an own design to other makers.
+	rules["fault_chance"] = 0.0
+	var licence: Dictionary = rules["licence"]
+	licence["uptake_chance"] = 1.0
+	licence["sales_spread"] = [1.0, 1.0]
+	var lab := DesignStudio.new(data.products, rules)
+	_check(lab.licence_problem(dragon) != "" and not lab.license(dragon), "a design that isn't the business's own can't be licensed")
+	lab.complete(dragon, rng)
+	_check(lab.licence_problem(dragon) != "" and not lab.license(dragon) and not lab.licensed(dragon), "nor one that has never been printed")
+	lab.printed(dragon)
+	_check(lab.licence_problem(dragon) == "" and lab.license(dragon) and lab.licensed(dragon), "a proven design can be licensed")
+	_check(lab.makers(dragon) == 0 and is_equal_approx(lab.own_share(dragon), 1.0), "no maker has it the day it is offered")
+	var first_day := lab.royalty_day(rng)
+	var each := roundi(1499 * float(licence["royalty_pct"]) * 3.0 * float(licence["sales_share"]))
+	_check(lab.makers(dragon) == 1 and first_day[dragon] == each, "a maker takes it up and pays a royalty on a day's sales")
+	_check(lab.own_share(dragon) < 1.0, "and takes some of the business's own orders for it")
+	var most := lab.max_makers(int(lab.designs[dragon]["quality"]))
+	for day in most + 3:
+		lab.royalty_day(rng)
+	_check(lab.makers(dragon) == most, "makers stop coming once all a design of that quality draws have it")
+	_check(lab.royalty_day(rng)[dragon] == lab.royalty_estimate(dragon, int(lab.designs[dragon]["quality"])), "an ordinary day then pays what was estimated")
+	_check(lab.licence_problem(dragon) != "", "there is nothing new to send them")
+	var earned := int(lab.designs[dragon]["royalties"])
+	lab.complete(dragon, rng)
+	_check(lab.licensed(dragon) and lab.makers(dragon) == most and lab.designs[dragon]["royalties"] == earned, "a new version leaves the licence as it was")
+	_check(not lab.license(dragon), "and can't go to the makers until it is proven")
+	lab.printed(dragon)
+	_check(lab.license(dragon) and lab.max_makers(int(lab.designs[dragon]["licensed_quality"])) > most, "a better version, once sent, draws more makers")
+	var kept := DesignStudio.new(data.products, rules)
+	kept.restore(_through_file(lab.save()))
+	_check(kept.licensed(dragon) and kept.makers(dragon) == most and kept.designs[dragon]["royalties"] == earned, "a licence comes back from a save")
+	lab.withdraw(dragon)
+	_check(not lab.licensed(dragon) and lab.makers(dragon) == 0 and lab.royalty_day(rng).is_empty(), "a design taken back pays nothing")
+	_check(is_equal_approx(lab.own_share(dragon), 1.0) and lab.designs[dragon]["royalties"] == earned, "and its orders come back")
+
 	var market := Marketplace.new(data.marketplaces["craftsy"], data.products)
 	var bought := market.orders_per_day(dragon, 1500)
 	_check(market.royalty_for(dragon, 1500) == 150, "a bought royalty design takes its cut")
