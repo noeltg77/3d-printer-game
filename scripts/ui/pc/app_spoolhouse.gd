@@ -7,6 +7,8 @@ const WARM_LINE := Color("F0C08C")
 const WARM_TEXT := Color("6B5A45")
 const DISABLED_LINE := Color("E6DCCB")
 const BRAND := "Plainly"
+## Basket lines shown before the list scrolls, so "Place order" stays in reach.
+const BASKET_LINES := 4
 
 var screen: PcScreen
 
@@ -16,13 +18,33 @@ var _basket: Dictionary = {}
 var _material := FilamentRules.DEFAULT_MATERIAL
 var _search := ""
 var _content: MarginContainer = null
+var _sidebar_scroll: ScrollContainer = null
+var _grid_scroll: ScrollContainer = null
+var _basket_scroll: ScrollContainer = null
 
 
 func refresh() -> void:
 	if _content == null:
 		_build()
+	# A refresh rebuilds every list, so put them back where the player had scrolled to.
+	var scrolled: Array[int] = []
+	for scroller: ScrollContainer in [_sidebar_scroll, _grid_scroll, _basket_scroll]:
+		scrolled.append(scroller.scroll_vertical if is_instance_valid(scroller) else 0)
+	_basket_scroll = null
 	Ui.clear(_content)
 	_content.add_child(Ui.hbox([_sidebar(), _catalogue(), _basket_card()], 24))
+	_restore_scroll.call_deferred(_sidebar_scroll, scrolled[0])
+	_restore_scroll.call_deferred(_grid_scroll, scrolled[1])
+	_restore_scroll.call_deferred(_basket_scroll, scrolled[2])
+
+
+func _restore_scroll(scroller: ScrollContainer, at: int) -> void:
+	if at <= 0:
+		return
+	# The list has no height to scroll through until it has been laid out.
+	await get_tree().process_frame
+	if is_instance_valid(scroller):
+		scroller.scroll_vertical = at
 
 
 func _build() -> void:
@@ -84,9 +106,12 @@ func _sidebar() -> Control:
 		shelf.add_child(Ui.text(low, 12, Ui.RED, 800))
 
 	var column := Ui.vbox([Ui.title("Material", 18), materials, Ui.panel(shelf, Ui.box(Ui.INSET, 16, 14, 14))], 12)
-	column.custom_minimum_size.x = 220
-	column.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
-	return column
+	# The list of materials is longer than a short window, and a column that
+	# can't shrink pushes the whole shop, Add buttons and all, off the bottom.
+	_sidebar_scroll = Ui.scroll(column)
+	_sidebar_scroll.custom_minimum_size.x = 236
+	_sidebar_scroll.size_flags_horizontal = Control.SIZE_FILL
+	return _sidebar_scroll
 
 
 func _catalogue() -> Control:
@@ -126,7 +151,8 @@ func _catalogue() -> Control:
 	for colour: String in filament["colours"]:
 		if _search.strip_edges() == "" or Palette.display_name(colour).containsn(_search.strip_edges()):
 			grid.add_child(_spool_card(StringName(colour)))
-	var column := Ui.vbox([notice, about, Ui.scroll(grid)], 16)
+	_grid_scroll = Ui.scroll(grid)
+	var column := Ui.vbox([notice, about, _grid_scroll], 16)
 	column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	return column
 
@@ -188,8 +214,14 @@ func _basket_card() -> Control:
 		Ui.text("Standard · %s" % GameClock.duration_label(Game.supplier.lead_minutes("filament")), 14), null, Ui.text("Free", 14),
 	]), Ui.box(Ui.SOFT, 12, 12, 10))
 
+	var listed: Control = lines
+	if _basket.size() > BASKET_LINES:
+		_basket_scroll = Ui.scroll(lines)
+		_basket_scroll.custom_minimum_size.y = BASKET_LINES * 52
+		_basket_scroll.size_flags_vertical = Control.SIZE_FILL
+		listed = _basket_scroll
 	var column := Ui.vbox([
-		Ui.title("Basket", 22), lines,
+		Ui.title("Basket", 22), listed,
 		Ui.text("Delivery", 14, Ui.INK, 800), delivery,
 		Ui.hbox([Ui.title("Total", 22), null, Ui.title(Money.format(total), 22)]),
 		Ui.wrap(Ui.text("Arrives day %d at %02d:%02d. Paid from %s." % [
@@ -218,6 +250,7 @@ func _add(key: String, by: int) -> void:
 
 func _pick_material(material: String) -> void:
 	_material = material
+	_grid_scroll = null
 	refresh.call_deferred()
 
 
