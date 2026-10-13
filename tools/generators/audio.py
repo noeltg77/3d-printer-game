@@ -21,7 +21,6 @@ import numpy as np
 
 OUT = Path(__file__).resolve().parents[2] / "assets" / "audio"
 RATE = 44100
-MUSIC_RATE = 32000
 TAU = 2.0 * np.pi
 
 
@@ -213,58 +212,110 @@ def done_beep():
 
 # --- Music ------------------------------------------------------------------
 
-BPM = 80.0
-BEAT = 60.0 / BPM
+# A piece is eight bars played twice. Each bar is its bass note, then the
+# notes of its chord. The tune goes over the second eight: for each bar,
+# (beat in the bar, note, beats long).
+MENU_THEME = {
+    "name": "menu_theme", "seed": 31, "rate": 32000, "bpm": 80.0, "drums": True, "tune_gain": 0.3,
+    "chords": [
+        (38, (54, 57, 61, 64)),   # D major 9
+        (35, (54, 57, 59, 62)),   # B minor 7
+        (43, (55, 59, 62, 66)),   # G major 7
+        (45, (52, 57, 61, 64)),   # A
+        (38, (54, 57, 61, 64)),   # D major 9
+        (35, (54, 57, 59, 62)),   # B minor 7
+        (40, (55, 59, 62, 66)),   # E minor 9
+        (45, (52, 57, 59, 64)),   # A sus 2
+    ],
+    "tune": [
+        [(0, 69, 1), (1.5, 78, 0.5), (2, 76, 1), (3, 74, 1)],
+        [(0, 71, 1.5), (2, 74, 1), (3, 78, 1)],
+        [(0, 79, 1.5), (1.5, 78, 0.5), (2, 74, 1), (3, 71, 1)],
+        [(0, 73, 1), (1, 76, 2), (3.5, 69, 0.5)],
+        [(0, 78, 1), (1, 81, 1), (2, 78, 0.5), (2.5, 76, 0.5), (3, 74, 1)],
+        [(0, 71, 1), (1, 74, 1), (2, 78, 2)],
+        [(0, 79, 1), (1, 76, 1), (2, 71, 1), (3, 74, 1)],
+        [(0, 76, 1.5), (1.5, 73, 0.5), (2, 69, 2)],
+    ],
+}
+# The two pieces heard while playing: slower and barer than the menu's, with
+# no drums, since they sit under hours of work and a room of printers.
+WORKSHOP_A = {
+    "name": "workshop_a", "seed": 32, "rate": 22050, "bpm": 72.0, "drums": False, "tune_gain": 0.24,
+    "chords": [
+        (43, (59, 62, 66, 69)),   # G major 9
+        (40, (55, 59, 62, 66)),   # E minor 9
+        (36, (55, 59, 60, 64)),   # C major 7
+        (38, (54, 57, 62, 64)),   # D add 9
+        (43, (59, 62, 66, 69)),   # G major 9
+        (35, (54, 57, 62, 66)),   # B minor
+        (36, (55, 59, 60, 64)),   # C major 7
+        (38, (55, 57, 62, 64)),   # D sus 4
+    ],
+    "tune": [
+        [(0, 74, 2), (2, 71, 1), (3, 69, 1)],
+        [(0, 67, 1.5), (2, 71, 2)],
+        [(0, 76, 1), (1, 72, 1), (2, 67, 2)],
+        [(0, 69, 1), (1, 74, 3)],
+        [(0, 71, 1), (1, 74, 1), (2, 79, 2)],
+        [(0, 78, 1.5), (1.5, 74, 0.5), (2, 71, 2)],
+        [(0, 72, 1), (1, 76, 1), (2, 79, 1), (3, 76, 1)],
+        [(0, 74, 2), (2, 69, 2)],
+    ],
+}
+WORKSHOP_B = {
+    "name": "workshop_b", "seed": 33, "rate": 22050, "bpm": 66.0, "drums": False, "tune_gain": 0.24,
+    "chords": [
+        (41, (57, 60, 64, 67)),   # F major 9
+        (38, (53, 57, 60, 64)),   # D minor 9
+        (34, (53, 58, 62, 65)),   # B flat major
+        (36, (52, 55, 60, 62)),   # C add 9
+        (33, (52, 55, 60, 64)),   # A minor 7
+        (38, (53, 57, 60, 64)),   # D minor 9
+        (43, (55, 58, 62, 65)),   # G minor 7
+        (36, (52, 55, 60, 62)),   # C add 9
+    ],
+    "tune": [
+        [(0, 72, 1), (1, 69, 1), (2, 77, 2)],
+        [(0, 74, 1.5), (1.5, 72, 0.5), (2, 69, 2)],
+        [(0, 70, 1), (1, 74, 1), (2, 77, 2)],
+        [(0, 76, 1), (1, 72, 3)],
+        [(0, 72, 1), (1, 76, 1), (2, 81, 2)],
+        [(0, 77, 2), (2, 74, 1), (3, 72, 1)],
+        [(0, 70, 1), (1, 74, 1), (2, 77, 1), (3, 74, 1)],
+        [(0, 72, 2), (2, 67, 2)],
+    ],
+}
 BARS = 16
-# One bar each: the bass note, then the notes of the chord. Eight bars, played twice.
-CHORDS = [
-    (38, (54, 57, 61, 64)),   # D major 9
-    (35, (54, 57, 59, 62)),   # B minor 7
-    (43, (55, 59, 62, 66)),   # G major 7
-    (45, (52, 57, 61, 64)),   # A
-    (38, (54, 57, 61, 64)),   # D major 9
-    (35, (54, 57, 59, 62)),   # B minor 7
-    (40, (55, 59, 62, 66)),   # E minor 9
-    (45, (52, 57, 59, 64)),   # A sus 2
-]
-# The tune over the second eight bars: (beat in the bar, note, beats long).
-TUNE = [
-    [(0, 69, 1), (1.5, 78, 0.5), (2, 76, 1), (3, 74, 1)],
-    [(0, 71, 1.5), (2, 74, 1), (3, 78, 1)],
-    [(0, 79, 1.5), (1.5, 78, 0.5), (2, 74, 1), (3, 71, 1)],
-    [(0, 73, 1), (1, 76, 2), (3.5, 69, 0.5)],
-    [(0, 78, 1), (1, 81, 1), (2, 78, 0.5), (2.5, 76, 0.5), (3, 74, 1)],
-    [(0, 71, 1), (1, 74, 1), (2, 78, 2)],
-    [(0, 79, 1), (1, 76, 1), (2, 71, 1), (3, 74, 1)],
-    [(0, 76, 1.5), (1.5, 73, 0.5), (2, 69, 2)],
-]
 # The order the notes of a chord are picked out in, an eighth note each.
 ARPEGGIO = (0, 2, 1, 3, 2, 3, 1, 2)
 
 
-def menu_theme():
-    """A slow, warm loop for the menu: a pad, a picked-out chord, a bass, and
-    after eight bars a tune and some soft percussion."""
-    rate = MUSIC_RATE
-    count = int(round(BARS * 4 * BEAT * rate))
+def piece(score):
+    """A slow, warm loop: a pad, a picked-out chord, a bass, and after eight
+    bars a tune. With drums, some soft percussion comes in after four."""
+    rate = score["rate"]
+    beat_seconds = 60.0 / score["bpm"]
+    chords = score["chords"]
+    count = int(round(BARS * 4 * beat_seconds * rate))
     left = np.zeros(count)
     right = np.zeros(count)
-    rng = np.random.default_rng(31)
+    rng = np.random.default_rng(score["seed"])
 
     def add(signal, beats, pan=0.0, gain=1.0):
         """Mixes a note in at a time given in beats. One that runs past the
         end carries on from the start, which is what makes the loop seamless."""
-        where = (int(round(beats * BEAT * rate)) + np.arange(len(signal))) % count
+        where = (int(round(beats * beat_seconds * rate)) + np.arange(len(signal))) % count
         np.add.at(left, where, signal * gain * np.sqrt(0.5 * (1.0 - pan)))
         np.add.at(right, where, signal * gain * np.sqrt(0.5 * (1.0 + pan)))
 
     for bar in range(BARS):
-        bass_note, chord = CHORDS[bar % len(CHORDS)]
+        bass_note, chord = chords[bar % len(chords)]
         start = bar * 4.0
         second_half = bar >= 8
 
         # Pad: each note two slightly detuned voices, one to each side.
-        t = times(4.0 * BEAT + 1.6, rate)
+        t = times(4.0 * beat_seconds + 1.6, rate)
         swell = np.minimum(t / 0.7, 1.0) * np.minimum((t[-1] - t) / 1.5, 1.0)
         for note in chord:
             for detune, pan in ((-0.07, -0.7), (0.07, 0.7)):
@@ -274,25 +325,25 @@ def menu_theme():
 
         # Bass: the root on the first beat, and again just before the third.
         for beat, length, gain in ((0.0, 2.3, 1.0), (2.5, 1.4, 0.7)):
-            t = times(length * BEAT, rate)
+            t = times(length * beat_seconds, rate)
             freq = midi(bass_note)
             tone = (np.sin(TAU * freq * t) + 0.35 * np.sin(TAU * freq * 2.0 * t)) * np.minimum(t / 0.012, 1.0) * np.exp(-t / 0.9)
             add(faded(tone, rate, 0.03), start + beat, 0.0, 0.36 * gain)
 
         # The chord picked out an octave up, quieter the first time round.
         for step, index in enumerate(ARPEGGIO):
-            if not second_half and step % 2 == 1 and bar < 4:
+            if not second_half and step % 2 == 1 and (bar < 4 or not score["drums"]):
                 continue
             tone = pluck(midi(chord[index] + 12), 1.3, rate, decay=0.34, bright=0.35)
             late = 0.03 if step % 2 == 1 else 0.0
             add(tone, start + step * 0.5 + late, (-0.45, 0.45)[step % 2], 0.15 * rng.uniform(0.75, 1.0))
 
         if second_half:
-            for beat, note, length in TUNE[bar - 8]:
-                tone = pluck(midi(note), length * BEAT + 1.2, rate, decay=0.5 + 0.15 * length, bright=0.55)
-                add(tone, start + beat, 0.1, 0.3)
+            for beat, note, length in score["tune"][bar - 8]:
+                tone = pluck(midi(note), length * beat_seconds + 1.2, rate, decay=0.5 + 0.15 * length, bright=0.55)
+                add(tone, start + beat, 0.1, score["tune_gain"])
 
-        if bar >= 4:
+        if score["drums"] and bar >= 4:
             # A shaker on the eighths, a soft thump on one and three, a tick on two and four.
             for step in range(8):
                 t = times(0.07, rate)
@@ -310,11 +361,11 @@ def menu_theme():
 
     mix = np.stack([left, right], axis=1)
     # An echo a dotted eighth behind, swapped to the other side each time.
-    echo = int(round(0.75 * BEAT * rate))
+    echo = int(round(0.75 * beat_seconds * rate))
     wet = shape(mix, rate, lowpass(2400.0))
     mix = mix + 0.24 * np.roll(wet[:, ::-1], echo, axis=0) + 0.1 * np.roll(wet, 2 * echo, axis=0)
     mix = shape(mix, rate, lambda freq: lowpass(7500.0)(freq) * highpass(32.0)(freq))
-    write("music/menu_theme", mix, rate, peak=0.7)
+    write("music/" + score["name"], mix, rate, peak=0.7)
 
 
 FAMILIES = {
@@ -325,7 +376,7 @@ FAMILIES = {
         lambda: motion_loop("motion_b", 42, 230.0, 840.0, 1.3),
         done_beep,
     ],
-    "music": [menu_theme],
+    "music": [lambda: piece(MENU_THEME), lambda: piece(WORKSHOP_A), lambda: piece(WORKSHOP_B)],
 }
 
 

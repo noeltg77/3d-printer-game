@@ -42,7 +42,14 @@ func refresh() -> void:
 	card.custom_minimum_size.x = 760
 	card.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	card.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
-	var page := Ui.margin(Ui.scroll(Ui.vbox([card, _save_card()], 20)), 32, 24, 32, 24)
+	var sound := Ui.card(Ui.vbox([
+		Ui.title("Sound", 22),
+		Ui.wrap(Ui.text("How loud the music is, and everything else: the printers, the clicks and the beeps.", 14, Ui.MUTED)),
+		VolumeControls.new(),
+	], 16), 22, 24, SHADOW)
+	sound.custom_minimum_size.x = 760
+	sound.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	var page := Ui.margin(Ui.scroll(Ui.vbox([card, sound, _save_card()], 20)), 32, 24, 32, 24)
 	page.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	add_child(page)
 
