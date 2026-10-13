@@ -31,9 +31,12 @@ const DESIGNS := 7
 const RACK_SPOOLS := 16
 const SHELF_PRINTS := 10
 const OWNER_DUTIES: Array[String] = ["clear", "collect", "reprint", "pack", "finish"]
-## How far to the left of the room the camera looks, as a share of the view's
-## width, so the room sits clear of the menu.
+## How far to the left of the room the camera looks at the least, as a share
+## of the view's width, so the room sits clear of the menu.
 const SHIFT := 0.17
+## How near the right of the view a small room's far corner may come, as a
+## share of the view's width.
+const EDGE := 0.02
 ## The view's height as a share of the premises camera's own, and when close in.
 const WIDE_SHARE := 0.88
 const CLOSE_SIZE := 4.6
@@ -52,6 +55,10 @@ var _curtain := ColorRect.new()
 var _home := Transform3D.IDENTITY
 var _wide_size := 11.5
 var _lean := Vector2.ZERO
+## The middle of the floor, and half its width across the screen in metres,
+## as the premises camera sees them.
+var _centre := Vector2.ZERO
+var _half_width := 0.0
 var _focus := Vector2.ZERO
 var _close_until := 0.0
 var _hovered: Interactable = null
@@ -159,6 +166,7 @@ func _stage() -> void:
 	_home = theirs.transform
 	camera.far = theirs.far
 	_wide_size = theirs.size * WIDE_SHARE
+	_measure_floor()
 	camera.size = _wide_size
 	_room.remove_child(theirs)
 	theirs.free()
@@ -190,6 +198,23 @@ func _restore(world: Dictionary) -> void:
 		var node := get_tree().get_first_node_in_group(WorldSave.PARTS[key])
 		if node != null and world.has(key):
 			node.call(&"restore", world[key])
+
+
+## Finds where the floor is in the camera's view. The room is framed by its
+## floor, not by where the premises camera happens to point.
+func _measure_floor() -> void:
+	var grid := _room.get_node_or_null(^"FloorGrid")
+	if grid == null:
+		_centre = Vector2.ZERO
+		_half_width = 0.0
+		return
+	var area: Rect2 = grid.get(&"area")
+	var to_view := _home.affine_inverse()
+	var middle := to_view * Vector3(area.get_center().x, 0.0, area.get_center().y)
+	_centre = Vector2(middle.x, middle.y)
+	_half_width = 0.0
+	for corner: Vector2 in [area.position, area.end, Vector2(area.end.x, area.position.y), Vector2(area.position.x, area.end.y)]:
+		_half_width = maxf(_half_width, absf((to_view * Vector3(corner.x, 0.0, corner.y)).x - middle.x))
 
 
 ## Fits the room out as a going concern: designs on sale, printers part way
@@ -309,12 +334,17 @@ func _move_camera(delta: float) -> void:
 	var close := now < _close_until
 	var size := minf(CLOSE_SIZE, _wide_size * 0.6) if close else _wide_size * (1.0 + 0.025 * sin(now * 0.13))
 	camera.size = lerpf(camera.size, size, 1.0 - exp(-2.2 * delta))
-	var mouse := get_viewport().get_mouse_position() / view - Vector2(0.5, 0.5)
+	# Clamped: the mouse may be well outside the window.
+	var mouse := (get_viewport().get_mouse_position() / view - Vector2(0.5, 0.5)).clampf(-0.5, 0.5)
 	_lean = _lean.lerp(Vector2(-mouse.x, mouse.y) * (0.15 if close else 0.5), 1.0 - exp(-3.0 * delta))
 	var drift := Vector2(sin(now * 0.11) * 0.45, sin(now * 0.07 + 1.0) * 0.2)
-	var centre := _focus if close else drift
-	# Looking to the left of the subject puts it to the right of the menu.
-	var shift := camera.size * view.aspect() * SHIFT
+	var centre := _focus if close else _centre + drift
+	# Looking to the left of the subject puts it to the right of the menu. A
+	# small room goes as far over as it can with its far corner still in view.
+	var width := camera.size * view.aspect()
+	var shift := width * SHIFT
+	if not close:
+		shift = maxf(shift, width * (0.5 - EDGE) - _half_width)
 	var target := centre + _lean - Vector2(shift, 0.0)
 	var seen := _home.affine_inverse() * camera.position
 	var at := Vector2(seen.x, seen.y).lerp(target, 1.0 - exp(-2.2 * delta))
