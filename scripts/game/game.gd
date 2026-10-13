@@ -666,6 +666,18 @@ func design_problem(product: StringName) -> String:
 	return ""
 
 
+## Adds game minutes at the PC to the next version of a design, or to a fix
+## to it. True when that finishes it.
+func design_work(product: StringName, fix: bool, minutes: float) -> bool:
+	if not studio.work(product, fix, minutes):
+		return false
+	if fix:
+		finish_design_fix(product)
+	else:
+		finish_design(product)
+	return true
+
+
 ## The character has finished the next version of an own design at the PC.
 func finish_design(product: StringName) -> void:
 	var record := studio.complete(product, rng)
@@ -1042,7 +1054,7 @@ func _count_takings(pence: int) -> void:
 	stats["best_month_pence"] = maxi(stats["best_month_pence"], stats["month_pence"])
 
 
-## How many staff the premises have room for. None until there is a workshop.
+## How many staff the premises have room for. None in the garage, one in the small unit.
 func staff_capacity() -> int:
 	return int(premises_row().get("staff", 0))
 

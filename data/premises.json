@@ -20,7 +20,7 @@
 		{
 			"id": "small_unit",
 			"name": "Small unit",
-			"description": "A lock-up unit on the trading estate. A long bench for four printers, twice the shelving and a proper filament rack.",
+			"description": "A lock-up unit on the trading estate. A long bench for four printers, twice the shelving, a proper filament rack and room to take one person on.",
 			"tier": 2,
 			"scene": "res://scenes/unit/unit.tscn",
 			"move_cost_pence": 149999,
@@ -31,7 +31,7 @@
 			"shelf_units": 3,
 			"rack_units": 2,
 			"max_printers": 8,
-			"staff": 0
+			"staff": 1
 		},
 		{
 			"id": "workshop",

@@ -82,7 +82,8 @@ The rules below are in the game but not in the model.
 - **Gritty filament.** Glow, Wood and Carbon PLA wear a brass nozzle out in a few prints, and the player never fits a hardened one, so those 20 designs are left out as well. In a short trial with them in, printers broke down several times a game.
 - **Printing several to a bed.** Each print is one item. Batches would save the character's time, which is the limit in the unit, so the unit may be worth more than the table says to a player who uses them.
 - **Pricing.** Everything is listed at the typical price for the marketplace. Raising prices to thin out orders is the other answer to a full day.
-- **The workshop and staff.** The long game stops at the small unit. A second pair of hands is what would lift the limit found above.
+- **Staff.** The small unit now has room for one member of staff (all three roles apply from tier 2), which is the second pair of hands that would lift the limit found above. The scripted player never hires, so none of the figures here include one: what an operator or a packer at £39.99 to £44.99 a day does to a unit's earnings is not measured.
+- **The workshop.** The long game stops at the small unit.
 
 ## Changed in the catalogue pass
 

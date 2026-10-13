@@ -143,6 +143,9 @@ static func items(tree: SceneTree) -> Array[Dictionary]:
 	if Game.research.current != &"" and owner != null and not owner.current_label.begins_with("Studying"):
 		_add(found, "Carry on with %s" % Game.data.courses[Game.research.current]["name"],
 			"You are part way through the course. Click the computer and carry on studying: it only moves on while you are sat at the desk.")
+	if Game.studio.current != &"" and owner != null and not owner.current_label.begins_with("Designing") and not owner.current_label.begins_with("Fixing"):
+		_add(found, "Carry on with your %s design" % Game.product_name(Game.studio.current).to_lower(),
+			"You left it part way through. Click the computer and carry on: it only moves on while you are sat at the desk.")
 	elif Game.research.current == &"" and found.is_empty():
 		for course: String in Game.data.courses:
 			if Game.study_problem(StringName(course)) == "":

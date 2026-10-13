@@ -1,4 +1,4 @@
-[gd_scene load_steps=47 format=3]
+[gd_scene load_steps=48 format=3]
 
 [ext_resource type="PackedScene" path="res://assets/models/garage/unit.glb" id="1_garage"]
 [ext_resource type="PackedScene" path="res://assets/models/furniture/workbench_long.glb" id="2_workbench"]
@@ -46,6 +46,7 @@
 [ext_resource type="Script" path="res://scripts/interaction/packing_station.gd" id="61_packing_station"]
 [ext_resource type="PackedScene" path="res://assets/models/furniture/finishing_bench.glb" id="62_finishing_bench"]
 [ext_resource type="Script" path="res://scripts/interaction/finishing_bench.gd" id="63_finishing_bench"]
+[ext_resource type="Script" path="res://scripts/world/staff_room.gd" id="64_staff_room"]
 
 [sub_resource type="Environment" id="Environment_garage"]
 background_mode = 1
@@ -163,6 +164,10 @@ script = ExtResource("38_dryer_spot")
 [node name="DeliveryZone" type="Node3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.45, 0, -0.85)
 script = ExtResource("31_delivery_zone")
+
+[node name="StaffRoom" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.6, 0, -0.1)
+script = ExtResource("64_staff_room")
 
 [node name="Outbox" parent="." instance=ExtResource("33_outbox_mat")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.45, 0, 0.6)
