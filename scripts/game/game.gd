@@ -1210,6 +1210,26 @@ func postage_shortfall(product: StringName, shop: Marketplace) -> int:
 
 
 ## Finished items of a design on the shelves.
+## The designs with finished prints on the shelving.
+func stocked_designs() -> Array[StringName]:
+	var shelf: StorageShelf = get_tree().get_first_node_in_group(&"print_storage")
+	return shelf.products() if shelf != null else ([] as Array[StringName])
+
+
+## Where a finished print of a design would best be sold: the marketplace it
+## is listed on that leaves the most from a sale, or, listed nowhere, the
+## first at the price it would go up for. As { shop, price, profit, listed }.
+func best_sale(product: StringName) -> Dictionary:
+	var best := {}
+	for shop in open_markets():
+		var entry := shop.listing(product)
+		var listed: bool = entry["listed"]
+		var profit := unit_profit(product, entry["price"], shop)
+		if best.is_empty() or (listed and not best["listed"]) or (listed == best["listed"] and profit > best["profit"]):
+			best = {"shop": shop, "price": int(entry["price"]), "profit": profit, "listed": listed}
+	return best
+
+
 func stock_of(product: StringName) -> int:
 	var shelf: StorageShelf = get_tree().get_first_node_in_group(&"print_storage")
 	return shelf.count_of(product) if shelf != null else 0

@@ -247,6 +247,15 @@ func room_for(product: StringName) -> int:
 	return room
 
 
+## The designs there are finished prints of, loose or in a bin, in the order they were found.
+func products() -> Array[StringName]:
+	var found: Array[StringName] = []
+	for item in _items():
+		if not found.has(item.product):
+			found.append(item.product)
+	return found
+
+
 func count_of(product: StringName) -> int:
 	return _items().filter(func(item: PrintedItem) -> bool: return item.product == product).size()
 
