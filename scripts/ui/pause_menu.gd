@@ -97,6 +97,7 @@ func _build(status := "") -> void:
 	_body.add_child(_button("Load a game", _show_list.bind(true)))
 	_body.add_child(_button("Main menu", _leave.bind(true)))
 	_body.add_child(_button("Quit to desktop", _leave.bind(false)))
+	_body.add_child(Ui.margin(VolumeControls.new(), 4, 8, 0, 0))
 	if status == "" and not saving:
 		status = "Saving is switched off for this run."
 	_status = Ui.wrap(Ui.text(status, 13, Ui.MUTED))

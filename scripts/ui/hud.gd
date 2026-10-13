@@ -76,6 +76,8 @@ func _ready() -> void:
 
 	add_child(NightOverlay.new())
 
+	# The HUD is only there when a game is being played, so that is its cue.
+	Sound.music_list(Sound.GAME_MUSIC)
 	_agent.status_changed.connect(_refresh)
 	_agent.said.connect(_show_toast)
 	Game.notified.connect(_show_toast)

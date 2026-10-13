@@ -23,6 +23,12 @@ const VOICES := 6
 ## How high over the floor the ears are, as a share of the height of the
 ## camera's view: zooming in on a printer brings it closer.
 const EAR_HEIGHT := 0.4
+## The pieces heard while a game is played, in turn. Each goes round a couple
+## of times, then there is a while with only the room before the next.
+const GAME_MUSIC: Array[StringName] = [&"workshop_a", &"workshop_b"]
+const LIST_ROUNDS := 2
+const LIST_GAP_SECONDS := 50.0
+const LIST_FADE_SECONDS := 4.0
 
 var _levels: Dictionary[StringName, float] = {}
 var _streams: Dictionary[String, AudioStream] = {}
@@ -32,6 +38,13 @@ var _music := AudioStreamPlayer.new()
 var _music_name: StringName = &""
 var _fade: Tween = null
 var _ears := AudioListener3D.new()
+## The pieces being played in turn, or empty when it is one track or silence.
+var _list: Array[StringName] = []
+var _list_at := 0
+## Real time, in seconds, at which the piece playing is to fade, and at which
+## the next one starts.
+var _list_fade_at := 0.0
+var _list_next_at := 0.0
 
 
 func _ready() -> void:
@@ -61,6 +74,7 @@ func _ready() -> void:
 
 
 func _process(_delta: float) -> void:
+	_run_list()
 	# The game looks down from a long way off, at an angle, so the camera is no
 	# place to listen from. The ears go over the spot it is looking at.
 	var camera := get_viewport().get_camera_3d()
@@ -116,6 +130,39 @@ func ui(sound: StringName, pitch := 1.0) -> void:
 ## Fades to a piece of music in assets/audio/music, or to silence with &"".
 ## Asking for what is already playing changes nothing.
 func music(track: StringName, fade_seconds := 1.5) -> void:
+	_list.clear()
+	_play(track, fade_seconds)
+
+
+## Plays several pieces in turn for as long as nothing else is asked for, with
+## a quiet while between them. Asking for the list already going changes
+## nothing, so it carries on across a change of scene.
+func music_list(tracks: Array[StringName]) -> void:
+	if tracks == _list:
+		return
+	_list = tracks.duplicate()
+	_list_at = -1
+	_list_fade_at = 0.0
+	_list_next_at = 0.0
+
+
+## Moves the list on: fades the piece that has had its turn, and starts the
+## next when the quiet after it is over. In real time, whatever the game speed.
+func _run_list() -> void:
+	if _list.is_empty():
+		return
+	var now := Time.get_ticks_msec() / 1000.0
+	if _music_name != &"" and now >= _list_fade_at:
+		_play(&"", LIST_FADE_SECONDS)
+		_list_next_at = now + LIST_FADE_SECONDS + LIST_GAP_SECONDS
+	elif _music_name == &"" and now >= _list_next_at:
+		_list_at = (_list_at + 1) % _list.size()
+		_play(_list[_list_at], LIST_FADE_SECONDS)
+		var piece := looped("music/%s" % _list[_list_at])
+		_list_fade_at = now + (piece.get_length() * LIST_ROUNDS if piece != null else 0.0)
+
+
+func _play(track: StringName, fade_seconds: float) -> void:
 	if track == _music_name:
 		return
 	_music_name = track

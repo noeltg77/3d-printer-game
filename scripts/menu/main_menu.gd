@@ -16,8 +16,6 @@ const SPLASH_SECONDS := 2.2
 ## Real seconds a line of news from the workshop stays up.
 const NEWS_SECONDS := 5.0
 const MUSIC := &"menu_theme"
-## Steps on each volume control.
-const VOLUME_STEPS := 5
 
 var _showcase: Showcase
 var _ui: Control
@@ -371,20 +369,8 @@ func _settings_panel() -> Control:
 		Ui.wrap(Ui.text("The money you think in. The business runs in pounds underneath, so changing this never alters what anything costs.", 14, Ui.MUTED)),
 		options,
 		Ui.margin(Ui.title("Sound", 20), 0, 8, 0, 0),
-		_volume_row("Music", Sound.MUSIC),
-		_volume_row("Sounds", Sound.SFX),
+		VolumeControls.new(),
 	], 12)
-
-
-## A named volume control for one of the things the player can turn down.
-func _volume_row(label: String, bus: StringName) -> Control:
-	var steps := Ui.steps(int(round(Sound.level(bus) * VOLUME_STEPS)), VOLUME_STEPS, Ui.ORANGE, _set_volume.bind(bus))
-	return Ui.hbox([Ui.width(Ui.text(label, 15, Ui.INK, 800), 90), steps], 12)
-
-
-func _set_volume(step: int, bus: StringName) -> void:
-	Sound.set_level(bus, float(step) / VOLUME_STEPS)
-	_reopen_settings()
 
 
 func _set_currency(code: String) -> void:
