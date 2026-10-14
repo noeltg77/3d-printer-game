@@ -899,6 +899,19 @@ func _test_stockroom() -> void:
 	_check(again.rules.size() == 3 and again.rule(red) == stock.rule(red) and typeof(again.rule(red)["point"]) == TYPE_INT, "rules come back from a save, without those for things the game no longer has")
 	_check(int(data.settings["stock"]["unlock_tier"]) <= data.settings["tier_names"].size(), "reordering unlocks at a tier that exists")
 
+	var reel := Stockroom.spool_key("pla", "red", true)
+	_check(reel == "spool:pla:red:bulk" and Stockroom.is_reel(reel) and not Stockroom.is_reel(red) and Stockroom.is_spool(reel), "a 5 kg reel is a stock of its own")
+	_check(stock.knows(reel) and not stock.knows(Stockroom.spool_key("pla_silk", "pink", true)), "only for a filament sold on reels")
+	var reels := Stockroom.new(data)
+	reels.set_rule(reel, true, 0, 1)
+	_check(reels.due({red: {"have": 4, "coming": 0}}) == ({reel: 1} as Dictionary[String, int]), "spools in stock don't stop a reel being reordered")
+	_check(reels.due({reel: {"have": 1, "coming": 0}}).is_empty(), "nor is a reel ordered while there is one")
+	var reel_basket := Stockroom.add_to_basket({}, reel, 2)
+	_check(reel_basket == {"spools": {"pla:red:bulk": 2}} and supplier.price_of(reel_basket) == supplier.spool_price("pla", true) * 2, "a reel goes in the basket as one, at a reel's price")
+	var kept := Stockroom.new(data)
+	kept.restore(_through_file(reels.save()))
+	_check(kept.rule(reel)["on"], "and its rule survives a save")
+
 
 func _test_contracts() -> void:
 	var data := GameData.load_all()
