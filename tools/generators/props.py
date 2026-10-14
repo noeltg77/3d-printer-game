@@ -176,7 +176,7 @@ def _ceiling_light(builder, args, rng):
     placed at the ceiling's height. A metal housing along X with a white
     diffuser underneath and end caps.
     """
-    length, width, drop = 1.0, 0.11, 0.35
+    length, width, drop = 1.0, 0.11, 0.08
     housing = 0.06
     centre = -drop - housing / 2
     builder.box((length, width, housing), (0, 0, centre), "metal_light", bevel=0.008)
