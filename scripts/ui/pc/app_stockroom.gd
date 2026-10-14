@@ -61,7 +61,7 @@ func refresh() -> void:
 		Ui.hbox([_heading("Finished prints", "On the shelving, ready to pack. Profit is what is left from selling each at its price, after costs and fees."), null,
 			worth if not designs.is_empty() else Ui.spacer()], 14),
 		_or_nothing(prints, "Nothing printed and waiting. What comes off the printers shows here until it is packed."),
-		_heading("Filament", "Counted in spools with a decent amount left, on the rack or in a printer. Arrives in %s." % GameClock.duration_label(Game.supplier.lead_minutes("filament"))),
+		_heading("Filament", "Counted in spools, and 5 kg reels apart, with a decent amount left, on the rack or in a printer. Arrives in %s." % GameClock.duration_label(Game.supplier.lead_minutes("filament"))),
 		_or_nothing(spools, "No filament in stock or on its way."),
 		_heading("Spare parts", "Counted on the shelving. Arrives in %s." % GameClock.duration_label(Game.supplier.lead_minutes("parts"))),
 		_or_nothing(parts, "No spare parts in stock or on their way."),
@@ -173,11 +173,12 @@ func _spool_keys(levels: Dictionary) -> Array[String]:
 		if not Game.unlocked(filament) or not FilamentRules.has_a_use(Game.data.products, filament):
 			continue
 		for colour: String in filament["colours"]:
-			var key := Stockroom.spool_key(filament["id"], colour)
-			if levels.has(key) or Game.stock.rules.has(key):
-				first.append(key)
-			else:
-				rest.append(key)
+			for bulk: bool in ([false, true] if FilamentRules.has_bulk(filament) else [false]):
+				var key := Stockroom.spool_key(filament["id"], colour, bulk)
+				if levels.has(key) or Game.stock.rules.has(key):
+					first.append(key)
+				else:
+					rest.append(key)
 	first.append_array(rest)
 	return first
 
@@ -186,9 +187,9 @@ func _spool_tile(key: String, level: Dictionary) -> Control:
 	var spool := key.trim_prefix(Stockroom.SPOOL)
 	var material := FilamentRules.material_of(spool)
 	var colour := FilamentRules.colour_of(spool)
-	var title := "%s %s" % [Palette.display_name(colour), Game.data.filaments[material]["name"]]
-	return _tile(key, ModelPicture.of_spool(StringName(colour), PICTURE), title, level, "spool", "spools",
-		"%s a spool" % Money.format(Game.supplier.spool_price(material)), 1)
+	var bulk := FilamentRules.is_bulk(spool)
+	return _tile(key, ModelPicture.of_spool(StringName(colour), PICTURE, bulk), Game.stock_name(key), level, "reel" if bulk else "spool", "reels" if bulk else "spools",
+		"%s a %s" % [Money.format(Game.supplier.spool_price(material, bulk)), "reel" if bulk else "spool"], 1)
 
 
 func _part_tile(part_id: String, level: Dictionary) -> Control:

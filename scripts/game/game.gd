@@ -1219,7 +1219,8 @@ func set_stock_rule(key: String, on: bool, point: int, quantity: int) -> void:
 
 
 ## What is in stock and on its way, by Stockroom key, as { have, coming }.
-## Spools count if they are on the rack or in a printer and not nearly empty;
+## Spools count if they are on the rack or in a printer and not nearly empty,
+## big reels apart from spools;
 ## spare parts if they are on the shelving. What is coming is whatever has been
 ## ordered or is sitting in a box by the door.
 func stock_levels() -> Dictionary:
@@ -1231,7 +1232,7 @@ func stock_levels() -> Dictionary:
 	for printer: PrinterStation in get_tree().get_nodes_in_group(&"printer"):
 		loaded.append_array(printer.spools.filter(func(spool: Spool) -> bool: return spool != null))
 	for spool in loaded:
-		_stock_add(levels, Stockroom.spool_key(spool.material, spool.colour), "have", 1 if spool.grams >= Advice.LOW_SPOOL_GRAMS else 0)
+		_stock_add(levels, Stockroom.spool_key(spool.material, spool.colour, spool.bulk), "have", 1 if spool.grams >= Advice.LOW_SPOOL_GRAMS else 0)
 	var shelf: StorageShelf = get_tree().get_first_node_in_group(&"print_storage")
 	for box in (shelf.spares() if shelf != null else ([] as Array[SparePart])):
 		if data.parts.has(box.part):
@@ -1243,7 +1244,7 @@ func stock_levels() -> Dictionary:
 		coming.append(box.delivery)
 	for delivery in coming:
 		for spool in delivery.spools:
-			_stock_add(levels, Stockroom.spool_key(FilamentRules.material_of(spool), FilamentRules.colour_of(spool)), "coming", 1)
+			_stock_add(levels, Stockroom.spool_key(FilamentRules.material_of(spool), FilamentRules.colour_of(spool), FilamentRules.is_bulk(spool)), "coming", 1)
 		for part in delivery.parts:
 			if data.parts.has(part):
 				_stock_add(levels, Stockroom.part_key(part), "coming", delivery.parts[part])
@@ -1283,14 +1284,16 @@ func restock() -> void:
 	notify("The stockroom reordered: %s" % ", ".join(ordered))
 
 
-## What a Stockroom key is called: "Red PLA", "Brass nozzle 0.4mm", "Small cardboard box".
+## What a Stockroom key is called: "Red PLA", "Red PLA 5 kg reel", "Brass nozzle 0.4mm", "Small cardboard box".
 func stock_name(key: String) -> String:
 	if Stockroom.is_packaging(key):
 		return data.packaging[key.trim_prefix(Stockroom.PACKAGING)]["name"]
 	if not Stockroom.is_spool(key):
 		return data.parts[key.trim_prefix(Stockroom.PART)]["name"]
 	var spool := key.trim_prefix(Stockroom.SPOOL)
-	return "%s %s" % [Palette.display_name(FilamentRules.colour_of(spool)), data.filaments[FilamentRules.material_of(spool)]["name"]]
+	var filament: Dictionary = data.filaments[FilamentRules.material_of(spool)]
+	var title := "%s %s" % [Palette.display_name(FilamentRules.colour_of(spool)), filament["name"]]
+	return "%s %s reel" % [title, FilamentRules.weight_label(FilamentRules.new_grams(filament, true))] if FilamentRules.is_bulk(spool) else title
 
 
 ## What one unit of a design costs to make and wrap: filament, electricity on

@@ -6,8 +6,10 @@ extends RefCounted
 ## it says what is due; placing the order is the caller's job.
 ##
 ## Stock is named by key: "spool:<material>:<colour>", "part:<id>" or
-## "packaging:<id>". Everything is counted singly; spools are ordered by the
-## spool, parts and packaging by the pack.
+## "packaging:<id>". A 5 kg reel is a stock of its own,
+## "spool:<material>:<colour>:bulk", counted and ordered apart from the spools.
+## Everything is counted singly; spools and reels are ordered one at a time,
+## parts and packaging by the pack.
 
 const SPOOL := "spool:"
 const PART := "part:"
@@ -27,8 +29,13 @@ func _init(p_data: GameData) -> void:
 	data = p_data
 
 
-static func spool_key(material: String, colour: String) -> String:
-	return SPOOL + FilamentRules.spool_key(material, colour)
+static func spool_key(material: String, colour: String, bulk := false) -> String:
+	return SPOOL + FilamentRules.spool_key(material, colour, bulk)
+
+
+## True if a key names a stock of big reels.
+static func is_reel(key: String) -> bool:
+	return is_spool(key) and FilamentRules.is_bulk(key.trim_prefix(SPOOL))
 
 
 static func part_key(part: String) -> String:
@@ -71,7 +78,9 @@ func knows(key: String) -> bool:
 		return false
 	var spool := key.trim_prefix(SPOOL)
 	var material := FilamentRules.material_of(spool)
-	return data.filaments.has(material) and data.filaments[material]["colours"].has(FilamentRules.colour_of(spool))
+	if not data.filaments.has(material) or not data.filaments[material]["colours"].has(FilamentRules.colour_of(spool)):
+		return false
+	return FilamentRules.has_bulk(data.filaments[material]) or not FilamentRules.is_bulk(spool)
 
 
 ## What to order now. `levels` is key -> { have, coming }: what is in stock and
