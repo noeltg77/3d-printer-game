@@ -671,6 +671,7 @@ func _test_reels_and_recycling() -> void:
 	_check(recycler.advance(float(machine["extrude_minutes"])) and recycler.job.is_empty() and recycler.ready == {"material": "pla", "colour": "red"}, "and ends with a spool ready")
 	_check(recycler.problem("petg") != "" and recycler.take() == {"material": "pla", "colour": "red"} and recycler.ready.is_empty(), "which has to be taken off before the next")
 	_check(supplier.price_of({"fittings": {"loopline_recycler": 1}}) == int(machine["price_pence"]), "a recycler has its shop price")
+	_check(data.roles.values().any(func(role: Dictionary) -> bool: return role["duties"].has("recycle")), "someone on the staff can be taken on to keep the recycler fed")
 
 	var station: Dictionary = data.fittings["rinseworks_wash_cure"]
 	var big: Dictionary = data.fittings["rinseworks_wash_cure_max"]

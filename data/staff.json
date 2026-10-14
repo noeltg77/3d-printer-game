@@ -4,10 +4,10 @@
 		{
 			"id": "operator",
 			"name": "Print operator",
-			"description": "Collects finished prints, clears up failed ones, and sets the same job going again on any printer you have told to keep printing.",
+			"description": "Collects finished prints, clears up failed ones, sets the same job going again on any printer you have told to keep printing, and keeps the recycler fed with the ends of spools.",
 			"unlock_tier": 2,
 			"wage_pence_per_day": 4499,
-			"duties": ["clear", "collect", "reprint"]
+			"duties": ["clear", "collect", "reprint", "recycle"]
 		},
 		{
 			"id": "packer",
