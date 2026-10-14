@@ -6,6 +6,10 @@ extends FittingUnit
 ## filament it winds a new spool in any colour that filament comes in, which
 ## takes a few hours and a little pigment, and waits on the machine to be put
 ## on the rack. The rules and the figures are in Recycling.
+##
+## Staff with the `recycle` duty shred the leftovers and rack a finished spool
+## by themselves, unless the player has switched that off here. Which colour to
+## make is always the player's choice.
 
 const KIND := "recycler"
 const EMPTY_SPOOL := "res://assets/models/filament/spool_empty.glb"
@@ -18,6 +22,8 @@ var _winding: Node3D = null
 ## Game minutes it has run since electricity was last charged.
 var _minutes_on := 0.0
 var _winder: Node3D
+## True if staff with the `recycle` duty may shred the leftovers on the rack unasked.
+var staff_shred := true
 
 
 ## The recycler that can melt down a filament, or null if there is none.
@@ -111,7 +117,7 @@ func _use_actions(_agent: Agent) -> Array[Action]:
 			GameClock.duration_label(float(job["left"]))]).with_progress(recycling.progress()))
 	if _output != null:
 		if _rack().free_slots() > 0:
-			var off := Action.new("Put the new %s on the rack" % _output.title(), _take_off)
+			var off := Action.new("Put the new %s on the rack" % _output.title(), _take_off).for_duty(&"recycle")
 			off.task_name = "Rack the recycled %s" % _output.title().to_lower()
 			actions.append(off)
 		else:
@@ -122,7 +128,15 @@ func _use_actions(_agent: Agent) -> Array[Action]:
 	if ends.is_empty():
 		actions.append(Action.info("Shred the leftovers (no spool on the rack is under %d g)" % int(Game.data.settings["recycling"]["leftover_grams"])))
 	else:
-		actions.append(shred_action(ends, "Shred the leftovers: %d spool%s" % [ends.size(), "" if ends.size() == 1 else "s"]))
+		var shred := shred_action(ends, "Shred the leftovers: %d spool%s" % [ends.size(), "" if ends.size() == 1 else "s"])
+		actions.append(shred.for_duty(&"recycle") if staff_shred else shred)
+	# Only worth asking with someone on the staff to do it.
+	if Game.staff.has_duty("recycle"):
+		var switch := Action.new("Staff shred the leftovers: %s" % ("on" if staff_shred else "off"), func(_agent: Agent) -> void:
+			staff_shred = not staff_shred
+			Game.changed.emit())
+		switch.immediate = true
+		actions.append(switch)
 	var any: Array[Action] = []
 	for spool in _rack().spools():
 		if family_of(spool.material) != "":
@@ -223,10 +237,12 @@ func save() -> Dictionary:
 	var data := super()
 	data["state"] = recycling.save()
 	data["state"]["minutes_on"] = _minutes_on
+	data["state"]["staff_shred"] = staff_shred
 	return data
 
 
 func restore_state(state: Dictionary) -> void:
 	recycling.restore(state, Game.data.filaments)
 	_minutes_on = float(state.get("minutes_on", 0.0))
+	staff_shred = bool(state.get("staff_shred", true))
 	_show()

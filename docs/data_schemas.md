@@ -310,7 +310,7 @@ Written for the game; the design data has no staff. Every number is a placeholde
 | `name`, `description` | Shown in the Rota app |
 | `unlock_tier` | The tier from which people apply for the job. All three open at tier 2, where the small unit has room for one of them, so which to take on is the player's choice |
 | `wage_pence_per_day` | Charged at midnight for every day the person is on the team, shift worked or not |
-| `duties` | The kinds of task they look for, most pressing first. Each matches the `duty` of an `Action` in the code: `clear` (a failed print), `collect` (a finished one), `reprint` (start a printer's last job again, if the printer is set to keep going), `pack` (an order), `send` (a contract crate) |
+| `duties` | The kinds of task they look for, most pressing first. Each matches the `duty` of an `Action` in the code: `clear` (a failed print), `collect` (a finished one), `reprint` (start a printer's last job again, if the printer is set to keep going), `pack` (an order), `send` (a contract crate), `recycle` (shred the leftover spools into the recycler, unless it is switched off there, and rack a spool it has made) |
 
 `shifts`: the hours staff can work, by `id`, with a `name` and a `start_minute` and `end_minute` of the day. A new hire starts on the first.
 
