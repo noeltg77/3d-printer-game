@@ -1,4 +1,4 @@
-[gd_scene load_steps=41 format=3]
+[gd_scene load_steps=42 format=3]
 
 [ext_resource type="PackedScene" path="res://assets/models/garage/factory.glb" id="1_garage"]
 [ext_resource type="PackedScene" path="res://assets/models/furniture/workbench_long.glb" id="2_workbench"]
@@ -36,6 +36,7 @@
 [ext_resource type="Script" path="res://scripts/world/day_night.gd" id="37_day_night"]
 [ext_resource type="Script" path="res://scripts/world/dryer_spot.gd" id="38_dryer_spot"]
 [ext_resource type="Script" path="res://scripts/world/machinery.gd" id="90_machinery"]
+[ext_resource type="Script" path="res://scripts/world/ceiling_lights.gd" id="91_ceiling_lights"]
 [ext_resource type="Script" path="res://scripts/world/staff_room.gd" id="39_staff_room"]
 [ext_resource type="PackedScene" path="res://assets/models/surroundings/estate_factory.glb" id="40_surroundings"]
 [ext_resource type="Script" path="res://scripts/world/surroundings.gd" id="41_surroundings"]
@@ -105,6 +106,12 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.03, 0.95, -5.7)
 light_color = Color(1, 0.78, 0.42, 1)
 light_energy = 1.2
 omni_range = 1.8
+
+[node name="CeilingLights" type="Node3D" parent="."]
+script = ExtResource("91_ceiling_lights")
+ceiling = 3.6
+spacing = 4.0
+energy = 1.0
 
 [node name="DayNight" type="Node" parent="."]
 script = ExtResource("37_day_night")

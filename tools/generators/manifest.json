@@ -615,6 +615,7 @@
 		{ "generator": "props", "out": "assets/models/props/rug.glb", "args": { "variant": "rug", "colour": "terracotta" } },
 		{ "generator": "props", "out": "assets/models/props/dryer_mini.glb", "args": { "variant": "dryer_mini", "colour": "yellow" } },
 		{ "generator": "props", "out": "assets/models/props/dryer_duo.glb", "args": { "variant": "dryer_duo", "colour": "orange" } },
+		{ "generator": "props", "out": "assets/models/props/ceiling_light.glb", "args": { "variant": "ceiling_light" } },
 		{ "generator": "machines", "out": "assets/models/furniture/recycler.glb", "args": { "variant": "recycler", "colour": "green" } },
 		{ "generator": "machines", "out": "assets/models/furniture/wash_station.glb", "args": { "variant": "wash_station", "colour": "yellow" } },
 		{ "generator": "machines", "out": "assets/models/furniture/wash_station_max.glb", "args": { "variant": "wash_station_max", "colour": "orange" } },
