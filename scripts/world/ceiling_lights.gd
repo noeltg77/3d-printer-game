@@ -12,7 +12,7 @@ extends Node3D
 
 const MODEL := preload("res://assets/models/props/ceiling_light.glb")
 ## How far below the ceiling the light hangs: the fitting's cables and housing.
-const DROP := 0.43
+const DROP := 0.16
 
 ## Height of the ceiling the fittings hang from, in metres.
 @export var ceiling := 2.6
