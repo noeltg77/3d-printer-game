@@ -15,6 +15,7 @@ func _init() -> void:
 	_test_filaments()
 	_test_moisture()
 	_test_reels_and_recycling()
+	_test_ceiling_lights()
 	_test_printable_designs()
 	_test_design_studio()
 	_test_markets_and_trends()
@@ -684,6 +685,22 @@ func _test_reels_and_recycling() -> void:
 	var rules_of_storage := StorageRules.new(data)
 	_check(rules_of_storage.limit(data.premises["garage"], "recycler") == 1 and rules_of_storage.limit(data.premises["factory"], "wash") == 1, "a place has room for one of each machine")
 	_check(StorageRules.stow_machines({"units": [{"fitting": "loopline_recycler", "state": {"hopper": {"pla": 500.0}}}]})["loopline_recycler"]["hopper"]["pla"] == 500.0, "what is in a machine goes with it on a move")
+
+
+func _test_ceiling_lights() -> void:
+	var garage := CeilingLights.layout(Rect2(-2.75, -2.75, 5.5, 5.5), 2.8)
+	_check(garage.size() == 4 and garage.has(Vector2(-1.375, -1.375)) and garage.has(Vector2(1.375, 1.375)), "the garage gets a light over each quarter of its floor")
+	var factory := CeilingLights.layout(Rect2(-8.75, -5.75, 17.5, 11.5), 4.0)
+	_check(factory.size() == 15, "a bigger floor gets more")
+	var area := Rect2(-8.75, -5.75, 17.5, 11.5)
+	var corner_reach := 0.0
+	for corner: Vector2 in [area.position, area.end, Vector2(area.position.x, area.end.y), Vector2(area.end.x, area.position.y)]:
+		var nearest := INF
+		for point in factory:
+			nearest = minf(nearest, corner.distance_to(point))
+		corner_reach = maxf(corner_reach, nearest)
+	_check(corner_reach < 4.0 * CeilingLights.REACH * 0.6, "and no corner of the floor is far from one")
+	_check(CeilingLights.layout(Rect2(0, 0, 1, 1), 3.0).size() == 1, "even a tiny room has one")
 
 
 func _test_design_studio() -> void:

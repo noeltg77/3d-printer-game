@@ -1,4 +1,4 @@
-"""Small prop generator: PC, bin, plant, rug, desk lamp.
+"""Small prop generator: PC, bin, plant, rug, desk lamp, ceiling light.
 
 blender --background --factory-startup --python tools/generators/props.py -- \
     --variant plant --seed 3 --out assets/models/props/plant.glb
@@ -169,7 +169,25 @@ def _dryer_duo(builder, args, rng):
     builder.cylinder(0.036, 0.014, (0.165, 0.11, 0.613), "ink", segments=8)
 
 
-VARIANTS = {"dryer_mini": _dryer_mini, "dryer_duo": _dryer_duo, "pc": _pc, "bin": _bin, "plant": _plant, "rug": _rug, "desk_lamp": _desk_lamp, "floor_mat": _floor_mat}
+def _ceiling_light(builder, args, rng):
+    """A strip light hanging on two cables: what lights a room from above.
+
+    Its origin is where the cables meet the ceiling, so it hangs below 0 and is
+    placed at the ceiling's height. A metal housing along X with a white
+    diffuser underneath and end caps.
+    """
+    length, width, drop = 1.0, 0.11, 0.35
+    housing = 0.06
+    centre = -drop - housing / 2
+    builder.box((length, width, housing), (0, 0, centre), "metal_light", bevel=0.008)
+    builder.box((length - 0.04, width - 0.03, 0.012), (0, 0, centre - housing / 2 - 0.004), "white", bevel=0.004)
+    for x in (-1, 1):
+        builder.box((0.02, width + 0.006, housing + 0.006), (x * (length / 2 - 0.01), 0, centre), "charcoal")
+        builder.cylinder(0.004, drop, (x * (length / 2 - 0.12), 0, -drop / 2), "charcoal", segments=4)
+        builder.cylinder(0.025, 0.012, (x * (length / 2 - 0.12), 0, -0.006), "charcoal", segments=6)
+
+
+VARIANTS = {"ceiling_light": _ceiling_light, "dryer_mini": _dryer_mini, "dryer_duo": _dryer_duo, "pc": _pc, "bin": _bin, "plant": _plant, "rug": _rug, "desk_lamp": _desk_lamp, "floor_mat": _floor_mat}
 
 if __name__ == "__main__":
     common.run(sys.modules[__name__])
