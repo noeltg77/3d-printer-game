@@ -347,8 +347,9 @@ def _lamp_post(yard, x, y, reach):
     scenery.cylinder(0.1, 0.5, (x, y, 0.25), "charcoal", segments=8)
     scenery.cylinder(0.055, 3.7, (x, y, 1.85), "metal_dark", segments=6)
     scenery.box((abs(reach) + 0.1, 0.07, 0.07), (x + reach / 2, y, 3.68), "metal_dark")
-    scenery.box((0.5, 0.26, 0.1), (x + reach, y, 3.66), "charcoal", bevel=0.02)
-    yard.glow("glow_lamps").box((0.4, 0.18, 0.05), (x + reach, y, 3.59), "white")
+    scenery.box((0.5, 0.26, 0.08), (x + reach, y, 3.68), "charcoal", bevel=0.02)
+    # A deep lens under the head, so it shows lit from above as well as below.
+    yard.glow("glow_lamps").box((0.44, 0.2, 0.12), (x + reach, y, 3.58), "white", bevel=0.03, bevel_segments=2)
     yard.markers.append((f"lamp_{yard.lamps}", (x + reach, y, 3.4)))
 
 
