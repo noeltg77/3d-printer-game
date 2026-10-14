@@ -7,6 +7,8 @@ extends Node3D
 ##
 ## They stay on at the same brightness whatever the hour. The lamps that
 ## DayNight brightens after dark (over the bench, on the desk) add to them.
+## After dark the fittings' diffusers (their `glow_*` meshes) glow softly too,
+## as far as DayNight.darkness says it is dark.
 ##
 ## Purely for looks. Nothing in the simulation depends on it.
 
@@ -22,6 +24,12 @@ const DROP := 0.16
 @export var colour := Color(1.0, 0.93, 0.8)
 ## How far each light reaches, as a multiple of the spacing, so neighbours overlap.
 const REACH := 1.65
+## How brightly a diffuser glows at full dark: enough to read as lit, not a bloom.
+const GLOW := 0.6
+const GLOW_COLOUR := Color(1.0, 0.95, 0.85)
+
+## One material shared by every diffuser, so the glow is set once a frame.
+var _glow: StandardMaterial3D = null
 
 
 func _ready() -> void:
@@ -41,6 +49,11 @@ static func layout(area: Rect2, gap: float) -> Array[Vector2]:
 	return points
 
 
+func _process(_delta: float) -> void:
+	if _glow != null:
+		_glow.emission_energy_multiplier = GLOW * DayNight.darkness(Game.clock.minute_of_day / 60.0)
+
+
 func _hang() -> void:
 	var grid: FloorGrid = get_tree().get_first_node_in_group(&"floor_grid")
 	if grid == null:
@@ -48,6 +61,12 @@ func _hang() -> void:
 	for point in CeilingLights.layout(grid.area, spacing):
 		var fitting: Node3D = MODEL.instantiate()
 		add_child(fitting)
+		for diffuser: MeshInstance3D in fitting.find_children("glow_*", "MeshInstance3D", true, false):
+			if _glow == null:
+				_glow = diffuser.get_active_material(0).duplicate()
+				_glow.emission_enabled = true
+				_glow.emission = GLOW_COLOUR
+			diffuser.material_override = _glow
 		fitting.global_position = Vector3(point.x, ceiling, point.y)
 		var light := OmniLight3D.new()
 		light.light_color = colour

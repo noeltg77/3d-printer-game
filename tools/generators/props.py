@@ -16,6 +16,8 @@ SCREEN_COLOURS = ("orange", "yellow", "pink", "lime", "teal", "white")
 SCRAP_COLOURS = ("red", "orange", "yellow", "green", "sky", "purple", "pink")
 SIDEWAYS = (0.0, 0.0, math.pi / 2)
 _pending_markers = []
+# Meshes of their own, (name, builder), finished as children of the main one.
+_pending_parts = []
 
 
 def add_arguments(parser):
@@ -26,8 +28,11 @@ def add_arguments(parser):
 def build(args, rng):
     builder = MeshBuilder()
     _pending_markers.clear()
+    _pending_parts.clear()
     VARIANTS[args.variant](builder, args, rng)
     obj = builder.finish(args.out.stem)
+    for name, part in _pending_parts:
+        part.finish(name, parent=obj)
     for name, position, rotation in _pending_markers:
         common.marker(name, position, obj, rotation=rotation)
 
@@ -174,15 +179,20 @@ def _ceiling_light(builder, args, rng):
 
     Its origin is where the cables meet the ceiling, so it hangs below 0 and is
     placed at the ceiling's height. A metal housing along X with a white
-    diffuser underneath and end caps.
+    diffuser underneath and end caps. The diffuser is a mesh of its own,
+    `glow_diffuser`, which the game lights up after dark.
     """
     length, width, drop = 1.0, 0.11, 0.08
-    housing = 0.06
+    housing = 0.035
     centre = -drop - housing / 2
-    builder.box((length, width, housing), (0, 0, centre), "metal_light", bevel=0.008)
-    builder.box((length - 0.04, width - 0.03, 0.012), (0, 0, centre - housing / 2 - 0.004), "white", bevel=0.004)
+    builder.box((length, width, housing), (0, 0, centre), "metal_light", bevel=0.006)
+    # A deep opal lens under the housing, so its sides show from above as well as below.
+    lens = 0.035
+    diffuser = MeshBuilder()
+    diffuser.box((length - 0.04, width - 0.012, lens), (0, 0, centre - housing / 2 - lens / 2 + 0.002), "white", bevel=0.01, bevel_segments=2)
+    _pending_parts.append(("glow_diffuser", diffuser))
     for x in (-1, 1):
-        builder.box((0.02, width + 0.006, housing + 0.006), (x * (length / 2 - 0.01), 0, centre), "charcoal")
+        builder.box((0.02, width + 0.006, housing + lens), (x * (length / 2 - 0.01), 0, centre - lens / 2), "charcoal")
         builder.cylinder(0.004, drop, (x * (length / 2 - 0.12), 0, -drop / 2), "charcoal", segments=4)
         builder.cylinder(0.025, 0.012, (x * (length / 2 - 0.12), 0, -0.006), "charcoal", segments=6)
 
