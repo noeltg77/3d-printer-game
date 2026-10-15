@@ -18,6 +18,7 @@ Cosy isometric 3D printing business sim in Godot 4.7 (GDScript). `docs/GDD.md` i
 - `docs/design_data/` content designed ahead of the build (660 products, 38 printers, filaments, parts, presets, failures, shipping). Reference only: the game loads `data/`, and each phase imports what it needs from here. Read its README before adding content or product models
 - `tools/generators/` Blender Python asset generators, one per asset family (ignored by Godot). `machines.py` is the recycler and the wash and cure stations; `spools.py -- --kilos 5` is a big reel
 - `tools/previews/` preview renders from the generators (git ignored)
+- `tools/trailer/` the Steam trailer, made in Blender from the game itself: `scripts/dev/trailer_snapshot.gd` (scene `scenes/dev/trailer_snapshot.tscn`) writes a fitted-out premises to `tools/trailer/worlds/<place>.json` (and the PC's apps as pictures with `--pc=`), `build_trailer.py` rebuilds them and cuts the shots to `timeline.py`, `music.py` scores it, and `render.sh` (`--preview` for a quick half-size one) renders and encodes to `tools/trailer/out/` (git ignored)
 - `assets/` generated `.glb` models, palette texture, shared material, and `assets/audio/` generated sounds
 - `data/` JSON content tables
 - `scenes/` garage, small unit (`scenes/unit/`), workshop (`scenes/workshop/`) and factory (`scenes/factory/`); `scenes/dev/` for test scenes

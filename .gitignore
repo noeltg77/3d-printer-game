@@ -5,3 +5,6 @@
 # Generator preview renders
 tools/previews/
 __pycache__/
+
+# Trailer renders and builds
+tools/trailer/out/
